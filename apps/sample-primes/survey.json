@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "title": "素数カウンタ アンケート",
+  "questions": [
+    {
+      "id": "speed",
+      "type": "scale",
+      "text": "計算の速さに満足した",
+      "min": 1,
+      "max": 5,
+      "minLabel": "そう思わない",
+      "maxLabel": "そう思う",
+      "required": true
+    },
+    {
+      "id": "device",
+      "type": "multi",
+      "text": "使った端末",
+      "options": ["PC", "スマホ", "タブレット"]
+    },
+    {
+      "id": "comment",
+      "type": "text",
+      "text": "感想",
+      "maxLength": 500
+    }
+  ]
+}

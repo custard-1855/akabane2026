@@ -1,0 +1,93 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f4f1ea;
+  --surface: #ffffff;
+  --ink: #1f2328;
+  --ink-soft: #5b616b;
+  --line: #c9c4b8;
+  --accent: #2563c9;
+  --bad: #c0282d;
+  font-family: system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17191d;
+    --surface: #22252b;
+    --ink: #e8e6e1;
+    --ink-soft: #a3a8b0;
+    --line: #3a3e46;
+    --accent: #6f9ef0;
+    --bad: #f0787c;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+h1 { font-size: 1.4rem; margin: 0 0 16px; }
+
+#apps {
+  list-style: none;
+  margin: 0 0 32px;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+#apps a {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  min-height: 64px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: inherit;
+  text-decoration: none;
+}
+
+#apps a:active { border-color: var(--accent); }
+#apps .title { font-weight: 600; font-size: 1.1rem; }
+#apps .desc { color: var(--ink-soft); font-size: .9rem; }
+
+.note { color: var(--ink-soft); font-size: .9rem; }
+.error { color: var(--bad); }
+
+#device summary { cursor: pointer; color: var(--ink-soft); min-height: 44px; display: flex; align-items: center; }
+#device label { display: block; margin: 8px 0 6px; font-size: .9rem; }
+#device .row { display: flex; gap: 8px; }
+#device input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  padding: 8px 10px;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: inherit;
+}
+#device button {
+  font: inherit;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+}
+#device code { word-break: break-all; }
