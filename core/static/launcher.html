@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>アプリ一覧</title>
+  <link rel="stylesheet" href="/core/launcher.css">
+  <script src="/core/sdk.js" defer></script>
+  <script src="/core/launcher.js" defer></script>
+</head>
+<body>
+  <main>
+    <h1>アプリ一覧</h1>
+    <ul id="apps" aria-live="polite"><li class="note">読み込み中…</li></ul>
+
+    <details id="device">
+      <summary>この端末</summary>
+      <form id="device-form">
+        <label for="device-name">端末の名前(管理画面での表示用・任意)</label>
+        <div class="row">
+          <input id="device-name" maxlength="64" placeholder="例: リビングのiPad">
+          <button type="submit">保存</button>
+        </div>
+        <p class="note">端末ID: <code id="device-id"></code></p>
+        <p class="note" id="device-status" aria-live="polite"></p>
+      </form>
+    </details>
+  </main>
+</body>
+</html>

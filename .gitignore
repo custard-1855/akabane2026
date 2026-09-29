@@ -40,3 +40,6 @@ coverage/
 
 # Logs
 *.log
+
+# 基盤の実行時データ(storage.db, metrics.db, ログ)
+/data/
