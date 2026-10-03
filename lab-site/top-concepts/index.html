@@ -1,0 +1,1377 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>研究室トップ表現案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: 全幅ステージ(ヒーローの試作)→ 案の切替 → 比較表。ステージは計算をそのまま映す計器盤として扱う */
+:root {
+  --bg: #0b1220;
+  --panel: #111a2c;
+  --ink: #e7edf6;
+  --muted: #8d9ab0;
+  --line: #24304a;
+  --edge: #3a4966;
+  --accent: #6cc4ff;
+  --accent2: #f5b14c;
+  --c1: #5aa9ff;
+  --c2: #f59e4b;
+  --c3: #4fd1a5;
+  --c4: #f46b8a;
+  --c5: #b28dff;
+  --scrim: rgba(11, 18, 32, 0.78);
+  --font-display: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --font-body: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f3f5f8;
+    --panel: #ffffff;
+    --ink: #121a2b;
+    --muted: #5a667c;
+    --line: #d5dbe5;
+    --edge: #b7c1d1;
+    --accent: #1d6fd6;
+    --accent2: #c7770c;
+    --c1: #2f6fd6;
+    --c2: #d9771f;
+    --c3: #1f9e74;
+    --c4: #d6456a;
+    --c5: #7d55d9;
+    --scrim: rgba(243, 245, 248, 0.86);
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #f3f5f8;
+  --panel: #ffffff;
+  --ink: #121a2b;
+  --muted: #5a667c;
+  --line: #d5dbe5;
+  --edge: #b7c1d1;
+  --accent: #1d6fd6;
+  --accent2: #c7770c;
+  --c1: #2f6fd6;
+  --c2: #d9771f;
+  --c3: #1f9e74;
+  --c4: #d6456a;
+  --c5: #7d55d9;
+  --scrim: rgba(243, 245, 248, 0.86);
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.stage {
+  position: relative;
+  height: clamp(440px, 74vh, 780px);
+  overflow: hidden;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  touch-action: pan-y;
+}
+.stage canvas.field {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+}
+.scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, var(--scrim) 0%, transparent 62%);
+  transition: opacity .4s;
+}
+.overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: clamp(20px, 5vw, 64px) clamp(16px, 6vw, 80px);
+  max-width: 100%;
+  pointer-events: none;
+  display: grid;
+  gap: 14px;
+  transition: opacity .4s;
+}
+.brand {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tagline {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(26px, 4.6vw, 56px);
+  line-height: 1.25;
+  letter-spacing: .01em;
+  display: grid;
+}
+.tagline span { white-space: nowrap; }
+.themes {
+  margin: 0;
+  font-size: clamp(14px, 1.6vw, 17px);
+  color: var(--muted);
+}
+.themes b { color: var(--ink); font-weight: 500; }
+.stage.bare .overlay, .stage.bare .scrim { opacity: 0; }
+
+.live {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 12px clamp(16px, 6vw, 80px) 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px 24px;
+  pointer-events: none;
+  background: linear-gradient(0deg, var(--scrim) 0%, transparent 100%);
+}
+.caption {
+  min-width: 0;
+  flex: 1 1 22rem;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink);
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+}
+.caption .rec {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent2);
+  transform: translateY(-1px);
+  animation: blink 1.6s ease-in-out infinite;
+}
+.paused .caption .rec { animation: none; opacity: .4; }
+@keyframes blink { 50% { opacity: .25; } }
+.metric {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.metric canvas { width: 120px; height: 30px; display: block; }
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding: 14px clamp(16px, 6vw, 80px);
+  border-bottom: 1px solid var(--line);
+}
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab, .btn {
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.tab .key {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+.tab[aria-selected="true"] {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.tab[aria-selected="true"] .key { color: var(--bg); opacity: .7; }
+.tab:hover, .btn:hover { border-color: var(--muted); }
+.tab:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.side { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.hint { margin: 0; font-size: 13px; color: var(--muted); }
+.btn-row { display: flex; gap: 6px; }
+
+main {
+  padding: clamp(28px, 5vw, 56px) clamp(16px, 6vw, 80px) 72px;
+  display: grid;
+  gap: 40px;
+  max-width: 1200px;
+}
+h2 {
+  margin: 0 0 12px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  text-wrap: balance;
+}
+.lede { margin: 0; max-width: 42rem; color: var(--muted); }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 14px; line-height: 1.65; }
+th, td { text-align: left; vertical-align: top; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+tr:last-child th, tr:last-child td { border-bottom: 0; }
+thead th { font-weight: 700; font-size: 15px; }
+thead th .key { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-right: 6px; font-weight: 400; }
+tbody th { width: 9.5rem; color: var(--muted); font-weight: 500; font-size: 13px; }
+td.is-current, th.is-current { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+td code, p code, li code { font-family: var(--font-mono); font-size: .9em; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 32px; }
+.cols > section { min-width: 0; }
+ul.plain { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+.pick {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+  color: var(--accent2);
+  border: 1px solid var(--accent2);
+  border-radius: 3px;
+  padding: 0 5px;
+  margin-left: 6px;
+  vertical-align: 2px;
+}
+
+@media (max-width: 640px) {
+  .scrim { background: linear-gradient(180deg, var(--scrim) 0%, transparent 70%); }
+  .metric canvas { width: 90px; }
+  .caption { font-size: 11px; }
+}
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <canvas class="field" id="cv" aria-label="研究テーマを表す動くグラフィック"></canvas>
+  <div class="scrim"></div>
+  <div class="overlay">
+    <div class="brand">◯◯ Laboratory · ◯◯研究室</div>
+    <h1 class="tagline"><span>つながりを読み解き、</span><span>学ぶしくみをつくる。</span></h1>
+    <p class="themes"><b>グラフ理論</b> · <b>機械学習</b> · <b>ネットワーク</b></p>
+  </div>
+  <div class="live">
+    <div class="caption"><span class="rec" aria-hidden="true"></span><span id="caption" aria-live="off"></span></div>
+    <div class="metric"><span id="metric-label"></span><canvas id="spark" width="120" height="30"></canvas></div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="tabs" role="tablist" aria-label="トップ表現の案">
+    <button class="tab" role="tab" id="tab-a" data-id="a" aria-selected="false"><span class="key">A</span>探索の波</button>
+    <button class="tab" role="tab" id="tab-b" data-id="b" aria-selected="false"><span class="key">B</span>学習する境界</button>
+    <button class="tab" role="tab" id="tab-c" data-id="c" aria-selected="false"><span class="key">C</span>つながりが学ぶ</button>
+  </div>
+  <div class="side">
+    <p class="hint" id="hint"></p>
+    <div class="btn-row">
+      <button class="btn" id="btn-play" type="button">一時停止</button>
+      <button class="btn" id="btn-bare" type="button" aria-pressed="false">文字を隠す</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <section>
+    <h2>3案の比較</h2>
+    <p class="lede">どの案も、見た目だけの演出ではなく実際の計算を毎フレーム描いています。画面下の一行は、いま何を計算しているかを示すライブキャプションです。</p>
+  </section>
+
+  <div class="table-wrap">
+    <table id="compare">
+      <thead>
+        <tr>
+          <th scope="col"></th>
+          <th scope="col" data-col="a"><span class="key">A</span>探索の波</th>
+          <th scope="col" data-col="b"><span class="key">B</span>学習する境界</th>
+          <th scope="col" data-col="c"><span class="key">C</span>つながりが学ぶ<span class="pick">推し</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">主なテーマ</th>
+          <td data-col="a">グラフ理論</td>
+          <td data-col="b">機械学習</td>
+          <td data-col="c">ネットワーク × グラフ × 学習</td>
+        </tr>
+        <tr>
+          <th scope="row">伝わること</th>
+          <td data-col="a">最短経路が近い順に確定していく様子。1回の実行で全地点への最短路が求まる。配達員ダイクストラと地続き</td>
+          <td data-col="b">データから学ぶ過程そのもの。でたらめな境界が数秒で形を持つ</td>
+          <td data-col="c">少数のラベルが辺を伝って広がり、ネットワーク全体の構造(コミュニティ)を推定する</td>
+        </tr>
+        <tr>
+          <th scope="row">中で動く計算</th>
+          <td data-col="a">ランダム点のガブリエルグラフ、辺ごとに速さの違う重み、ダイクストラ法</td>
+          <td data-col="b">2-16-16-1 のニューラルネットを Adam で学習。決定境界はマーチングスクエアで描画</td>
+          <td data-col="c">確率的ブロックモデルで生成したネットワーク、力学モデル配置、ラベル伝播法(Zhou et al., 2004)</td>
+        </tr>
+        <tr>
+          <th scope="row">触ったとき</th>
+          <td data-col="a">クリック地点から再探索。ホバーでその頂点への最短路</td>
+          <td data-col="b">クリックで「モデルの予測と逆のラベル」の点を追加し、境界が組み直される</td>
+          <td data-col="c">クリックした頂点のラベルを切り替え、伝わり方が変わる。ホバーで隣接頂点を強調</td>
+        </tr>
+        <tr>
+          <th scope="row">止まった状態</th>
+          <td data-col="a">最短路木と距離の色分けで成立</td>
+          <td data-col="b">決定境界の色面で成立</td>
+          <td data-col="c">コミュニティの色分けで成立</td>
+        </tr>
+        <tr>
+          <th scope="row">負荷</th>
+          <td data-col="a">軽い</td>
+          <td data-col="b">中。毎フレーム数千点の推論(格子を粗くして調整)</td>
+          <td data-col="c">軽い〜中。配置計算が頂点数の2乗(130頂点まで)</td>
+        </tr>
+        <tr>
+          <th scope="row">懸念</th>
+          <td data-col="a">「学習」の要素が見えない</td>
+          <td data-col="b">TensorFlow Playground に似る。グラフ・ネットワークの要素がない</td>
+          <td data-col="c">説明がないと「きれいな点と線」で終わる。キャプションと操作で補う</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cols">
+    <section>
+      <h2>推しは C、A と B は下の階層で使う</h2>
+      <p>C は3つのテーマが1枚の画面に重なる唯一の案です。グラフ(構造)、ネットワーク(伝わる)、学習(推定する)が同じ動きの中で説明できます。A と B は研究テーマ紹介のセクションや各テーマのページで、それぞれの見出し背景として使うと役割が分かれます。</p>
+    </section>
+    <section>
+      <h2>発展させるなら</h2>
+      <ul class="plain">
+        <li>C のネットワークを研究室の実データにする(論文の共著・引用ネットワーク、メンバーと研究テーマの二部グラフ)</li>
+        <li>スクロールに合わせて C → A → B と計算が切り替わり、各研究テーマの説明につながる</li>
+        <li>ライブキャプションを全ページ共通の意匠にする(「いま何を計算しているか」を必ず書く)</li>
+      </ul>
+    </section>
+    <section>
+      <h2>要件で決めること</h2>
+      <ul class="plain">
+        <li>研究室名、キャッチコピー(いまの文言は仮)</li>
+        <li>主な閲覧環境(スマホの比率)と、明暗どちらを基本にするか</li>
+        <li>トップの役割(ヒーローのみか、研究紹介まで担うか)</li>
+        <li>実データを使うか、使うならデータの更新方法</li>
+      </ul>
+    </section>
+  </div>
+</main>
+
+<script>
+(() => {
+'use strict';
+
+const $ = (s) => document.querySelector(s);
+const stage = $('#stage');
+const cv = $('#cv');
+const ctx = cv.getContext('2d');
+const spark = $('#spark');
+const sctx = spark.getContext('2d');
+const capEl = $('#caption');
+const metricEl = $('#metric-label');
+const hintEl = $('#hint');
+const playBtn = $('#btn-play');
+const bareBtn = $('#btn-bare');
+
+let W = 0, H = 0, DPR = 1;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rand = (a, b) => a + Math.random() * (b - a);
+const fmt = (n) => n.toLocaleString('ja-JP');
+
+/* ---------- colors (CSS トークンから読む) ---------- */
+let C = {};
+function hexRgb(h) {
+  h = h.replace('#', '').trim();
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  const n = parseInt(h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function readColors() {
+  const cs = getComputedStyle(document.documentElement);
+  const g = (n) => hexRgb(cs.getPropertyValue(n));
+  C = {
+    bg: g('--bg'), ink: g('--ink'), muted: g('--muted'), line: g('--line'), edge: g('--edge'),
+    accent: g('--accent'), accent2: g('--accent2'),
+    L: ['--c1', '--c2', '--c3', '--c4', '--c5'].map(g),
+  };
+}
+const rgba = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
+const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+
+/* =========================================================
+   A. 探索の波 — ガブリエルグラフ上のダイクストラ法
+   ========================================================= */
+const Dijkstra = {
+  hint: 'クリックした地点から探索し直します。ホバーでその頂点への最短路を表示',
+  init() { this.build(); this.start(this.randomSource()); },
+  resize() { this.init(); },
+  build() {
+    const area = W * H;
+    const N = Math.round(clamp(area / 5200, 50, 260));
+    const r = Math.sqrt(area / N) * 0.72;
+    this.r = r;
+    const pts = [];
+    let tries = 0;
+    while (pts.length < N && tries < N * 60) {
+      tries++;
+      const x = rand(-10, W + 10), y = rand(-10, H + 10);
+      let ok = true;
+      for (const p of pts) { if ((p.x - x) ** 2 + (p.y - y) ** 2 < r * r) { ok = false; break; } }
+      if (ok) pts.push({ x, y });
+    }
+    const n = pts.length;
+    const adj = Array.from({ length: n }, () => []);
+    const edges = [];
+    const R2 = (r * 2.8) ** 2;
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const dx = pts[j].x - pts[i].x, dy = pts[j].y - pts[i].y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 > R2) continue;
+        const mx = pts[i].x + dx / 2, my = pts[i].y + dy / 2, rr = d2 / 4;
+        let ok = true;
+        for (let k = 0; k < n; k++) {
+          if (k === i || k === j) continue;
+          if ((pts[k].x - mx) ** 2 + (pts[k].y - my) ** 2 < rr) { ok = false; break; }
+        }
+        if (!ok) continue;
+        const len = Math.sqrt(d2);
+        const f = Math.random() < 0.18 ? rand(0.45, 0.7) : rand(0.9, 1.9); // 速い道と遅い道
+        const e = { a: i, b: j, len, w: len * f, f };
+        edges.push(e);
+        adj[i].push([j, e.w]);
+        adj[j].push([i, e.w]);
+      }
+    }
+    Object.assign(this, { pts, adj, edges, n });
+  },
+  randomSource() {
+    // 画面の中ほどにある頂点から始める
+    const cand = this.pts.map((p, i) => i).filter((i) => {
+      const p = this.pts[i];
+      return p.x > W * 0.2 && p.x < W * 0.9 && p.y > H * 0.2 && p.y < H * 0.8;
+    });
+    const list = cand.length ? cand : this.pts.map((p, i) => i);
+    return list[(Math.random() * list.length) | 0];
+  },
+  start(s) {
+    const { n, adj } = this;
+    const dist = new Float64Array(n).fill(Infinity);
+    const par = new Int32Array(n).fill(-1);
+    const done = new Uint8Array(n);
+    const order = [];
+    dist[s] = 0;
+    for (let it = 0; it < n; it++) {
+      let u = -1, best = Infinity;
+      for (let i = 0; i < n; i++) if (!done[i] && dist[i] < best) { best = dist[i]; u = i; }
+      if (u < 0) break;
+      done[u] = 1;
+      order.push(u);
+      for (const [v, w] of adj[u]) {
+        if (dist[u] + w < dist[v]) { dist[v] = dist[u] + w; par[v] = u; }
+      }
+    }
+    const minNb = new Float64Array(n).fill(Infinity);
+    for (let v = 0; v < n; v++) for (const [u] of adj[v]) minNb[v] = Math.min(minNb[v], dist[u]);
+    const maxD = dist[order[order.length - 1]];
+    // 経路を見せる終点: 遠い側から選ぶ
+    const far = order.slice(Math.floor(order.length * 0.75));
+    const target = far[(Math.random() * far.length) | 0];
+    Object.assign(this, {
+      src: s, dist, par, order, minNb, maxD, target,
+      T: 0, speed: maxD / 5.5, phase: 'grow', phaseT: 0, series: [], sampleT: 0, hover: -1,
+    });
+  },
+  settledCount() {
+    let c = 0;
+    for (const v of this.order) { if (this.dist[v] <= this.T) c++; else break; }
+    return c;
+  },
+  pathTo(v) {
+    const path = [];
+    while (v >= 0) { path.push(v); v = this.par[v]; }
+    return path.reverse();
+  },
+  update(dt) {
+    this.phaseT += dt;
+    if (this.phase === 'grow') {
+      this.T += this.speed * dt;
+      this.sampleT += dt;
+      if (this.sampleT > 0.1) { this.sampleT = 0; this.series.push(this.settledCount() / this.order.length); }
+      if (this.T > this.maxD + this.speed * 0.4) { this.phase = 'path'; this.phaseT = 0; }
+    } else if (this.phase === 'path') {
+      if (this.phaseT > 3.6) { this.phase = 'fade'; this.phaseT = 0; }
+    } else if (this.phase === 'fade') {
+      if (this.phaseT > 0.9) this.start(this.randomSource());
+    }
+  },
+  settle() {
+    this.T = this.maxD + 1;
+    this.series = [0.02, 0.08, 0.2, 0.38, 0.6, 0.8, 0.94, 1];
+    this.phase = 'path'; this.phaseT = 1.2;
+  },
+  pointer(type, x, y) {
+    let best = -1, bd = Infinity;
+    this.pts.forEach((p, i) => {
+      const d = (p.x - x) ** 2 + (p.y - y) ** 2;
+      if (d < bd && this.dist[i] < Infinity) { bd = d; best = i; }
+    });
+    if (type === 'down' && best >= 0) this.start(best);
+    if (type === 'move') this.hover = bd < 50 * 50 ? best : -1;
+    if (type === 'leave') this.hover = -1;
+  },
+  drawPath(path, color, width, prog = 1) {
+    const { pts } = this;
+    const k = Math.max(1, Math.floor((path.length - 1) * prog));
+    ctx.beginPath();
+    ctx.moveTo(pts[path[0]].x, pts[path[0]].y);
+    for (let i = 1; i <= k && i < path.length; i++) ctx.lineTo(pts[path[i]].x, pts[path[i]].y);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  },
+  draw() {
+    const { pts, edges, dist, par, order, minNb, T, maxD, speed } = this;
+    ctx.clearRect(0, 0, W, H);
+    ctx.globalAlpha = this.phase === 'fade' ? clamp(1 - this.phaseT / 0.9, 0, 1) : 1;
+
+    // 道路網: 速い道は太く、遅い道は破線
+    const groups = [[], [], []];
+    for (const e of edges) groups[e.f < 0.8 ? 0 : e.f > 1.5 ? 2 : 1].push(e);
+    const styles = [[1.8, [], 0.95], [1, [], 0.8], [1, [2, 4], 0.7]];
+    groups.forEach((g, gi) => {
+      ctx.beginPath();
+      for (const e of g) { ctx.moveTo(pts[e.a].x, pts[e.a].y); ctx.lineTo(pts[e.b].x, pts[e.b].y); }
+      ctx.lineWidth = styles[gi][0];
+      ctx.setLineDash(styles[gi][1]);
+      ctx.strokeStyle = rgba(C.edge, styles[gi][2]);
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    // 最短路木(確定済みの親から子へ伸びる)
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 2;
+    for (const v of order) {
+      const p = par[v];
+      if (p < 0) continue;
+      const f = clamp((T - dist[p]) / (dist[v] - dist[p] || 1), 0, 1);
+      if (f <= 0) continue;
+      const col = mix(C.accent, C.accent2, dist[v] / maxD);
+      ctx.strokeStyle = rgba(col, 0.9);
+      ctx.beginPath();
+      ctx.moveTo(pts[p].x, pts[p].y);
+      ctx.lineTo(pts[p].x + (pts[v].x - pts[p].x) * f, pts[p].y + (pts[v].y - pts[p].y) * f);
+      ctx.stroke();
+    }
+
+    // 頂点
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      if (dist[i] <= T) {
+        const col = mix(C.accent, C.accent2, dist[i] / maxD);
+        const age = (T - dist[i]) / speed;
+        if (age < 0.8 && this.phase === 'grow') {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 3 + age * 26, 0, Math.PI * 2);
+          ctx.strokeStyle = rgba(col, (1 - age / 0.8) * 0.55);
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2.8, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(col);
+        ctx.fill();
+      } else if (minNb[i] <= T) {
+        // フロンティア(暫定値を持つ未確定頂点)
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(C.bg);
+        ctx.fill();
+        ctx.strokeStyle = rgba(C.accent2);
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 1.7, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(C.muted, 0.8);
+        ctx.fill();
+      }
+    }
+
+    // 終点への最短路
+    if (this.phase !== 'grow') {
+      const path = this.pathTo(this.target);
+      this.drawPath(path, rgba(C.ink, 0.95), 3, clamp(this.phaseT / 0.9, 0, 1));
+      const t = pts[this.target];
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, 6, 0, Math.PI * 2);
+      ctx.strokeStyle = rgba(C.ink);
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    if (this.hover >= 0 && dist[this.hover] <= T) {
+      this.drawPath(this.pathTo(this.hover), rgba(C.ink, 0.75), 2);
+    }
+
+    // 始点
+    const s = pts[this.src];
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = rgba(C.accent);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, 9, 0, Math.PI * 2);
+    ctx.strokeStyle = rgba(C.accent, 0.8);
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  },
+  caption() {
+    const n = this.order.length;
+    if (this.phase === 'grow') {
+      return `ダイクストラ法 — 始点 #${this.src} から近い順に確定中 · 確定 ${fmt(this.settledCount())} / ${fmt(n)} 頂点 · 黄色の輪は暫定値を持つ候補`;
+    }
+    const d = (this.dist[this.target] / this.r).toFixed(1);
+    return `ダイクストラ法 — 1回の実行で ${fmt(n)} 頂点すべての最短路が確定 · 例: #${this.src} → #${this.target} の最短距離 ${d}`;
+  },
+  metric() { return `確定 ${Math.round((this.settledCount() / this.order.length) * 100)}%`; },
+};
+
+/* =========================================================
+   B. 学習する境界 — 小さなニューラルネットの学習
+   ========================================================= */
+const MLP = {
+  hint: 'クリックすると、モデルの予測とは逆のラベルを持つ点を追加します',
+  H1: 16, H2: 16,
+  datasets: [
+    { key: 'spiral', name: '渦巻き' },
+    { key: 'moons', name: '二つの月' },
+    { key: 'rings', name: '同心円' },
+    { key: 'xor', name: '市松' },
+  ],
+  init() {
+    this.dsIndex = 0;
+    this.alloc();
+    this.newRun();
+  },
+  resize() { this.mapping(); },
+  mapping() {
+    const ax = W / H;
+    this.ax = ax;
+    this.cx = ax > 1.3 ? ax * 0.4 : 0;
+    this.cy = ax > 1.3 ? 0 : -0.25;
+    this.sc = Math.min(1, ax) * (ax > 1.3 ? 0.82 : 0.62);
+    this.cell = clamp(W / 110, 7, 14);
+  },
+  toScreen(u, v) {
+    const x = this.cx + u * this.sc, y = this.cy + v * this.sc;
+    return [((x + this.ax) / (2 * this.ax)) * W, ((1 - y) / 2) * H];
+  },
+  toModel(px, py) {
+    const x = (px / W) * 2 * this.ax - this.ax, y = 1 - (py / H) * 2;
+    return [(x - this.cx) / this.sc, (y - this.cy) / this.sc];
+  },
+  alloc() {
+    const { H1, H2 } = this;
+    const o = { W1: 0 };
+    o.b1 = o.W1 + 2 * H1;
+    o.W2 = o.b1 + H1;
+    o.b2 = o.W2 + H1 * H2;
+    o.W3 = o.b2 + H2;
+    o.b3 = o.W3 + H2;
+    this.o = o;
+    this.np = o.b3 + 1;
+    this.P = new Float64Array(this.np);
+    this.G = new Float64Array(this.np);
+    this.M = new Float64Array(this.np);
+    this.V = new Float64Array(this.np);
+    this.h1 = new Float64Array(H1);
+    this.h2 = new Float64Array(H2);
+    this.dz2 = new Float64Array(H2);
+  },
+  initWeights() {
+    const { P, o, H1, H2 } = this;
+    const fill = (from, count, lim) => { for (let i = 0; i < count; i++) P[from + i] = rand(-lim, lim); };
+    P.fill(0);
+    fill(o.W1, 2 * H1, Math.sqrt(6 / (2 + H1)) * 1.6);
+    fill(o.W2, H1 * H2, Math.sqrt(6 / (H1 + H2)));
+    fill(o.W3, H2, Math.sqrt(6 / (H2 + 1)));
+    this.M.fill(0); this.V.fill(0); this.t = 0;
+  },
+  makeData(key) {
+    const pts = [];
+    const noise = () => (Math.random() + Math.random() + Math.random() - 1.5) * 0.06;
+    if (key === 'spiral') {
+      const m = 90;
+      for (let c = 0; c < 2; c++) for (let i = 0; i < m; i++) {
+        const r = 0.12 + 0.88 * (i / m), th = (i / m) * 2.7 * Math.PI + c * Math.PI;
+        pts.push({ u: r * Math.cos(th) + noise() * 0.7, v: r * Math.sin(th) + noise() * 0.7, c });
+      }
+    } else if (key === 'moons') {
+      for (let i = 0; i < 80; i++) {
+        const t = Math.PI * (i / 79);
+        pts.push({ u: (Math.cos(t) - 0.5) * 0.85 + noise(), v: (Math.sin(t) - 0.25) * 0.85 + noise(), c: 0 });
+        pts.push({ u: (0.5 - Math.cos(t)) * 0.85 + noise(), v: (0.25 - Math.sin(t)) * 0.85 + noise(), c: 1 });
+      }
+    } else if (key === 'rings') {
+      for (let i = 0; i < 80; i++) {
+        const a = rand(0, Math.PI * 2), b = rand(0, Math.PI * 2);
+        const r0 = 0.3 + noise(), r1 = 0.85 + noise();
+        pts.push({ u: r0 * Math.cos(a), v: r0 * Math.sin(a), c: 0 });
+        pts.push({ u: r1 * Math.cos(b), v: r1 * Math.sin(b), c: 1 });
+      }
+    } else {
+      while (pts.length < 160) {
+        const u = rand(-1, 1), v = rand(-1, 1);
+        if (Math.abs(u) < 0.1 || Math.abs(v) < 0.1) continue;
+        pts.push({ u, v, c: u * v > 0 ? 1 : 0 });
+      }
+    }
+    return pts;
+  },
+  newRun() {
+    this.mapping();
+    const ds = this.datasets[this.dsIndex % this.datasets.length];
+    this.ds = ds;
+    this.data = this.makeData(ds.key);
+    this.initWeights();
+    Object.assign(this, { steps: 0, loss: 0.69, acc: 0.5, series: [], phase: 'train', phaseT: 0, goodT: 0, acc0: 0 });
+  },
+  fwd(x, y) {
+    const { P, o, H1, H2, h1, h2 } = this;
+    for (let i = 0; i < H1; i++) h1[i] = Math.tanh(P[o.W1 + 2 * i] * x + P[o.W1 + 2 * i + 1] * y + P[o.b1 + i]);
+    let s3 = P[o.b3];
+    for (let j = 0; j < H2; j++) {
+      let s = P[o.b2 + j];
+      const base = o.W2 + j * H1;
+      for (let i = 0; i < H1; i++) s += P[base + i] * h1[i];
+      h2[j] = Math.tanh(s);
+      s3 += P[o.W3 + j] * h2[j];
+    }
+    return 1 / (1 + Math.exp(-s3));
+  },
+  step() {
+    const { P, G, M, V, o, H1, H2, h1, h2, dz2, data } = this;
+    G.fill(0);
+    let loss = 0, correct = 0;
+    const n = data.length;
+    for (const d of data) {
+      const p = this.fwd(d.u, d.v);
+      const t = d.c;
+      loss -= t * Math.log(p + 1e-9) + (1 - t) * Math.log(1 - p + 1e-9);
+      if ((p > 0.5) === (t === 1)) correct++;
+      const dz3 = (p - t) / n;
+      G[o.b3] += dz3;
+      for (let j = 0; j < H2; j++) {
+        G[o.W3 + j] += dz3 * h2[j];
+        dz2[j] = dz3 * P[o.W3 + j] * (1 - h2[j] * h2[j]);
+        G[o.b2 + j] += dz2[j];
+        const base = o.W2 + j * H1;
+        for (let i = 0; i < H1; i++) G[base + i] += dz2[j] * h1[i];
+      }
+      for (let i = 0; i < H1; i++) {
+        let s = 0;
+        for (let j = 0; j < H2; j++) s += P[o.W2 + j * H1 + i] * dz2[j];
+        const dz1 = s * (1 - h1[i] * h1[i]);
+        G[o.W1 + 2 * i] += dz1 * d.u;
+        G[o.W1 + 2 * i + 1] += dz1 * d.v;
+        G[o.b1 + i] += dz1;
+      }
+    }
+    // Adam
+    this.t++;
+    const lr = 0.012, b1 = 0.9, b2 = 0.999;
+    const c1 = 1 - Math.pow(b1, this.t), c2 = 1 - Math.pow(b2, this.t);
+    for (let k = 0; k < this.np; k++) {
+      M[k] = b1 * M[k] + (1 - b1) * G[k];
+      V[k] = b2 * V[k] + (1 - b2) * G[k] * G[k];
+      P[k] -= (lr * (M[k] / c1)) / (Math.sqrt(V[k] / c2) + 1e-8);
+    }
+    this.steps++;
+    this.loss = loss / n;
+    this.acc = correct / n;
+  },
+  update(dt) {
+    this.phaseT += dt;
+    if (this.phase === 'train') {
+      // 序盤はゆっくり、形ができてきたら速く回す
+      this.rate = Math.min(400, 30 * (1 + this.steps / 150));
+      this.acc0 += dt * this.rate;
+      const k = Math.floor(this.acc0);
+      this.acc0 -= k;
+      for (let i = 0; i < k; i++) this.step();
+      if (k && this.steps % 10 < k) this.series.push(this.loss);
+      if (this.series.length > 240) this.series.shift();
+      this.goodT = this.acc >= 0.99 && this.loss < 0.07 ? this.goodT + dt : 0;
+      if (this.goodT > 2.5 || this.steps > 6000) { this.phase = 'hold'; this.phaseT = 0; }
+    } else if (this.phase === 'hold') {
+      if (this.phaseT > 2) { this.phase = 'fade'; this.phaseT = 0; }
+    } else if (this.phase === 'fade') {
+      if (this.phaseT > 0.8) { this.dsIndex++; this.newRun(); }
+    }
+  },
+  settle() {
+    for (let i = 0; i < 1500; i++) {
+      this.step();
+      if (i % 20 === 0) this.series.push(this.loss);
+    }
+    this.phase = 'hold'; this.phaseT = 0;
+  },
+  pointer(type, x, y) {
+    if (type !== 'down') return;
+    const [u, v] = this.toModel(x, y);
+    const p = this.fwd(u, v);
+    this.data.push({ u, v, c: p > 0.5 ? 0 : 1, user: true });
+    const users = this.data.filter((d) => d.user);
+    if (users.length > 30) this.data.splice(this.data.indexOf(users[0]), 1);
+    this.phase = 'train'; this.phaseT = 0; this.goodT = 0;
+  },
+  draw() {
+    const s = this.cell;
+    const cols = Math.ceil(W / s) + 1, rows = Math.ceil(H / s) + 1;
+    if (!this.fc || this.fc.width !== cols || this.fc.height !== rows) {
+      this.fc = document.createElement('canvas');
+      this.fc.width = cols; this.fc.height = rows;
+      this.fctx = this.fc.getContext('2d');
+      this.grid = new Float32Array(cols * rows);
+    }
+    const img = this.fctx.createImageData(cols, rows);
+    const g = this.grid;
+    const A = C.L[0], B = C.L[1];
+    for (let gy = 0; gy < rows; gy++) {
+      for (let gx = 0; gx < cols; gx++) {
+        const [u, v] = this.toModel(gx * s, gy * s);
+        const p = this.fwd(u, v);
+        const k = gy * cols + gx;
+        g[k] = p;
+        const conf = Math.abs(p - 0.5) * 2;
+        const a = 0.04 + 0.2 * Math.pow(conf, 0.9);
+        const col = p > 0.5 ? B : A;
+        img.data[k * 4] = C.bg[0] + (col[0] - C.bg[0]) * a;
+        img.data[k * 4 + 1] = C.bg[1] + (col[1] - C.bg[1]) * a;
+        img.data[k * 4 + 2] = C.bg[2] + (col[2] - C.bg[2]) * a;
+        img.data[k * 4 + 3] = 255;
+      }
+    }
+    this.fctx.putImageData(img, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    const fade = this.phase === 'fade' ? clamp(1 - this.phaseT / 0.8, 0, 1) : 1;
+    ctx.globalAlpha = fade;
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(this.fc, -s / 2, -s / 2, cols * s, rows * s);
+
+    // 決定境界(p = 0.5 の等高線)をマーチングスクエアで引く
+    const SEG = { 1: [[3, 2]], 2: [[2, 1]], 3: [[3, 1]], 4: [[0, 1]], 5: [[0, 1], [3, 2]], 6: [[0, 2]], 7: [[0, 3]],
+      8: [[0, 3]], 9: [[0, 2]], 10: [[0, 3], [2, 1]], 11: [[0, 1]], 12: [[3, 1]], 13: [[1, 2]], 14: [[3, 2]] };
+    ctx.beginPath();
+    for (let gy = 0; gy < rows - 1; gy++) {
+      for (let gx = 0; gx < cols - 1; gx++) {
+        const a = g[gy * cols + gx], b = g[gy * cols + gx + 1];
+        const c = g[(gy + 1) * cols + gx + 1], d = g[(gy + 1) * cols + gx];
+        const idx = ((a > 0.5) << 3) | ((b > 0.5) << 2) | ((c > 0.5) << 1) | (d > 0.5);
+        const segs = SEG[idx];
+        if (!segs) continue;
+        const x0 = gx * s, y0 = gy * s;
+        const pt = (e) => {
+          if (e === 0) return [x0 + ((0.5 - a) / (b - a)) * s, y0];
+          if (e === 1) return [x0 + s, y0 + ((0.5 - b) / (c - b)) * s];
+          if (e === 2) return [x0 + ((0.5 - d) / (c - d)) * s, y0 + s];
+          return [x0, y0 + ((0.5 - a) / (d - a)) * s];
+        };
+        for (const [e1, e2] of segs) {
+          const p1 = pt(e1), p2 = pt(e2);
+          ctx.moveTo(p1[0], p1[1]);
+          ctx.lineTo(p2[0], p2[1]);
+        }
+      }
+    }
+    ctx.strokeStyle = rgba(C.ink, 0.85);
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    // データ点(誤分類は輪で示す)
+    const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 260);
+    for (const d of this.data) {
+      const [x, y] = this.toScreen(d.u, d.v);
+      const p = this.fwd(d.u, d.v);
+      const wrong = (p > 0.5) !== (d.c === 1);
+      ctx.beginPath();
+      ctx.arc(x, y, d.user ? 4.6 : 3.4, 0, Math.PI * 2);
+      ctx.fillStyle = rgba(d.c ? B : A);
+      ctx.fill();
+      ctx.lineWidth = 1.4;
+      ctx.strokeStyle = rgba(C.bg);
+      ctx.stroke();
+      if (d.user) {
+        ctx.beginPath();
+        ctx.arc(x, y, 8, 0, Math.PI * 2);
+        ctx.strokeStyle = rgba(C.ink, 0.9);
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      } else if (wrong) {
+        ctx.beginPath();
+        ctx.arc(x, y, 7, 0, Math.PI * 2);
+        ctx.strokeStyle = rgba(C.ink, 0.35 + 0.45 * pulse);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
+  },
+  caption() {
+    const state = this.phase === 'train' ? 'を学習中' : 'を学習済み';
+    return `ニューラルネット 2-16-16-1 — データ「${this.ds.name}」${state} · ステップ ${fmt(this.steps)} · 正解率 ${(this.acc * 100).toFixed(1)}% · 輪の点は誤分類`;
+  },
+  metric() { return `損失 ${this.loss.toFixed(3)}`; },
+};
+
+/* =========================================================
+   C. つながりが学ぶ — ネットワーク上のラベル伝播
+   ========================================================= */
+const LP = {
+  hint: 'クリックした頂点のラベル(色)を切り替えます。ホバーで隣接頂点を強調',
+  K: 5, alpha: 0.88, tickDur: 0.38,
+  init() { this.cycle = 0; this.build(); },
+  resize() {
+    if (!this.nodes) return;
+    const sx = W / this.bw, sy = H / this.bh;
+    for (const p of this.nodes) { p.x *= sx; p.y *= sy; }
+    this.bw = W; this.bh = H;
+    this.k = Math.sqrt((W * H) / this.n) * 0.7;
+  },
+  build() {
+    const K = this.K;
+    const n = Math.round(clamp((W * H) / 7600, 40, 130));
+    const wts = Array.from({ length: K }, () => rand(0.7, 1.3));
+    const tot = wts.reduce((a, b) => a + b, 0);
+    const comm = [];
+    let acc = 0;
+    for (let i = 0; i < n; i++) {
+      const r = ((i + 0.5) / n) * tot;
+      let k = 0; acc = 0;
+      while (k < K - 1 && acc + wts[k] < r) { acc += wts[k]; k++; }
+      comm.push(k);
+    }
+    const size = Array(K).fill(0);
+    comm.forEach((k) => size[k]++);
+    const edges = [];
+    const deg = new Array(n).fill(0);
+    const has = new Set();
+    const add = (i, j) => {
+      const key = i < j ? i * n + j : j * n + i;
+      if (i === j || has.has(key)) return;
+      has.add(key); edges.push([i, j]); deg[i]++; deg[j]++;
+    };
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+      const p = comm[i] === comm[j] ? Math.min(0.6, 4 / size[comm[i]]) : 0.4 / n;
+      if (Math.random() < p) add(i, j);
+    }
+    for (let i = 0; i < n; i++) {
+      if (deg[i] > 0) continue;
+      const same = comm.map((c, j) => j).filter((j) => comm[j] === comm[i] && j !== i);
+      add(i, same[(Math.random() * same.length) | 0]);
+    }
+    // 初期配置: コミュニティごとに横へ並べ、力学モデルでならす
+    const order = [...Array(K).keys()].sort(() => Math.random() - 0.5);
+    const nodes = comm.map((c) => {
+      const slot = order.indexOf(c);
+      const x0 = W > H * 1.3 ? 0.36 : 0.12;
+      const cx = W * (x0 + (0.9 - x0) * ((slot + 0.5) / K)), cy = H * rand(0.3, 0.7);
+      return { x: cx + rand(-40, 40), y: cy + rand(-40, 40), vx: 0, vy: 0 };
+    });
+    Object.assign(this, { n, comm, edges, deg, nodes, bw: W, bh: H });
+    this.k = Math.sqrt((W * H) / n) * 0.7;
+    for (let i = 0; i < 260; i++) this.layout(this.k * (1 - i / 260) * 0.5 + 1);
+    this.adjacency();
+    this.reseed();
+  },
+  adjacency() {
+    const { n, edges } = this;
+    this.nbrs = Array.from({ length: n }, () => []);
+    this.sw = edges.map(([a, b]) => 1 / Math.sqrt(this.deg[a] * this.deg[b]));
+    edges.forEach(([a, b]) => { this.nbrs[a].push(b); this.nbrs[b].push(a); });
+  },
+  reseed() {
+    const { n, K, comm } = this;
+    this.Y = new Float64Array(n * K);
+    this.seedLabel = new Int8Array(n).fill(-1);
+    for (let k = 0; k < K; k++) {
+      const members = comm.map((c, i) => i).filter((i) => comm[i] === k);
+      const m = Math.random() < 0.5 ? 2 : 1;
+      for (let t = 0; t < m && members.length; t++) {
+        const i = members.splice((Math.random() * members.length) | 0, 1)[0];
+        this.setSeed(i, k);
+      }
+    }
+    this.F = Float64Array.from(this.Y);
+    this.Fd = Float64Array.from(this.Y);
+    Object.assign(this, { iter: 0, tickT: 0, delta: 1, phase: 'spread', phaseT: 0, particles: [], series: [], hover: -1 });
+    this.series.push(this.accuracy());
+  },
+  setSeed(i, k) {
+    const K = this.K;
+    for (let j = 0; j < K; j++) this.Y[i * K + j] = j === k ? 1 : 0;
+    this.seedLabel[i] = k;
+  },
+  layout(temp) {
+    const { nodes, edges, n } = this;
+    const k = this.k, k2 = k * k;
+    const dx = new Float64Array(n), dy = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        let x = nodes[i].x - nodes[j].x, y = nodes[i].y - nodes[j].y;
+        let d2 = x * x + y * y;
+        if (d2 < 0.01) { x = rand(-1, 1); y = rand(-1, 1); d2 = 1; }
+        if (d2 > 9 * k2) continue;
+        const f = k2 / d2;
+        dx[i] += x * f; dy[i] += y * f; dx[j] -= x * f; dy[j] -= y * f;
+      }
+    }
+    for (const [a, b] of edges) {
+      const x = nodes[b].x - nodes[a].x, y = nodes[b].y - nodes[a].y;
+      const d = Math.sqrt(x * x + y * y) || 1;
+      const f = d / k;
+      dx[a] += x * f; dy[a] += y * f; dx[b] -= x * f; dy[b] -= y * f;
+    }
+    const m = 22;
+    for (let i = 0; i < n; i++) {
+      const gx = W > H * 1.3 ? W * 0.64 : W / 2;
+      dx[i] += (gx - nodes[i].x) * 0.008;
+      dy[i] += (H / 2 - nodes[i].y) * 0.02;
+      const d = Math.sqrt(dx[i] * dx[i] + dy[i] * dy[i]) || 1;
+      const s = Math.min(d, temp) / d;
+      nodes[i].x = clamp(nodes[i].x + dx[i] * s, m, W - m);
+      nodes[i].y = clamp(nodes[i].y + dy[i] * s, m, H - m);
+    }
+  },
+  tick() {
+    const { n, K, edges, sw, F, Y, alpha } = this;
+    const Fn = new Float64Array(n * K);
+    edges.forEach(([a, b], e) => {
+      const w = sw[e];
+      for (let k = 0; k < K; k++) { Fn[a * K + k] += w * F[b * K + k]; Fn[b * K + k] += w * F[a * K + k]; }
+    });
+    let delta = 0, mass = 0;
+    const change = new Float64Array(n);
+    for (let i = 0; i < n * K; i++) {
+      Fn[i] = alpha * Fn[i] + (1 - alpha) * Y[i];
+      const d = Math.abs(Fn[i] - F[i]);
+      delta += d; mass += Fn[i];
+      change[(i / K) | 0] += d;
+    }
+    // 情報が流れた辺にだけメッセージ(粒子)を走らせる
+    const now = performance.now() / 1000;
+    for (const [a, b] of edges) {
+      for (const [u, v] of [[a, b], [b, a]]) {
+        if (this.massOf(F, u) > 1e-3 && change[v] > 2e-3 * (1 + this.massOf(F, v))) {
+          if (this.particles.length < 900) this.particles.push({ u, v, t0: now, col: this.colorOf(F, u) });
+        }
+      }
+    }
+    this.F = Fn;
+    this.iter++;
+    this.delta = delta / (mass || 1);
+    this.series.push(this.accuracy());
+    if (this.series.length > 80) this.series.shift();
+  },
+  massOf(F, i) { let s = 0; for (let k = 0; k < this.K; k++) s += F[i * this.K + k]; return s; },
+  argmax(F, i) {
+    let best = -1, bv = 1e-6;
+    for (let k = 0; k < this.K; k++) if (F[i * this.K + k] > bv) { bv = F[i * this.K + k]; best = k; }
+    return best;
+  },
+  colorOf(F, i) {
+    const K = this.K;
+    const s = this.massOf(F, i);
+    if (s < 1e-6) return C.edge;
+    let col = [0, 0, 0], mx = 0;
+    for (let k = 0; k < K; k++) {
+      const w = F[i * K + k] / s;
+      mx = Math.max(mx, w);
+      col = [col[0] + C.L[k][0] * w, col[1] + C.L[k][1] * w, col[2] + C.L[k][2] * w];
+    }
+    const reach = clamp(Math.log10(s * 1e6) / 2.5, 0, 1);
+    return mix(C.edge, mix(C.muted, col, clamp(mx * 1.5 - 0.2, 0, 1)), reach);
+  },
+  accuracy() {
+    let ok = 0, tot = 0;
+    for (let i = 0; i < this.n; i++) {
+      if (this.seedLabel[i] >= 0) continue;
+      tot++;
+      if (this.argmax(this.F, i) === this.comm[i]) ok++;
+    }
+    return tot ? ok / tot : 0;
+  },
+  update(dt) {
+    this.phaseT += dt;
+    this.layout(this.k * 0.012);
+    const K = this.K, ease = Math.min(1, dt * 7);
+    for (let i = 0; i < this.Fd.length; i++) this.Fd[i] += (this.F[i] - this.Fd[i]) * ease;
+    if (this.phase === 'spread') {
+      this.tickT += dt;
+      if (this.tickT >= this.tickDur) { this.tickT = 0; this.tick(); }
+      if (this.iter > 6 && this.delta < 0.004) { this.phase = 'hold'; this.phaseT = 0; }
+    } else if (this.phase === 'hold') {
+      if (this.phaseT > 3.5) { this.cycle++; this.phase = this.cycle % 2 ? 'reseed' : 'fade'; this.phaseT = 0; }
+    } else if (this.phase === 'reseed') {
+      this.reseed();
+    } else if (this.phase === 'fade') {
+      if (this.phaseT > 0.8) this.build();
+    }
+    const now = performance.now() / 1000;
+    this.particles = this.particles.filter((p) => now - p.t0 < this.tickDur * 1.6);
+  },
+  settle() {
+    for (let i = 0; i < 60 && !(this.iter > 6 && this.delta < 0.004); i++) this.tick();
+    this.Fd = Float64Array.from(this.F);
+    this.particles = [];
+    this.phase = 'hold'; this.phaseT = 0;
+  },
+  pointer(type, x, y) {
+    let best = -1, bd = Infinity;
+    this.nodes.forEach((p, i) => {
+      const d = (p.x - x) ** 2 + (p.y - y) ** 2;
+      if (d < bd) { bd = d; best = i; }
+    });
+    if (type === 'move') this.hover = bd < 40 * 40 ? best : -1;
+    if (type === 'leave') this.hover = -1;
+    if (type === 'down' && bd < 60 * 60) {
+      const cur = this.seedLabel[best] >= 0 ? this.seedLabel[best] : this.argmax(this.F, best);
+      this.setSeed(best, (cur + 1) % this.K);
+      this.phase = 'spread'; this.phaseT = 0; this.iter = 0; this.delta = 1;
+    }
+  },
+  draw() {
+    const { nodes, edges, Fd, n } = this;
+    ctx.clearRect(0, 0, W, H);
+    ctx.globalAlpha = this.phase === 'fade' ? clamp(1 - this.phaseT / 0.8, 0, 1) : 1;
+    const cols = nodes.map((p, i) => this.colorOf(Fd, i));
+    const lab = nodes.map((p, i) => this.argmax(Fd, i));
+
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (const [a, b] of edges) {
+      if (lab[a] >= 0 && lab[a] === lab[b]) continue;
+      ctx.moveTo(nodes[a].x, nodes[a].y); ctx.lineTo(nodes[b].x, nodes[b].y);
+    }
+    ctx.strokeStyle = rgba(C.edge, 0.7);
+    ctx.stroke();
+    for (const [a, b] of edges) {
+      if (lab[a] < 0 || lab[a] !== lab[b]) continue;
+      ctx.beginPath();
+      ctx.moveTo(nodes[a].x, nodes[a].y); ctx.lineTo(nodes[b].x, nodes[b].y);
+      ctx.strokeStyle = rgba(mix(cols[a], cols[b], 0.5), 0.6);
+      ctx.stroke();
+    }
+    if (this.hover >= 0) {
+      ctx.beginPath();
+      for (const j of this.nbrs[this.hover]) { ctx.moveTo(nodes[this.hover].x, nodes[this.hover].y); ctx.lineTo(nodes[j].x, nodes[j].y); }
+      ctx.strokeStyle = rgba(C.ink, 0.8);
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+    }
+
+    // メッセージ
+    const now = performance.now() / 1000;
+    for (const p of this.particles) {
+      const t = clamp((now - p.t0) / this.tickDur, 0, 1);
+      if (t >= 1) continue;
+      const e = t * t * (3 - 2 * t);
+      const a = nodes[p.u], b = nodes[p.v];
+      ctx.beginPath();
+      ctx.arc(a.x + (b.x - a.x) * e, a.y + (b.y - a.y) * e, 1.9, 0, Math.PI * 2);
+      ctx.fillStyle = rgba(p.col, 0.95 * (1 - t * 0.4));
+      ctx.fill();
+    }
+
+    for (let i = 0; i < n; i++) {
+      const p = nodes[i];
+      const r = 2.6 + Math.sqrt(this.deg[i]) * 1.1;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = rgba(cols[i]);
+      ctx.fill();
+      if (this.seedLabel[i] >= 0) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r + 4, 0, Math.PI * 2);
+        ctx.strokeStyle = rgba(C.ink, 0.9);
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
+  },
+  caption() {
+    const seeds = Array.from(this.seedLabel).filter((s) => s >= 0).length;
+    const state = this.phase === 'spread' ? '伝播中' : '収束';
+    return `ラベル伝播法(グラフ上の半教師あり学習)— ${state} · ${fmt(this.n)} 頂点 / ${fmt(this.edges.length)} 辺 · 輪付きの ${seeds} 頂点だけがラベルを持つ · 反復 ${this.iter}`;
+  },
+  metric() { return `コミュニティ一致率 ${Math.round(this.accuracy() * 100)}%`; },
+};
+
+/* ---------- 共通の枠組み ---------- */
+const modules = { a: Dijkstra, b: MLP, c: LP };
+let cur = null, curId = 'c';
+let running = true, visible = true, last = 0, uiT = 0;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function sizeCanvas() {
+  const r = stage.getBoundingClientRect();
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = Math.max(1, Math.round(r.width));
+  H = Math.max(1, Math.round(r.height));
+  cv.width = W * DPR; cv.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const sw = spark.clientWidth || 120, sh = spark.clientHeight || 30;
+  spark.width = sw * DPR; spark.height = sh * DPR;
+  sctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+
+function drawSpark(series) {
+  const w = spark.width / DPR, h = spark.height / DPR;
+  sctx.clearRect(0, 0, w, h);
+  if (!series || series.length < 2) return;
+  let lo = Math.min(...series), hi = Math.max(...series);
+  if (hi - lo < 1e-6) { hi += 0.5; lo -= 0.5; }
+  const X = (i) => 2 + (i / (series.length - 1)) * (w - 6);
+  const Y = (v) => h - 3 - ((v - lo) / (hi - lo)) * (h - 6);
+  sctx.beginPath();
+  sctx.moveTo(X(0), h);
+  series.forEach((v, i) => sctx.lineTo(X(i), Y(v)));
+  sctx.lineTo(X(series.length - 1), h);
+  sctx.closePath();
+  sctx.fillStyle = rgba(C.accent, 0.16);
+  sctx.fill();
+  sctx.beginPath();
+  series.forEach((v, i) => (i ? sctx.lineTo(X(i), Y(v)) : sctx.moveTo(X(i), Y(v))));
+  sctx.strokeStyle = rgba(C.accent);
+  sctx.lineWidth = 1.4;
+  sctx.stroke();
+  sctx.beginPath();
+  sctx.arc(X(series.length - 1), Y(series[series.length - 1]), 2.4, 0, Math.PI * 2);
+  sctx.fillStyle = rgba(C.accent);
+  sctx.fill();
+}
+
+function updateUI() {
+  capEl.textContent = cur.caption();
+  metricEl.textContent = cur.metric();
+  drawSpark(cur.series);
+}
+
+function select(id) {
+  curId = id;
+  cur = modules[id];
+  cur.init();
+  if (!running) cur.settle();
+  cur.draw();
+  updateUI();
+  hintEl.textContent = cur.hint;
+  document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.id === id)));
+  document.querySelectorAll('#compare [data-col]').forEach((c) => c.classList.toggle('is-current', c.dataset.col === id));
+  try { localStorage.setItem('top-concept', id); } catch (e) { /* 保存できなくても動く */ }
+}
+
+function setRunning(on) {
+  running = on;
+  playBtn.textContent = on ? '一時停止' : '再生';
+  stage.classList.toggle('paused', !on);
+  last = performance.now();
+}
+
+function loop(ts) {
+  requestAnimationFrame(loop);
+  const dt = Math.min(0.05, (ts - last) / 1000 || 0.016);
+  last = ts;
+  if (!running || !visible || !cur) return;
+  cur.update(dt);
+  cur.draw();
+  uiT += dt;
+  if (uiT > 0.2) { uiT = 0; updateUI(); }
+}
+
+function local(e) {
+  const r = cv.getBoundingClientRect();
+  return [e.clientX - r.left, e.clientY - r.top];
+}
+cv.addEventListener('pointermove', (e) => { cur.pointer('move', ...local(e)); if (!running) cur.draw(); });
+cv.addEventListener('pointerleave', (e) => { cur.pointer('leave', ...local(e)); if (!running) cur.draw(); });
+cv.addEventListener('pointerdown', (e) => {
+  cur.pointer('down', ...local(e));
+  if (!running) { cur.settle(); cur.draw(); updateUI(); }
+});
+
+document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => select(t.dataset.id)));
+document.querySelector('.tabs').addEventListener('keydown', (e) => {
+  const ids = ['a', 'b', 'c'];
+  const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+  if (!d) return;
+  const next = ids[(ids.indexOf(curId) + d + 3) % 3];
+  select(next);
+  document.getElementById('tab-' + next).focus();
+});
+playBtn.addEventListener('click', () => setRunning(!running));
+bareBtn.addEventListener('click', () => {
+  const on = stage.classList.toggle('bare');
+  bareBtn.setAttribute('aria-pressed', String(on));
+  bareBtn.textContent = on ? '文字を表示' : '文字を隠す';
+});
+
+new ResizeObserver(() => {
+  const pw = W, ph = H;
+  sizeCanvas();
+  if (cur && (pw !== W || ph !== H)) { cur.resize(); cur.draw(); updateUI(); }
+}).observe(stage);
+new IntersectionObserver((es) => { visible = es[0].isIntersecting; }).observe(stage);
+document.addEventListener('visibilitychange', () => { visible = !document.hidden; last = performance.now(); });
+
+function onTheme() { readColors(); if (cur) { cur.draw(); updateUI(); } }
+matchMedia('(prefers-color-scheme: light)').addEventListener('change', onTheme);
+new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+readColors();
+sizeCanvas();
+let initial = 'c';
+try { const s = localStorage.getItem('top-concept'); if (s && modules[s]) initial = s; } catch (e) { /* なし */ }
+setRunning(!reduceMotion);
+select(initial);
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
