@@ -173,7 +173,7 @@ main p { margin: 0; color: var(--muted); max-width: 44rem; }
 </div>
 
 <main>
-  <p>C-1 は OpenFlights の航空路線(2014年時点)から、路線の多い300空港を選び、各空港につき航空会社の多い路線を5本まで残しています。NN は scikit-learn 同梱の手書き数字(8×8)で実際に学習した重みで動いています。</p>
+  <p>C-1 は OpenFlights の航空路線(2014年時点)から、路線の多い300空港を選び、各空港につき航空会社の多い路線を5本まで残しています。NN は scikit-learn 同梱の手書き数字(8×8)で実際に学習した重みを使い、ページ内で行う計算を1手ずつ実行して見せています(0 のマスは掛け算を飛ばす、行優先で一列に並べる、など処理の順番もそのまま)。</p>
 </main>
 
 <script src="data/world.js"></script>
@@ -561,51 +561,116 @@ const Shapes = makeCascade({
 });
 
 /* =========================================================
-   NN 手書き数字を読むニューラルネット(3Blue1Brown 風)
-   数字の画像が一列に並び替わり、層から層へ信号が伝わって答えが光る
+   NN 手書き数字を読むニューラルネット
+   画面の動きは、このページが実際に行う計算を1手ずつ実行したもの。
+   演出のための加速・減速や残光は入れない。1手 = 1拍(一定の長さ)
    ========================================================= */
 const Net = {
   hint: 'クリックで次の数字を読ませます',
   credit: '',
+  BEAT: 0.08,
   init() {
     const d = window.DIGITS_NET;
     this.d = d;
-    this.credit = `<b>手書き数字を読むニューラルネット</b> · 64-16-16-10 · 正解率 ${Math.round(d.accuracy * 100)}% · データ: scikit-learn digits`;
+    this.credit = `<b>手書き数字を読むニューラルネット</b> · 64-16-16-10 · 計算の順番どおりに1手ずつ再生 · 正解率 ${Math.round(d.accuracy * 100)}% · データ: scikit-learn digits`;
     this.si = -1;
-    this.next();
     this.layout();
+    this.load();
   },
   resize() { this.layout(); },
-  next() {
+  // 次の数字の計算手順(命令の列)を組み立てる
+  load() {
     const d = this.d;
     this.si = (this.si + 1) % d.samples.length;
     const x = d.samples[this.si].map((v) => v / 16);
-    const acts = [x];
-    d.W.forEach((W, k) => {
-      const prev = acts[k], n = W[0].length, z = d.b[k].slice();
-      for (let i = 0; i < prev.length; i++) if (prev[i]) for (let j = 0; j < n; j++) z[j] += prev[i] * W[i][j];
-      if (k < d.W.length - 1) acts.push(z.map((v) => 1 / (1 + Math.exp(-v))));
-      else { const m = Math.max(...z), e = z.map((v) => Math.exp(v - m)), s = e.reduce((a, b) => a + b, 0); acts.push(e.map((v) => v / s)); }
-    });
-    this.acts = acts;
-    this.answer = acts[3].indexOf(Math.max(...acts[3]));
+    this.a = [x, null, null, null];       // 各層の出力(計算が済むまで null)
+    this.z = d.sizes.slice(1).map((n) => new Float64Array(n)); // 足し合わせの途中経過
+    this.done = [[], [], []];             // 各層で足し終えた入力の番号
+    this.prob = null;
+    this.rows = 0;                        // 一列に並べ終えた行数
+    this.ops = [];
+    for (let r = 0; r < 8; r++) this.ops.push({ op: 'reshape', r });
+    for (let k = 0; k < 3; k++) {
+      this.ops.push({ op: 'axpy', k });   // i は実行時に決まる(0 の入力は飛ばす)
+      this.ops.push({ op: 'bias', k });
+      this.ops.push({ op: k < 2 ? 'sigmoid' : 'softmax', k });
+    }
+    this.ops.push({ op: 'hold' }, { op: 'clear' });
+    this.pc = 0;          // 実行中の命令
+    this.i = -1;          // axpy で処理中の入力の番号
     this.t = 0;
+    this.cur = null;      // いま光らせる対象
+    this.scale = this.dryRun();
   },
+  // ゲージの目盛りを決めるため、同じ計算を先に一度だけ済ませておく
+  dryRun() {
+    const d = this.d;
+    let a = this.a[0];
+    return d.W.map((W, k) => {
+      const z = d.b[k].slice();
+      let mx = 1e-6;
+      const part = new Float64Array(z.length);
+      for (let i = 0; i < a.length; i++) if (a[i] !== 0) for (let j = 0; j < z.length; j++) { part[j] += a[i] * W[i][j]; mx = Math.max(mx, Math.abs(part[j])); }
+      for (let j = 0; j < z.length; j++) { z[j] += part[j]; mx = Math.max(mx, Math.abs(z[j])); }
+      a = k < 2 ? z.map((v) => 1 / (1 + Math.exp(-v))) : z;
+      return mx;
+    });
+  },
+  // 命令を1手進める
+  step() {
+    const d = this.d, o = this.ops[this.pc];
+    if (!o) return;
+    if (o.op === 'reshape') { this.rows = o.r + 1; this.cur = { reshape: o.r }; this.pc++; return; }
+    if (o.op === 'axpy') {
+      const a = this.a[o.k], W = d.W[o.k], z = this.z[o.k];
+      do { this.i++; } while (this.i < a.length && a[this.i] === 0);
+      if (this.i >= a.length) { this.i = -1; this.cur = null; this.pc++; this.step(); return; }
+      for (let j = 0; j < z.length; j++) z[j] += a[this.i] * W[this.i][j];
+      this.done[o.k].push(this.i);
+      this.cur = { k: o.k, i: this.i };
+      return;
+    }
+    if (o.op === 'bias') { const z = this.z[o.k]; d.b[o.k].forEach((b, j) => { z[j] += b; }); this.cur = { bias: o.k }; this.pc++; return; }
+    if (o.op === 'sigmoid') { this.a[o.k + 1] = Array.from(this.z[o.k], (v) => 1 / (1 + Math.exp(-v))); this.cur = { act: o.k + 1 }; this.pc++; return; }
+    if (o.op === 'softmax') {
+      const z = this.z[o.k], m = Math.max(...z), e = Array.from(z, (v) => Math.exp(v - m)), s = e.reduce((p, q) => p + q, 0);
+      this.prob = e.map((v) => v / s);
+      this.a[3] = this.prob;
+      this.answer = this.prob.indexOf(Math.max(...this.prob));
+      this.cur = { act: 3 };
+      this.pc++;
+      return;
+    }
+  },
+  update(dt) {
+    this.t += dt;
+    const o = this.ops[this.pc];
+    const dur = o.op === 'hold' ? 2.6 : o.op === 'clear' ? 0.5 : this.BEAT;
+    while (this.t >= dur) {
+      this.t -= dur;
+      if (o.op === 'hold') { this.pc++; this.cur = null; return; }
+      if (o.op === 'clear') { this.load(); return; }
+      this.step();
+      if (this.ops[this.pc] && ['hold', 'clear'].includes(this.ops[this.pc].op)) return;
+    }
+  },
+  settle() { while (this.ops[this.pc].op !== 'hold') this.step(); },
+  pointer(type) { if (type === 'down') this.load(); },
   layout() {
     const wide = W > H * 1.3;
-    const x0 = wide ? W * 0.46 : W * 0.05, x1 = wide ? W * 0.95 : W * 0.9;
+    const x0 = wide ? W * 0.46 : W * 0.05, x1 = wide ? W * 0.93 : W * 0.86;
     const y0 = wide ? H * 0.08 : H * 0.34, y1 = wide ? H * 0.92 : H * 0.88;
-    const g = Math.min(((y1 - y0) * 0.55) / 8, ((x1 - x0) * 0.3) / 8);
+    const g = Math.min(((y1 - y0) * 0.55) / 8, ((x1 - x0) * 0.26) / 8);
     const mid = (y0 + y1) / 2;
     const rest = x1 - (x0 + 8 * g);
-    const xs = [0.2, 0.47, 0.72, 0.9].map((f) => x0 + 8 * g + rest * f);
+    const xs = [0.18, 0.44, 0.68, 0.86].map((f) => x0 + 8 * g + rest * f);
     this.grid = { x: x0, y: mid - 4 * g, g };
+    this.gauge = rest * 0.07;
     this.L = this.d.sizes.map((m, k) => {
       const sp = Math.min((y1 - y0) / m, k ? 40 : 14);
       const r = Math.min(sp * (k ? 0.34 : 0.4), k ? 12 : 5);
       return Array.from({ length: m }, (_, i) => ({ x: xs[k], y: mid + (i - (m - 1) / 2) * sp, r }));
     });
-    // 重みの線は位置が変わったときだけ組み直す(層・符号・強さ4段階ごとにまとめる)
     this.base = this.d.W.map((Wk, k) => {
       const mx = Math.max(...Wk.flat().map(Math.abs));
       const paths = [0, 1].map(() => [0, 1, 2, 3].map(() => new Path2D()));
@@ -618,108 +683,114 @@ const Net = {
       return paths;
     });
   },
-  // 時間割(秒): 表示 → 一列に並ぶ → 3層を順に伝わる → 答えを見せる → 消える
-  T: { show: 1.2, flat: 2.5, l1: 3.2, l2: 3.9, l3: 4.6, hold: 7.0, end: 7.7 },
-  update(dt) { this.t += dt; if (this.t > this.T.end) this.next(); },
-  settle() { this.t = this.T.l3 + 0.8; },
-  pointer(type) { if (type === 'down') this.next(); },
   draw() {
-    const { L, grid, acts, T } = this;
-    const t = this.t;
-    background(W * 0.7, H * 0.5, null, 'nn');
-    const fade = t > T.hold ? clamp(1 - (t - T.hold) / (T.end - T.hold), 0, 1) : 1;
+    const { L, grid, d } = this;
     const pos = C.accent, neg = C.L[3];
+    background(W * 0.7, H * 0.5, null, 'nn');
 
     // 重み(常にうっすら)
     this.base.forEach((bySign) => bySign.forEach((byLv, s) => byLv.forEach((p, lv) => {
-      ctx.strokeStyle = rgba(s ? neg : pos, 0.03 + 0.07 * lv);
+      ctx.strokeStyle = rgba(s ? neg : pos, 0.03 + 0.05 * lv);
       ctx.lineWidth = 0.6 + 0.3 * lv;
       ctx.stroke(p);
     })));
 
-    // 各層の信号: 前の層の出力 × 重み が大きい線だけ、左から右へ光が走る
-    const stage = [[T.flat, T.l1], [T.l1, T.l2], [T.l2, T.l3]];
-    additive();
+    // 足し終えた掛け算(明るさ × 重み)。いま処理中の入力の線だけ強く描く
     ctx.lineCap = 'round';
-    stage.forEach(([s0, s1], k) => {
-      if (t < s0) return;
-      const p = clamp((t - s0) / (s1 - s0), 0, 1);
-      const after = t > s1 ? clamp(1 - (t - s1) / 1.4, 0.25, 1) : 1;
-      const Wk = this.d.W[k], a = acts[k];
-      let mx = 1e-6;
-      Wk.forEach((row, i) => row.forEach((w) => { mx = Math.max(mx, Math.abs(w * a[i])); }));
-      const paths = [new Path2D(), new Path2D(), new Path2D(), new Path2D()];
-      Wk.forEach((row, i) => {
-        if (a[i] < 0.05) return;
+    for (let k = 0; k < 3; k++) {
+      const a = this.a[k];
+      if (!a) continue;
+      const mx = this.scale[k];
+      const paths = [new Path2D(), new Path2D()];
+      for (const i of this.done[k]) {
+        if (this.cur && this.cur.k === k && this.cur.i === i) continue;
         const A = L[k][i];
-        row.forEach((w, j) => {
-          const c = (w * a[i]) / mx;
-          if (Math.abs(c) < 0.18) return;
+        d.W[k][i].forEach((w, j) => {
+          if (Math.abs(a[i] * w) < mx * 0.04) return;
           const B = L[k + 1][j];
-          const path = paths[(w > 0 ? 0 : 2) + (Math.abs(c) > 0.55 ? 1 : 0)];
-          path.moveTo(A.x + A.r, A.y);
-          path.lineTo(A.x + A.r + (B.x - B.r - A.x - A.r) * p, A.y + (B.y - A.y) * p);
+          paths[w > 0 ? 0 : 1].moveTo(A.x + A.r, A.y);
+          paths[w > 0 ? 0 : 1].lineTo(B.x - B.r, B.y);
         });
+      }
+      ctx.lineWidth = 0.8;
+      paths.forEach((pa, s) => { ctx.strokeStyle = rgba(s ? neg : pos, 0.22); ctx.stroke(pa); });
+    }
+    if (this.cur && this.cur.i !== undefined) {
+      const { k, i } = this.cur, a = this.a[k][i], A = L[k][i], mx = this.scale[k];
+      additive();
+      d.W[k][i].forEach((w, j) => {
+        const B = L[k + 1][j], c = Math.abs(a * w) / mx;
+        ctx.strokeStyle = rgba(w > 0 ? pos : neg, 0.35 + 0.6 * Math.min(1, c * 3));
+        ctx.lineWidth = 0.8 + 3 * Math.min(1, c * 3);
+        ctx.beginPath();
+        ctx.moveTo(A.x + A.r, A.y);
+        ctx.lineTo(B.x - B.r, B.y);
+        ctx.stroke();
       });
-      paths.forEach((pa, i) => {
-        ctx.strokeStyle = rgba(i < 2 ? pos : neg, (i % 2 ? 0.85 : 0.4) * after * fade);
-        ctx.lineWidth = i % 2 ? 1.8 : 1.1;
-        ctx.stroke(pa);
-      });
-    });
-    normal();
+      normal();
+      ctx.beginPath();
+      ctx.arc(A.x, A.y, A.r + 4, 0, Math.PI * 2);
+      ctx.strokeStyle = rgba(C.accent2);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
 
-    // 入力: 8x8 の画像が一列に並び替わる
-    const show = clamp(t / 0.5, 0, 1) * fade;
-    acts[0].forEach((v, i) => {
-      const gx = grid.x + (i % 8) * grid.g, gy = grid.y + Math.floor(i / 8) * grid.g;
-      const n = L[0][i];
-      const p = smooth(clamp((t - T.show - (i % 8) * 0.03 - Math.floor(i / 8) * 0.06) / 0.55, 0, 1));
-      const size = grid.g * 0.92 * (1 - p) + n.r * 2 * p;
-      const x = gx + grid.g / 2 + (n.x - gx - grid.g / 2) * p, y = gy + grid.g / 2 + (n.y - gy - grid.g / 2) * p;
-      const rr = (size / 2) * p;
+    // 入力: 8x8 の画像を、行ごとに一列へ並べ直す(行優先の順)
+    this.a[0].forEach((v, i) => {
+      const r = Math.floor(i / 8);
+      let x, y, size, rr;
+      if (r < this.rows) { const n = L[0][i]; x = n.x; y = n.y; size = n.r * 2; rr = n.r; }
+      else { x = grid.x + (i % 8) * grid.g + grid.g / 2; y = grid.y + r * grid.g + grid.g / 2; size = grid.g * 0.92; rr = 2; }
       ctx.beginPath();
       ctx.roundRect(x - size / 2, y - size / 2, size, size, rr);
-      ctx.fillStyle = rgba(C.ink, (0.04 + 0.9 * v) * show);
+      ctx.fillStyle = rgba(C.ink, 0.04 + 0.9 * v);
       ctx.fill();
-      ctx.strokeStyle = rgba(C.edge, 0.8 * show);
+      ctx.strokeStyle = rgba(this.cur && this.cur.reshape === r ? C.accent2 : C.edge, 0.9);
       ctx.lineWidth = 0.8;
       ctx.stroke();
     });
 
-    // 隠れ層と出力層: 明るさ = 出力の大きさ
-    for (let k = 1; k < L.length; k++) {
-      const s0 = stage[k - 1][0], s1 = stage[k - 1][1];
-      const p = clamp((t - s0 - (s1 - s0) * 0.6) / ((s1 - s0) * 0.5), 0, 1) * fade;
+    // 隠れ層と出力層: 足し合わせの途中経過をゲージで、活性化後の出力を明るさで示す
+    for (let k = 1; k < 4; k++) {
+      const z = this.z[k - 1], a = this.a[k], mx = this.scale[k - 1];
       L[k].forEach((n, j) => {
         ctx.beginPath();
         ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(C.ink, acts[k][j] * p * 0.95);
-        ctx.fill();
-        ctx.strokeStyle = rgba(C.muted, 0.7);
+        if (a) { ctx.fillStyle = rgba(C.ink, a[j] * 0.95); ctx.fill(); }
+        ctx.strokeStyle = rgba(this.cur && this.cur.act === k && this.t < this.BEAT ? C.accent2 : C.muted, 0.8);
         ctx.lineWidth = 1;
         ctx.stroke();
+        if (!a && this.done[k - 1].length) {
+          // ゲージ: 0 を中心に、正なら右へ青、負なら左へ赤
+          const len = (z[j] / mx) * this.gauge;
+          const gx = n.x, gy = n.y + n.r + 3;
+          ctx.fillStyle = rgba(C.edge, 0.6);
+          ctx.fillRect(gx - this.gauge, gy, this.gauge * 2, 1);
+          ctx.fillStyle = rgba(z[j] > 0 ? pos : neg, 0.95);
+          ctx.fillRect(len > 0 ? gx : gx + len, gy - 1.5, Math.abs(len), 4);
+        }
       });
     }
 
-    // 答え
+    // 答え: ソフトマックスの確率を棒で
     const out = L[3];
-    const won = clamp((t - T.l3) / 0.5, 0, 1) * fade;
     ctx.font = `500 ${Math.round(clamp(out[0].r * 1.4, 11, 16))}px "JetBrains Mono", ui-monospace, monospace`;
     ctx.textBaseline = 'middle';
     out.forEach((n, j) => {
-      const win = j === this.answer;
-      ctx.fillStyle = win ? rgba(mix(C.muted, C.accent2, won), 1) : rgba(C.muted, 0.8);
-      ctx.fillText(String(j), n.x + n.r + 10, n.y);
+      const win = this.prob && j === this.answer;
+      ctx.fillStyle = win ? rgba(C.accent2) : rgba(C.muted, 0.8);
+      ctx.fillText(String(j), n.x + n.r + 8, n.y);
+      if (this.prob) {
+        const bw = (W - (n.x + n.r + 28) - 12) * this.prob[j];
+        ctx.fillStyle = rgba(win ? C.accent2 : C.muted, win ? 0.9 : 0.5);
+        ctx.fillRect(n.x + n.r + 26, n.y - 3, Math.max(1, bw), 6);
+      }
     });
-    if (won > 0) {
+    if (this.prob) {
       const n = out[this.answer];
-      additive();
-      glow(1, n.x, n.y, n.r * 4, won * 0.9);
-      normal();
       ctx.beginPath();
       ctx.arc(n.x, n.y, n.r + 5, 0, Math.PI * 2);
-      ctx.strokeStyle = rgba(C.accent2, won);
+      ctx.strokeStyle = rgba(C.accent2);
       ctx.lineWidth = 1.6;
       ctx.stroke();
     }
