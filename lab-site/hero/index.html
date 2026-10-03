@@ -50,7 +50,8 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-display
   background: var(--bg);
   touch-action: pan-y;
 }
-.hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; }
+.hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+.hero.dragging canvas { cursor: grabbing; }
 .scrim {
   position: absolute;
   inset: 0;
@@ -136,6 +137,8 @@ const CFG = {
   pace: 2.4,       // 信号の遅さ(辺の長さあたりの秒数)
   tail: 0.18,      // 信号の尾の長さ(辺に対する割合)
   size: 0.72,      // 画面に対する大きさ
+  drag: 0.008,     // ドラッグ1pxあたりの回転(ラジアン)
+  bfsStep: 0.3,    // 探索の波が1ホップ進む秒数
 };
 
 /* ---------- 色(CSS の変数から読む) ---------- */
@@ -273,10 +276,16 @@ function geodesic() {
 }
 
 /* ---------- 回転するグラフと、その上を伝わる信号 ---------- */
+const BASE_TILT = 0.25;
+// 幅優先探索の距離に応じた色(青 → 緑 → 紫 → 赤 → 橙)
+const RAMP = [0, 2, 4, 3, 1];
 const Scene = {
   init() {
     this.list = [fullerene(), torus(), hypercube(), geodesic()];
-    Object.assign(this, { si: 0, rot: 0, tilt: 0.25, yaw: 0, tiltT: 0.25, yawT: 0, cid: 0, hue: 0, shapeT: 0, fade: 1 });
+    Object.assign(this, {
+      si: 0, rot: 0, tilt: BASE_TILT, vRot: 0, vTilt: 0, cid: 0, hue: 0, shapeT: 0, fade: 1,
+      dragging: false, idle: 99, hover: -1, hoverA: 0, ptr: { x: 0, y: 0, inside: false, mouse: false },
+    });
     this.load(this.list[0]);
   },
   load(shape) {
@@ -288,31 +297,58 @@ const Scene = {
       const l = dist3(shape.nodes[a], shape.nodes[b]);
       len.set(a * n + b, l); len.set(b * n + a, l);
     }
-    Object.assign(this, { shape, n, nbrs, len, pulses: [], timer: 0 });
+    Object.assign(this, { shape, n, nbrs, len, pulses: [], waves: [], timer: 0, hover: -1, hoverA: 0 });
     this.nodes = shape.nodes.map((p) => ({ p, ci: 0, heat: 0, flash: 0, last: -1 }));
     this.proj = this.nodes.map(() => ({ x: 0, y: 0, k: 1, d: 0 }));
     nameEl.textContent = shape.name;
     for (let i = 0; i < 3; i++) this.emit((Math.random() * n) | 0);
   },
   pulse(a, b, ci, ttl, id) { return { a, b, t: 0, dur: 0.3 + this.len.get(a * this.n + b) * CFG.pace, ci, ttl, id }; },
+  // 環境の信号: ランダムに枝分かれしながら伝わる
   emit(i) {
     const ci = this.hue++ % 5, id = ++this.cid;
     Object.assign(this.nodes[i], { ci, heat: 1, flash: 1.4, last: id });
     for (const j of this.nbrs[i]) this.pulses.push(this.pulse(i, j, ci, CFG.ttl, id));
   },
+  // クリック: 幅優先探索を実際に実行し、距離の順に波として見せる
+  bfs(src) {
+    const n = this.n, dist = new Int16Array(n).fill(-1), par = new Int32Array(n).fill(-1);
+    const queue = [src];
+    dist[src] = 0;
+    for (let h = 0; h < queue.length; h++) {
+      const u = queue[h];
+      for (const v of this.nbrs[u]) if (dist[v] < 0) { dist[v] = dist[u] + 1; par[v] = u; queue.push(v); }
+    }
+    const maxD = dist[queue[queue.length - 1]];
+    const wave = { src, dist, par, maxD, t: 0, end: (maxD + 1) * CFG.bfsStep + 3 };
+    this.waves.push(wave);
+    if (this.waves.length > 2) this.waves.shift();
+    return wave;
+  },
+  levelColor(w, d) { return RAMP[Math.min(4, Math.floor((d / (w.maxD + 1)) * 5))]; },
   update(dt) {
-    this.rot += dt * CFG.spin;
-    this.tilt += (this.tiltT - this.tilt) * Math.min(1, dt * 2);
-    this.yaw += (this.yawT - this.yaw) * Math.min(1, dt * 2);
+    this.idle += dt;
+    if (!this.dragging) {
+      // 手を離したあとは慣性で回り、やがて自動回転に戻る
+      const decay = Math.exp(-dt * 2.5);
+      this.vRot *= decay;
+      this.vTilt *= decay;
+      this.rot += dt * (CFG.spin + this.vRot);
+      this.tilt = clamp(this.tilt + dt * this.vTilt, -1.2, 1.2);
+      if (this.idle > 2) this.tilt += (BASE_TILT - this.tilt) * Math.min(1, dt * 0.5);
+    }
     this.timer += dt;
-    if (this.timer > CFG.interval) { this.timer = 0; this.emit((Math.random() * this.n) | 0); }
-    this.shapeT += dt;
+    if (this.timer > CFG.interval) { this.timer = 0; if (!this.waves.length) this.emit((Math.random() * this.n) | 0); }
+    // 触っている間と探索の波が出ている間は、形を切り替えない
+    if (!this.dragging && !this.waves.length && this.idle > 4) this.shapeT += dt;
     if (this.shapeT > CFG.hold) {
       this.fade = Math.max(0, this.fade - dt * 1.5);
       if (this.fade === 0) { this.si = (this.si + 1) % this.list.length; this.load(this.list[this.si]); this.shapeT = 0; }
     } else {
       this.fade = Math.min(1, this.fade + dt * 1.5);
     }
+    for (const w of this.waves) w.t += dt;
+    this.waves = this.waves.filter((w) => w.t < w.end);
     const next = [];
     for (const q of this.pulses) {
       q.t += dt;
@@ -329,27 +365,30 @@ const Scene = {
     this.pulses = next;
     const cool = Math.exp(-dt * 0.15), fl = Math.exp(-dt * 2.4);
     for (const nd of this.nodes) { nd.heat *= cool; nd.flash *= fl; }
+    this.hoverA += ((this.hoverOn ? 1 : 0) - this.hoverA) * Math.min(1, dt * 8);
   },
   // 信号を3秒ぶん進める(形は切り替えない)
   settle() {
     for (let i = 0; i < 90; i++) { this.shapeT = 0; this.update(1 / 30); }
     this.fade = 1;
   },
-  pointer(type, x, y) {
-    if (type === 'move') { this.tiltT = 0.25 + (y / H - 0.5) * 0.6; this.yawT = (x / W - 0.5) * 0.9; }
-    if (type === 'leave') { this.tiltT = 0.25; this.yawT = 0; }
-    if (type === 'down') {
-      let best = 0, bd = Infinity;
-      this.proj.forEach((q, i) => { const d = (q.x - x) ** 2 + (q.y - y) ** 2 - q.d * 400; if (d < bd) { bd = d; best = i; } });
-      this.emit(best);
-    }
+  nearest(x, y, radius) {
+    let best = -1, bd = radius * radius;
+    this.proj.forEach((q, i) => { const d = (q.x - x) ** 2 + (q.y - y) ** 2 - q.d * 300; if (d < bd) { bd = d; best = i; } });
+    return best;
+  },
+  click(x, y) {
+    this.idle = 0;
+    const i = this.nearest(x, y, 80);
+    if (i < 0) return;
+    const w = this.bfs(i);
+    if (reduceMotion) w.t = (w.maxD + 1) * CFG.bfsStep;
   },
   draw() {
     const wide = W > H * 1.3;
     const cx = wide ? W * 0.63 : W / 2, cy = wide ? H / 2 : H * 0.6;
     const S = (wide ? Math.min(H * 0.6, W * 0.34) : Math.min(W, H) * 0.56) * CFG.size * (0.85 + 0.15 * smooth(this.fade));
-    const ry = this.rot + this.yaw;
-    const m0 = Math.cos(ry), m1 = Math.sin(ry), m2 = Math.cos(this.tilt), m3 = Math.sin(this.tilt);
+    const m0 = Math.cos(this.rot), m1 = Math.sin(this.rot), m2 = Math.cos(this.tilt), m3 = Math.sin(this.tilt);
     const P = (p, out) => {
       const x = p[0] * m0 + p[2] * m1, z1 = -p[0] * m1 + p[2] * m0;
       const y = -p[1] * m2 - z1 * m3, z = -p[1] * m3 + z1 * m2;
@@ -361,6 +400,11 @@ const Scene = {
     const a0 = smooth(this.fade);
     this.nodes.forEach((nd, i) => P(nd.p, this.proj[i]));
     const Q = this.proj;
+    const h = this.ptr.inside && this.ptr.mouse && !this.dragging ? this.nearest(this.ptr.x, this.ptr.y, 40) : -1;
+    this.hoverOn = h >= 0;
+    if (h >= 0) this.hover = h;
+    else if (this.hoverA < 0.02) this.hover = -1;
+    if (reduceMotion) this.hoverA = this.hoverOn ? 1 : 0;
 
     // 辺(奥行きで3段階の濃さ)
     const bands = [new Path2D(), new Path2D(), new Path2D()];
@@ -372,8 +416,55 @@ const Scene = {
     ctx.lineWidth = 1;
     bands.forEach((pa, i) => { ctx.strokeStyle = rgba(C.edge, (0.22 + i * 0.22) * a0); ctx.stroke(pa); });
 
+    // ホバー: いちばん近い頂点と、その隣を照らす
+    const hv = this.hover, ha = this.hoverA * a0;
+    if (hv >= 0 && ha > 0.01) {
+      ctx.beginPath();
+      for (const j of this.nbrs[hv]) { ctx.moveTo(Q[hv].x, Q[hv].y); ctx.lineTo(Q[j].x, Q[j].y); }
+      ctx.strokeStyle = rgba(C.ink, 0.6 * ha);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.lineWidth = 1;
+      for (const j of this.nbrs[hv]) {
+        ctx.beginPath();
+        ctx.arc(Q[j].x, Q[j].y, (3 + 1.8 * Q[j].d) * Q[j].k + 2, 0, Math.PI * 2);
+        ctx.strokeStyle = rgba(C.ink, 0.55 * ha);
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.arc(Q[hv].x, Q[hv].y, (3 + 1.8 * Q[hv].d) * Q[hv].k + 6, 0, Math.PI * 2);
+      ctx.strokeStyle = rgba(C.accent, 0.9 * ha);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
     ctx.globalCompositeOperation = C.dark ? 'lighter' : 'source-over';
-    // 信号: 尾は色ごとにまとめて描く
+    ctx.lineCap = 'round';
+    // 探索の波: 探索木の辺を、距離 d の頂点に届く時刻 d × bfsStep に合わせて伸ばす
+    const waveCol = new Int8Array(this.n).fill(-1), waveA = new Float32Array(this.n);
+    for (const w of this.waves) {
+      const lv = w.t / CFG.bfsStep;
+      const out = clamp((w.end - w.t) / 0.8, 0, 1) * a0;
+      const paths = Array.from({ length: 5 }, () => new Path2D());
+      for (let v = 0; v < this.n; v++) {
+        const d = w.dist[v];
+        if (d < 0 || lv < d - 1) continue;
+        const ci = this.levelColor(w, d);
+        if (lv >= d) { waveCol[v] = ci; waveA[v] = out; }
+        if (d === 0) continue;
+        const p = w.par[v], f = Math.min(1, lv - (d - 1));
+        const hx = Q[p].x + (Q[v].x - Q[p].x) * f, hy = Q[p].y + (Q[v].y - Q[p].y) * f;
+        paths[ci].moveTo(Q[p].x, Q[p].y);
+        paths[ci].lineTo(hx, hy);
+        if (f < 1) glow(ci, hx, hy, 8 * Q[v].k, 0.9 * out);
+        else if (lv - d < 1.2) glow(ci, Q[v].x, Q[v].y, (10 + 14 * (1 - (lv - d) / 1.2)) * Q[v].k, (1 - (lv - d) / 1.2) * out);
+      }
+      ctx.lineWidth = 2;
+      paths.forEach((pa, ci) => { ctx.strokeStyle = rgba(C.pal[ci], 0.75 * out); ctx.stroke(pa); });
+      if (lv < 1.5) glow(RAMP[0], Q[w.src].x, Q[w.src].y, 46 * Q[w.src].k, (1 - lv / 1.5) * out);
+    }
+
+    // 環境の信号: 尾は色ごとにまとめて描く
     const tails = Array.from({ length: 5 }, () => new Path2D());
     const heads = [];
     for (const q of this.pulses) {
@@ -384,7 +475,6 @@ const Scene = {
       tails[q.ci].lineTo(hx, hy);
       heads.push(q.ci, hx, hy, A.k, A.d + (B.d - A.d) * t);
     }
-    ctx.lineCap = 'round';
     ctx.lineWidth = 1.8;
     tails.forEach((pa, ci) => { ctx.strokeStyle = rgba(C.pal[ci], 0.55 * a0); ctx.stroke(pa); });
     for (let i = 0; i < heads.length; i += 5) glow(heads[i], heads[i + 1], heads[i + 2], 7 * heads[i + 3], (0.4 + 0.5 * heads[i + 4]) * a0);
@@ -395,9 +485,10 @@ const Scene = {
     ctx.globalCompositeOperation = 'source-over';
     for (let i = 0; i < this.n; i++) {
       const nd = this.nodes[i], q = Q[i];
-      const col = mix(C.muted, C.dark ? mix(C.pal[nd.ci], C.ink, 0.2) : C.pal[nd.ci], nd.heat);
+      let col = mix(C.muted, C.dark ? mix(C.pal[nd.ci], C.ink, 0.2) : C.pal[nd.ci], nd.heat);
+      if (waveCol[i] >= 0) col = mix(col, C.dark ? mix(C.pal[waveCol[i]], C.ink, 0.15) : C.pal[waveCol[i]], waveA[i]);
       ctx.beginPath();
-      ctx.arc(q.x, q.y, (1.5 + 1.8 * q.d) * q.k, 0, Math.PI * 2);
+      ctx.arc(q.x, q.y, (1.5 + 1.8 * q.d) * q.k + (waveCol[i] >= 0 ? waveA[i] : 0), 0, Math.PI * 2);
       ctx.fillStyle = rgba(col, (0.3 + 0.7 * q.d) * a0);
       ctx.fill();
     }
@@ -424,10 +515,53 @@ function loop(ts) {
   Scene.update(dt);
   Scene.draw();
 }
+
+/* 操作: ドラッグで回す / ホバーで隣を照らす / クリックで探索の波 */
 const local = (e) => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
-cv.addEventListener('pointermove', (e) => Scene.pointer('move', ...local(e)));
-cv.addEventListener('pointerleave', (e) => Scene.pointer('leave', ...local(e)));
-cv.addEventListener('pointerdown', (e) => { Scene.pointer('down', ...local(e)); if (reduceMotion) { Scene.settle(); Scene.draw(); } });
+let press = null;
+const redraw = () => { if (reduceMotion) Scene.draw(); };
+cv.addEventListener('pointerdown', (e) => {
+  const [x, y] = local(e);
+  press = { x, y, lx: x, ly: y, lt: performance.now(), moved: false, id: e.pointerId };
+  Scene.vRot = 0; Scene.vTilt = 0; Scene.idle = 0;
+});
+cv.addEventListener('pointermove', (e) => {
+  const [x, y] = local(e);
+  Object.assign(Scene.ptr, { x, y, inside: true, mouse: e.pointerType === 'mouse' });
+  if (press && press.id === e.pointerId) {
+    if (!press.moved && Math.hypot(x - press.x, y - press.y) > 6) {
+      press.moved = true;
+      Scene.dragging = true;
+      hero.classList.add('dragging');
+      try { cv.setPointerCapture(e.pointerId); } catch (err) { /* 取れなくても回せる */ }
+    }
+    if (press.moved) {
+      const now = performance.now(), sec = Math.max(0.008, (now - press.lt) / 1000);
+      const dr = (x - press.lx) * CFG.drag, dtl = -(y - press.ly) * CFG.drag;
+      Scene.rot += dr;
+      Scene.tilt = clamp(Scene.tilt + dtl, -1.2, 1.2);
+      Scene.vRot = 0.6 * (dr / sec) + 0.4 * Scene.vRot;
+      Scene.vTilt = 0.6 * (dtl / sec) + 0.4 * Scene.vTilt;
+      Object.assign(press, { lx: x, ly: y, lt: now });
+      Scene.idle = 0;
+    }
+  }
+  redraw();
+});
+const release = (e, canceled) => {
+  if (!press || press.id !== e.pointerId) return;
+  if (!press.moved && !canceled) { Scene.click(...local(e)); }
+  // 最後に動かしてから時間が空いていれば、慣性は付けない
+  if (performance.now() - press.lt > 120) { Scene.vRot = 0; Scene.vTilt = 0; }
+  if (reduceMotion) { Scene.vRot = 0; Scene.vTilt = 0; }
+  press = null;
+  Scene.dragging = false;
+  hero.classList.remove('dragging');
+  redraw();
+};
+cv.addEventListener('pointerup', (e) => release(e, false));
+cv.addEventListener('pointercancel', (e) => release(e, true));
+cv.addEventListener('pointerleave', () => { if (!Scene.dragging) Scene.ptr.inside = false; redraw(); });
 
 new ResizeObserver(() => { sizeCanvas(); Scene.draw(); }).observe(hero);
 new IntersectionObserver((es) => { visible = es[0].isIntersecting; }).observe(hero);
@@ -440,7 +574,7 @@ readColors();
 sizeCanvas();
 Scene.init();
 if (reduceMotion) {
-  // 動きを減らす設定では、信号が広がった状態の1枚で止める
+  // 動きを減らす設定では、信号が広がった状態の1枚で止める(ドラッグとクリックには応じる)
   Scene.settle();
   Scene.draw();
 } else {
