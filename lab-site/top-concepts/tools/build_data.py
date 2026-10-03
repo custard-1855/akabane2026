@@ -1,79 +1,35 @@
-"""トップ表現の試作で使うグラフデータを作る。
+"""トップ表現の試作で使うデータを作る。
 
-入力(先に取得しておく):
-  railways.json, stations.json  … Mini Tokyo 3D (https://github.com/nagix/mini-tokyo-3d, MIT)
-  land.geojson, places.geojson  … Natural Earth 1:110m (パブリックドメイン)
+入力(先に <入力ディレクトリ> へ取得しておく):
+  land.geojson                … Natural Earth 1:110m land(パブリックドメイン)
+                                https://github.com/nvkelso/natural-earth-vector
+  airports.dat, routes.dat    … OpenFlights(ODbL、路線は2014年時点)
+                                https://github.com/jpatokal/openflights
+手書き数字は scikit-learn 同梱の digits(8x8、1797枚)を使う。
 
 使い方:
+  pip install numpy scikit-learn
   python3 build_data.py <入力ディレクトリ> <出力ディレクトリ>
 """
+import csv
 import json
 import math
 import sys
+from collections import defaultdict
 from pathlib import Path
+
+import numpy as np
+from sklearn.datasets import load_digits
 
 src, out = Path(sys.argv[1]), Path(sys.argv[2])
 
-# ---------- 東京の鉄道網 ----------
-BBOX = (139.56, 35.55, 139.92, 35.82)  # 西, 南, 東, 北
-railways = json.loads((src / 'railways.json').read_text())
-stations = {s['id']: s for s in json.loads((src / 'stations.json').read_text())}
+
+def write_js(name, var, comment, data):
+    (out / name).write_text(
+        f'// {comment}\nwindow.{var} = ' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';\n')
 
 
-def km(a, b):
-    dx = (a[0] - b[0]) * 111.32 * math.cos(math.radians((a[1] + b[1]) / 2))
-    dy = (a[1] - b[1]) * 110.57
-    return math.hypot(dx, dy)
-
-
-def inside(c):
-    return BBOX[0] <= c[0] <= BBOX[2] and BBOX[1] <= c[1] <= BBOX[3]
-
-
-# 同じ駅名で近い(500m以内)駅、または 120m 以内の駅は1つの頂点にまとめる(乗換駅)
-nodes, names, index = [], [], {}
-
-
-def node_of(sid):
-    if sid in index:
-        return index[sid]
-    s = stations[sid]
-    c, name = s['coord'][:2], s['title']['ja']
-    for i, (p, nm) in enumerate(zip(nodes, names)):
-        d = km(p, c)
-        if (nm == name and d < 0.5) or d < 0.12:
-            index[sid] = i
-            return i
-    nodes.append(c)
-    names.append(name)
-    index[sid] = len(nodes) - 1
-    return index[sid]
-
-
-edges = set()
-for r in railways:
-    ids = [s for s in r['stations'] if s in stations]
-    seq = ids + ([ids[0]] if r.get('loop') else [])
-    for a, b in zip(seq, seq[1:]):
-        ca, cb = stations[a]['coord'], stations[b]['coord']
-        if not (inside(ca) and inside(cb)):
-            continue
-        u, v = node_of(a), node_of(b)
-        if u != v:
-            edges.add((min(u, v), max(u, v)))
-
-rail = {
-    'bbox': BBOX,
-    'nodes': [[round(c[0], 5), round(c[1], 5)] for c in nodes],
-    'names': names,
-    'edges': sorted(edges),
-}
-(out / 'tokyo-rail.js').write_text(
-    '// 東京の鉄道網(Mini Tokyo 3D のデータから生成、MIT)\nwindow.TOKYO_RAIL = '
-    + json.dumps(rail, ensure_ascii=False, separators=(',', ':')) + ';\n')
-print('rail', len(nodes), 'nodes', len(edges), 'edges')
-
-# ---------- 世界(海岸線と主要都市) ----------
+# ---------- 世界: 海岸線と航空路線 ----------
 land = json.loads((src / 'land.geojson').read_text())
 coast = []
 STEP = 1.6  # 度
@@ -87,10 +43,100 @@ for f in land['features']:
             for k in range(n):
                 t = k / n
                 coast.append([round(x0 + (x1 - x0) * t, 1), round(y0 + (y1 - y0) * t, 1)])
-places = json.loads((src / 'places.geojson').read_text())
-cities = [[round(p['properties']['longitude'], 2), round(p['properties']['latitude'], 2)] for p in places['features']]
-world = {'coast': coast, 'cities': cities}
-(out / 'world.js').write_text(
-    '// 海岸線と主要都市(Natural Earth 1:110m、パブリックドメイン)\nwindow.WORLD = '
-    + json.dumps(world, separators=(',', ':')) + ';\n')
-print('world', len(coast), 'coast points', len(cities), 'cities')
+
+airports = {}
+with open(src / 'airports.dat', encoding='utf-8') as fp:
+    for row in csv.reader(fp):
+        airports[row[0]] = {'iata': row[4], 'city': row[2], 'lat': float(row[6]), 'lon': float(row[7])}
+
+# 空港の組ごとに、その路線を飛ばしている航空会社の数を数える
+airlines = defaultdict(set)
+with open(src / 'routes.dat', encoding='utf-8') as fp:
+    for row in csv.reader(fp):
+        a, b = row[3], row[5]
+        if a == '\\N' or b == '\\N' or a == b or a not in airports or b not in airports:
+            continue
+        airlines[(min(a, b), max(a, b))].add(row[0])
+
+partners = defaultdict(dict)
+for (a, b), s in airlines.items():
+    partners[a][b] = partners[b][a] = len(s)
+
+TOP, KEEP = 300, 5
+hubs = sorted(partners, key=lambda a: -len(partners[a]))[:TOP]
+idx = {a: i for i, a in enumerate(hubs)}
+edges = set()
+for a in hubs:
+    near = sorted(((c, b) for b, c in partners[a].items() if b in idx), reverse=True)[:KEEP]
+    for _, b in near:
+        edges.add((min(idx[a], idx[b]), max(idx[a], idx[b])))
+
+world = {
+    'coast': coast,
+    'airports': [[round(airports[a]['lon'], 2), round(airports[a]['lat'], 2)] for a in hubs],
+    'iata': [airports[a]['iata'] for a in hubs],
+    'edges': sorted(edges),
+}
+write_js('world.js', 'WORLD', '海岸線(Natural Earth、パブリックドメイン)と航空路線(OpenFlights、ODbL、2014年時点)', world)
+print('world', len(coast), 'coast points', len(hubs), 'airports', len(edges), 'routes')
+
+# ---------- 手書き数字を読むニューラルネット(64-16-16-10) ----------
+digits = load_digits()
+X = digits.data / 16.0
+y = digits.target
+rng = np.random.default_rng(7)
+perm = rng.permutation(len(X))
+train, test = perm[:1500], perm[1500:]
+sizes = [64, 16, 16, 10]
+Ws = [rng.normal(0, 1 / math.sqrt(m), (m, n)) for m, n in zip(sizes, sizes[1:])]
+bs = [np.zeros(n) for n in sizes[1:]]
+
+
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+
+def forward(x):
+    acts = [x]
+    for i, (W, b) in enumerate(zip(Ws, bs)):
+        z = acts[-1] @ W + b
+        if i < len(Ws) - 1:
+            acts.append(sigmoid(z))
+        else:
+            e = np.exp(z - z.max(axis=-1, keepdims=True))
+            acts.append(e / e.sum(axis=-1, keepdims=True))
+    return acts
+
+
+lr = 0.5
+for epoch in range(300):
+    for batch in np.array_split(rng.permutation(train), 30):
+        acts = forward(X[batch])
+        delta = acts[-1].copy()
+        delta[np.arange(len(batch)), y[batch]] -= 1
+        delta /= len(batch)
+        for i in reversed(range(len(Ws))):
+            gW, gb = acts[i].T @ delta, delta.sum(0)
+            if i > 0:
+                delta = (delta @ Ws[i].T) * acts[i] * (1 - acts[i])
+            Ws[i] -= lr * gW
+            bs[i] -= lr * gb
+
+pred = forward(X[test])[-1].argmax(1)
+acc = float((pred == y[test]).mean())
+print('digits test accuracy', round(acc, 3))
+
+# 表示用のサンプル: 各数字2枚ずつ、正しく読めたもの
+samples = []
+for d in range(10):
+    ok = [i for i in test if y[i] == d and pred[list(test).index(i)] == d][:2]
+    samples += [[int(v) for v in digits.data[i]] for i in ok]
+order = rng.permutation(len(samples))
+net = {
+    'sizes': sizes,
+    'W': [np.round(W, 3).tolist() for W in Ws],
+    'b': [np.round(b, 3).tolist() for b in bs],
+    'samples': [samples[i] for i in order],
+    'accuracy': round(acc, 3),
+}
+write_js('digits-net.js', 'DIGITS_NET', '手書き数字 8x8 を読む 64-16-16-10 のニューラルネット(scikit-learn digits で学習)', net)

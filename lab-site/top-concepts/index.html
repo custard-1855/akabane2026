@@ -903,7 +903,7 @@ function setRunning(on) {
 
 function loop(ts) {
   requestAnimationFrame(loop);
-  const dt = Math.min(0.05, (ts - last) / 1000 || 0.016);
+  const dt = clamp((ts - last) / 1000 || 0.016, 0, 0.05);
   last = ts;
   if (!running || !visible || !cur) return;
   cur.update(dt);
