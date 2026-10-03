@@ -159,9 +159,9 @@ main p { margin: 0; color: var(--muted); max-width: 44rem; }
 
 <div class="controls">
   <div class="tabs" role="tablist" aria-label="トポロジの案">
-    <button class="tab" role="tab" id="tab-rail" data-id="rail" aria-selected="false"><span class="key">A-2</span>東京の鉄道</button>
-    <button class="tab" role="tab" id="tab-globe" data-id="globe" aria-selected="false"><span class="key">C-1</span>地球</button>
+    <button class="tab" role="tab" id="tab-globe" data-id="globe" aria-selected="false"><span class="key">C-1</span>航空路線</button>
     <button class="tab" role="tab" id="tab-shapes" data-id="shapes" aria-selected="false"><span class="key">C-5</span>有名なグラフ</button>
+    <button class="tab" role="tab" id="tab-net" data-id="net" aria-selected="false"><span class="key">NN</span>ニューラルネット</button>
   </div>
   <div class="side">
     <p class="hint" id="hint"></p>
@@ -173,11 +173,11 @@ main p { margin: 0; color: var(--muted); max-width: 44rem; }
 </div>
 
 <main>
-  <p>A-1(大学周辺の道路網)は、場所が決まってから地図データを用意して追加します。C-1 は海底ケーブルの代わりに、主要都市を近い順に結んだ網で仮に組んでいます。</p>
+  <p>C-1 は OpenFlights の航空路線(2014年時点)から、路線の多い300空港を選び、各空港につき航空会社の多い路線を5本まで残しています。NN は scikit-learn 同梱の手書き数字(8×8)で実際に学習した重みで動いています。</p>
 </main>
 
-<script src="data/tokyo-rail.js"></script>
 <script src="data/world.js"></script>
+<script src="data/digits-net.js"></script>
 <script>
 (() => {
 'use strict';
@@ -193,7 +193,6 @@ const bareBtn = $('#btn-bare');
 
 let W = 0, H = 0, DPR = 1;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const rand = (a, b) => a + Math.random() * (b - a);
 const smooth = (t) => t * t * (3 - 2 * t);
 
 /* ---------- colors ---------- */
@@ -264,164 +263,6 @@ function background(cx, cy, decor, key = '') {
 const additive = () => { ctx.globalCompositeOperation = C.dark ? 'lighter' : 'source-over'; };
 const normal = () => { ctx.globalCompositeOperation = 'source-over'; };
 
-/* ---------- 共通: ダイクストラ法(二分ヒープ) ---------- */
-function dijkstra(n, adj, src) {
-  const dist = new Float64Array(n).fill(Infinity);
-  const par = new Int32Array(n).fill(-1);
-  const heap = [[0, src]];
-  dist[src] = 0;
-  let maxD = 0;
-  const push = (item) => {
-    heap.push(item);
-    let i = heap.length - 1;
-    while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; }
-  };
-  const pop = () => {
-    const top = heap[0], last = heap.pop();
-    if (heap.length) {
-      heap[0] = last;
-      let i = 0;
-      for (;;) {
-        const l = 2 * i + 1, r = l + 1;
-        let m = i;
-        if (l < heap.length && heap[l][0] < heap[m][0]) m = l;
-        if (r < heap.length && heap[r][0] < heap[m][0]) m = r;
-        if (m === i) break;
-        [heap[m], heap[i]] = [heap[i], heap[m]];
-        i = m;
-      }
-    }
-    return top;
-  };
-  while (heap.length) {
-    const [d, u] = pop();
-    if (d > dist[u]) continue;
-    maxD = d;
-    for (const [v, w] of adj[u]) if (d + w < dist[v]) { dist[v] = d + w; par[v] = u; push([dist[v], v]); }
-  }
-  return { dist, par, maxD };
-}
-
-/* =========================================================
-   平面の型: 点のあいだを光が枝分かれしながら広がる
-   build() は { pts, edges, decor?, key? } を返す
-   ========================================================= */
-function makeSpread(opts) {
-  return {
-    hint: opts.hint,
-    credit: opts.credit,
-    init() {
-      const g = opts.build();
-      const n = g.pts.length;
-      const adj = Array.from({ length: n }, () => []);
-      for (const [a, b] of g.edges) {
-        const w = Math.hypot(g.pts[a].x - g.pts[b].x, g.pts[a].y - g.pts[b].y);
-        adj[a].push([b, w]); adj[b].push([a, w]);
-      }
-      const deg = adj.map((l) => l.length);
-      Object.assign(this, { g, n, adj, deg, waves: [], timer: 0, hue: 0 });
-      this.spawn();
-    },
-    resize() { this.init(); },
-    spawn(src) {
-      if (src === undefined) {
-        const cand = opts.pickSource ? opts.pickSource(this.g) : null;
-        src = cand ?? ((Math.random() * this.n) | 0);
-      }
-      const r = dijkstra(this.n, this.adj, src);
-      this.waves.push({ src, ...r, T: 0, speed: Math.hypot(W, H) / (opts.duration || 4.2), ci: this.hue++ % 5 });
-      if (this.waves.length > 4) this.waves.shift();
-    },
-    update(dt) {
-      this.timer += dt;
-      if (this.timer > (opts.interval || 2.6)) { this.timer = 0; this.spawn(); }
-      for (const w of this.waves) w.T += w.speed * dt;
-      this.waves = this.waves.filter((w) => w.T < w.maxD + w.speed * 3);
-    },
-    settle() { this.update(1.2); this.spawn(); for (let i = 0; i < 40; i++) this.update(0.05); },
-    pointer(type, x, y) {
-      if (type !== 'down') return;
-      let best = 0, bd = Infinity;
-      this.g.pts.forEach((p, i) => { const d = (p.x - x) ** 2 + (p.y - y) ** 2; if (d < bd) { bd = d; best = i; } });
-      this.spawn(best);
-      this.timer = 0;
-    },
-    draw() {
-      const { pts, edges } = this.g;
-      background(W * 0.62, H * 0.45, this.g.decor, this.g.key);
-      ctx.beginPath();
-      for (const [a, b] of edges) { ctx.moveTo(pts[a].x, pts[a].y); ctx.lineTo(pts[b].x, pts[b].y); }
-      ctx.strokeStyle = rgba(C.edge, opts.edgeAlpha ?? 0.4);
-      ctx.lineWidth = 0.9;
-      ctx.stroke();
-      ctx.fillStyle = rgba(C.muted, 0.5);
-      for (let i = 0; i < this.n; i++) {
-        const r = this.deg[i] > 4 ? 2.2 : 1.2;
-        ctx.fillRect(pts[i].x - r / 2, pts[i].y - r / 2, r, r);
-      }
-
-      additive();
-      ctx.lineCap = 'round';
-      ctx.lineWidth = 1.7;
-      const LV = 6;
-      for (const w of this.waves) {
-        const { dist, par, T } = w;
-        const col = C.pal[w.ci];
-        const decay = w.speed * 0.9;
-        // 明るさを6段階にまとめて、段階ごとに1回で描く
-        const paths = Array.from({ length: LV }, () => new Path2D());
-        const heads = [];
-        for (let v = 0; v < this.n; v++) {
-          const p = par[v];
-          if (p < 0 || dist[p] > T) continue;
-          const f = clamp((T - dist[p]) / (dist[v] - dist[p] || 1), 0, 1);
-          const b = f < 1 ? 1 : Math.exp(-(T - dist[v]) / decay);
-          if (b < 0.03) continue;
-          const hx = pts[p].x + (pts[v].x - pts[p].x) * f, hy = pts[p].y + (pts[v].y - pts[p].y) * f;
-          const lv = Math.min(LV - 1, Math.floor(b * LV));
-          paths[lv].moveTo(pts[p].x, pts[p].y);
-          paths[lv].lineTo(hx, hy);
-          if (f < 1) heads.push(hx, hy);
-        }
-        paths.forEach((pa, lv) => { ctx.strokeStyle = rgba(col, 0.75 * ((lv + 1) / LV)); ctx.stroke(pa); });
-        for (let i = 0; i < heads.length; i += 2) glow(w.ci, heads[i], heads[i + 1], 9, 0.9);
-        for (let v = 0; v < this.n; v++) {
-          const age = T - dist[v];
-          if (age < 0 || age > decay * 1.6) continue;
-          const b = Math.exp(-age / decay);
-          glow(w.ci, pts[v].x, pts[v].y, (4 + 12 * b) * (this.deg[v] > 4 ? 1.5 : 1), b);
-        }
-        if (T < w.speed * 1.2) glow(w.ci, pts[w.src].x, pts[w.src].y, 40, 1 - T / (w.speed * 1.2));
-      }
-      normal();
-    },
-  };
-}
-
-/* ---------- A-2 東京の鉄道 ---------- */
-const Rail = makeSpread({
-  hint: 'クリックした駅から光が広がります',
-  credit: '<b>東京の鉄道網</b> · 537駅 · データ: Mini Tokyo 3D (MIT)',
-  duration: 5,
-  interval: 2.8,
-  edgeAlpha: 0.55,
-  build() {
-    const d = window.TOKYO_RAIL;
-    const wide = W > H * 1.3;
-    const lon0 = 139.735, lat0 = 35.69, k = Math.cos((lat0 * Math.PI) / 180);
-    const scale = H / (wide ? 0.21 : 0.17);
-    const cx = wide ? W * 0.6 : W * 0.5, cy = wide ? H * 0.5 : H * 0.58;
-    const pts = d.nodes.map(([lon, lat]) => ({ x: cx + (lon - lon0) * k * scale, y: cy - (lat - lat0) * scale }));
-    return { pts, edges: d.edges, key: 'rail' };
-  },
-  pickSource(g) {
-    // 画面に見えている駅から選ぶ
-    const vis = [];
-    g.pts.forEach((p, i) => { if (p.x > W * 0.3 && p.x < W * 0.95 && p.y > H * 0.1 && p.y < H * 0.9) vis.push(i); });
-    return vis.length ? vis[(Math.random() * vis.length) | 0] : null;
-  },
-});
-
 /* =========================================================
    立体の型: 回転する立体のネットワークを色の信号が伝わる
    shapes() は [{ name, nodes:[[x,y,z]], edges:[[a,b]], arc?, coast? }] を返す
@@ -482,7 +323,7 @@ function makeCascade(opts) {
       this.tilt += (this.tiltT - this.tilt) * Math.min(1, dt * 2);
       this.yaw += (this.yawT - this.yaw) * Math.min(1, dt * 2);
       this.timer += dt;
-      if (this.timer > 1.4) { this.timer = 0; this.emit((Math.random() * this.n) | 0); }
+      if (this.timer > (opts.interval ?? 1.4)) { this.timer = 0; this.emit((Math.random() * this.n) | 0); }
       // 複数の形を順に見せる
       if (this.list.length > 1) {
         this.shapeT += dt;
@@ -503,7 +344,7 @@ function makeCascade(opts) {
         Object.assign(node, { ci: q.ci, heat: 1, flash: 1, last: q.id });
         if (q.ttl <= 0) continue;
         for (const k of this.nbrs[q.b]) {
-          if (k === q.a || Math.random() > (opts.branch ?? 0.7) || next.length > 240) continue;
+          if (k === q.a || Math.random() > (opts.branch ?? 0.7) || next.length > (opts.maxPulses ?? 240)) continue;
           next.push(this.pulse(q.b, k, q.ci, q.ttl - 1, q.id));
         }
       }
@@ -581,7 +422,7 @@ function makeCascade(opts) {
       };
       for (const q of this.pulses) {
         const t = Math.min(1, q.t / q.dur);
-        const h = at(q.arc, t), tl = at(q.arc, Math.max(0, t - 0.3));
+        const h = at(q.arc, t), tl = at(q.arc, Math.max(0, t - (opts.tail ?? 0.3)));
         tails[q.ci].moveTo(tl.x, tl.y);
         tails[q.ci].lineTo(h.x, h.y);
         heads.push(q.ci, h);
@@ -589,7 +430,7 @@ function makeCascade(opts) {
       ctx.lineCap = 'round';
       ctx.lineWidth = 1.8;
       tails.forEach((pa, ci) => { ctx.strokeStyle = rgba(C.pal[ci], 0.55 * a0); ctx.stroke(pa); });
-      for (let i = 0; i < heads.length; i += 2) { const h = heads[i + 1]; glow(heads[i], h.x, h.y, 10 * h.k, (0.4 + 0.5 * h.d) * a0); }
+      for (let i = 0; i < heads.length; i += 2) { const h = heads[i + 1]; glow(heads[i], h.x, h.y, (opts.head ?? 10) * h.k, (0.4 + 0.5 * h.d) * a0); }
       for (let i = 0; i < this.n; i++) {
         const nd = this.nodes[i], q = Q[i];
         if (nd.flash > 0.05) glow(nd.ci, q.x, q.y, (10 + 26 * nd.flash) * q.k, 0.75 * nd.flash * (0.3 + 0.7 * q.d) * a0);
@@ -607,41 +448,27 @@ function makeCascade(opts) {
   };
 }
 
-/* 頂点が連結になるよう、近い順に辺を足す(k近傍 + 最短の橋渡し) */
-function knnGraph(nodes, k, dist) {
-  const n = nodes.length, has = new Set(), edges = [];
-  const add = (a, b) => { const key = a < b ? a * n + b : b * n + a; if (a !== b && !has.has(key)) { has.add(key); edges.push([a, b]); } };
-  const pairs = [];
-  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) pairs.push([dist(nodes[i], nodes[j]), i, j]);
-  pairs.sort((x, y) => x[0] - y[0]);
-  const near = Array.from({ length: n }, () => []);
-  for (const [, i, j] of pairs) { if (near[i].length < k) near[i].push(j); if (near[j].length < k) near[j].push(i); }
-  near.forEach((l, i) => l.forEach((j) => add(i, j)));
-  const root = [...Array(n).keys()];
-  const find = (x) => (root[x] === x ? x : (root[x] = find(root[x])));
-  edges.forEach(([a, b]) => { root[find(a)] = find(b); });
-  for (const [, i, j] of pairs) if (find(i) !== find(j)) { root[find(i)] = find(j); add(i, j); }
-  return edges;
-}
 const ll = ([lon, lat]) => {
   const a = (lon * Math.PI) / 180, b = (lat * Math.PI) / 180;
   return [Math.cos(b) * Math.cos(a), Math.sin(b), -Math.cos(b) * Math.sin(a)];
 };
 
-/* ---------- C-1 地球 ---------- */
+/* ---------- C-1 航空路線 ---------- */
 const Globe = makeCascade({
-  hint: 'クリックした都市から光が伝わります。カーソルで地球が傾きます',
-  credit: () => '<b>世界の主要都市</b> · 243都市 · 地図: Natural Earth',
+  hint: 'クリックした空港から光が伝わります。カーソルで地球が傾きます',
+  credit: () => `<b>世界の航空路線</b> · ${window.WORLD.airports.length}空港 · ${window.WORLD.edges.length.toLocaleString()}路線 · データ: OpenFlights (ODbL), Natural Earth`,
   tilt: -0.4,
   size: 0.72,
-  spin: 0.09,
-  pace: 1.4,
-  ttl: 10,
-  branch: 0.75,
+  spin: 0.08,
+  pace: 1.3,
+  ttl: 5,
+  branch: 0.35,
+  maxPulses: 150,
+  interval: 1.8,
+  tail: 0.15,
+  head: 8,
   shapes() {
-    const nodes = window.WORLD.cities.map(ll);
-    const edges = knnGraph(nodes, 3, (a, b) => Math.acos(clamp(a[0] * b[0] + a[1] * b[1] + a[2] * b[2], -1, 1)));
-    return [{ name: 'globe', nodes, edges, arc: true, coast: window.WORLD.coast.map(ll) }];
+    return [{ name: 'flights', nodes: window.WORLD.airports.map(ll), edges: window.WORLD.edges, arc: true, coast: window.WORLD.coast.map(ll) }];
   },
 });
 
@@ -723,14 +550,186 @@ const Shapes = makeCascade({
   hint: 'クリックした点から光が伝わります。形は16秒ごとに変わります',
   credit: (s) => `<b>${s ? s.name : ''}</b>`,
   size: 0.72,
-  pace: 1.6,
+  pace: 2.4,
+  interval: 2.4,
+  ttl: 5,
+  branch: 0.5,
+  maxPulses: 90,
+  tail: 0.18,
+  head: 7,
   shapes() { return [fullerene(), torus(), hypercube(), geodesic()]; },
 });
 
+/* =========================================================
+   NN 手書き数字を読むニューラルネット(3Blue1Brown 風)
+   数字の画像が一列に並び替わり、層から層へ信号が伝わって答えが光る
+   ========================================================= */
+const Net = {
+  hint: 'クリックで次の数字を読ませます',
+  credit: '',
+  init() {
+    const d = window.DIGITS_NET;
+    this.d = d;
+    this.credit = `<b>手書き数字を読むニューラルネット</b> · 64-16-16-10 · 正解率 ${Math.round(d.accuracy * 100)}% · データ: scikit-learn digits`;
+    this.si = -1;
+    this.next();
+    this.layout();
+  },
+  resize() { this.layout(); },
+  next() {
+    const d = this.d;
+    this.si = (this.si + 1) % d.samples.length;
+    const x = d.samples[this.si].map((v) => v / 16);
+    const acts = [x];
+    d.W.forEach((W, k) => {
+      const prev = acts[k], n = W[0].length, z = d.b[k].slice();
+      for (let i = 0; i < prev.length; i++) if (prev[i]) for (let j = 0; j < n; j++) z[j] += prev[i] * W[i][j];
+      if (k < d.W.length - 1) acts.push(z.map((v) => 1 / (1 + Math.exp(-v))));
+      else { const m = Math.max(...z), e = z.map((v) => Math.exp(v - m)), s = e.reduce((a, b) => a + b, 0); acts.push(e.map((v) => v / s)); }
+    });
+    this.acts = acts;
+    this.answer = acts[3].indexOf(Math.max(...acts[3]));
+    this.t = 0;
+  },
+  layout() {
+    const wide = W > H * 1.3;
+    const x0 = wide ? W * 0.46 : W * 0.05, x1 = wide ? W * 0.95 : W * 0.9;
+    const y0 = wide ? H * 0.08 : H * 0.34, y1 = wide ? H * 0.92 : H * 0.88;
+    const g = Math.min(((y1 - y0) * 0.55) / 8, ((x1 - x0) * 0.3) / 8);
+    const mid = (y0 + y1) / 2;
+    const rest = x1 - (x0 + 8 * g);
+    const xs = [0.2, 0.47, 0.72, 0.9].map((f) => x0 + 8 * g + rest * f);
+    this.grid = { x: x0, y: mid - 4 * g, g };
+    this.L = this.d.sizes.map((m, k) => {
+      const sp = Math.min((y1 - y0) / m, k ? 40 : 14);
+      const r = Math.min(sp * (k ? 0.34 : 0.4), k ? 12 : 5);
+      return Array.from({ length: m }, (_, i) => ({ x: xs[k], y: mid + (i - (m - 1) / 2) * sp, r }));
+    });
+    // 重みの線は位置が変わったときだけ組み直す(層・符号・強さ4段階ごとにまとめる)
+    this.base = this.d.W.map((Wk, k) => {
+      const mx = Math.max(...Wk.flat().map(Math.abs));
+      const paths = [0, 1].map(() => [0, 1, 2, 3].map(() => new Path2D()));
+      Wk.forEach((row, i) => row.forEach((w, j) => {
+        const lv = Math.min(3, Math.floor((Math.abs(w) / mx) * 4));
+        const a = this.L[k][i], b = this.L[k + 1][j];
+        paths[w > 0 ? 0 : 1][lv].moveTo(a.x + a.r, a.y);
+        paths[w > 0 ? 0 : 1][lv].lineTo(b.x - b.r, b.y);
+      }));
+      return paths;
+    });
+  },
+  // 時間割(秒): 表示 → 一列に並ぶ → 3層を順に伝わる → 答えを見せる → 消える
+  T: { show: 1.2, flat: 2.5, l1: 3.2, l2: 3.9, l3: 4.6, hold: 7.0, end: 7.7 },
+  update(dt) { this.t += dt; if (this.t > this.T.end) this.next(); },
+  settle() { this.t = this.T.l3 + 0.8; },
+  pointer(type) { if (type === 'down') this.next(); },
+  draw() {
+    const { L, grid, acts, T } = this;
+    const t = this.t;
+    background(W * 0.7, H * 0.5, null, 'nn');
+    const fade = t > T.hold ? clamp(1 - (t - T.hold) / (T.end - T.hold), 0, 1) : 1;
+    const pos = C.accent, neg = C.L[3];
+
+    // 重み(常にうっすら)
+    this.base.forEach((bySign) => bySign.forEach((byLv, s) => byLv.forEach((p, lv) => {
+      ctx.strokeStyle = rgba(s ? neg : pos, 0.03 + 0.07 * lv);
+      ctx.lineWidth = 0.6 + 0.3 * lv;
+      ctx.stroke(p);
+    })));
+
+    // 各層の信号: 前の層の出力 × 重み が大きい線だけ、左から右へ光が走る
+    const stage = [[T.flat, T.l1], [T.l1, T.l2], [T.l2, T.l3]];
+    additive();
+    ctx.lineCap = 'round';
+    stage.forEach(([s0, s1], k) => {
+      if (t < s0) return;
+      const p = clamp((t - s0) / (s1 - s0), 0, 1);
+      const after = t > s1 ? clamp(1 - (t - s1) / 1.4, 0.25, 1) : 1;
+      const Wk = this.d.W[k], a = acts[k];
+      let mx = 1e-6;
+      Wk.forEach((row, i) => row.forEach((w) => { mx = Math.max(mx, Math.abs(w * a[i])); }));
+      const paths = [new Path2D(), new Path2D(), new Path2D(), new Path2D()];
+      Wk.forEach((row, i) => {
+        if (a[i] < 0.05) return;
+        const A = L[k][i];
+        row.forEach((w, j) => {
+          const c = (w * a[i]) / mx;
+          if (Math.abs(c) < 0.18) return;
+          const B = L[k + 1][j];
+          const path = paths[(w > 0 ? 0 : 2) + (Math.abs(c) > 0.55 ? 1 : 0)];
+          path.moveTo(A.x + A.r, A.y);
+          path.lineTo(A.x + A.r + (B.x - B.r - A.x - A.r) * p, A.y + (B.y - A.y) * p);
+        });
+      });
+      paths.forEach((pa, i) => {
+        ctx.strokeStyle = rgba(i < 2 ? pos : neg, (i % 2 ? 0.85 : 0.4) * after * fade);
+        ctx.lineWidth = i % 2 ? 1.8 : 1.1;
+        ctx.stroke(pa);
+      });
+    });
+    normal();
+
+    // 入力: 8x8 の画像が一列に並び替わる
+    const show = clamp(t / 0.5, 0, 1) * fade;
+    acts[0].forEach((v, i) => {
+      const gx = grid.x + (i % 8) * grid.g, gy = grid.y + Math.floor(i / 8) * grid.g;
+      const n = L[0][i];
+      const p = smooth(clamp((t - T.show - (i % 8) * 0.03 - Math.floor(i / 8) * 0.06) / 0.55, 0, 1));
+      const size = grid.g * 0.92 * (1 - p) + n.r * 2 * p;
+      const x = gx + grid.g / 2 + (n.x - gx - grid.g / 2) * p, y = gy + grid.g / 2 + (n.y - gy - grid.g / 2) * p;
+      const rr = (size / 2) * p;
+      ctx.beginPath();
+      ctx.roundRect(x - size / 2, y - size / 2, size, size, rr);
+      ctx.fillStyle = rgba(C.ink, (0.04 + 0.9 * v) * show);
+      ctx.fill();
+      ctx.strokeStyle = rgba(C.edge, 0.8 * show);
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+    });
+
+    // 隠れ層と出力層: 明るさ = 出力の大きさ
+    for (let k = 1; k < L.length; k++) {
+      const s0 = stage[k - 1][0], s1 = stage[k - 1][1];
+      const p = clamp((t - s0 - (s1 - s0) * 0.6) / ((s1 - s0) * 0.5), 0, 1) * fade;
+      L[k].forEach((n, j) => {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(C.ink, acts[k][j] * p * 0.95);
+        ctx.fill();
+        ctx.strokeStyle = rgba(C.muted, 0.7);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      });
+    }
+
+    // 答え
+    const out = L[3];
+    const won = clamp((t - T.l3) / 0.5, 0, 1) * fade;
+    ctx.font = `500 ${Math.round(clamp(out[0].r * 1.4, 11, 16))}px "JetBrains Mono", ui-monospace, monospace`;
+    ctx.textBaseline = 'middle';
+    out.forEach((n, j) => {
+      const win = j === this.answer;
+      ctx.fillStyle = win ? rgba(mix(C.muted, C.accent2, won), 1) : rgba(C.muted, 0.8);
+      ctx.fillText(String(j), n.x + n.r + 10, n.y);
+    });
+    if (won > 0) {
+      const n = out[this.answer];
+      additive();
+      glow(1, n.x, n.y, n.r * 4, won * 0.9);
+      normal();
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r + 5, 0, Math.PI * 2);
+      ctx.strokeStyle = rgba(C.accent2, won);
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+    }
+  },
+};
+
 /* ---------- 共通の枠組み ---------- */
-const modules = { rail: Rail, globe: Globe, shapes: Shapes };
-const order = ['rail', 'globe', 'shapes'];
-let cur = null, curId = 'rail';
+const modules = { globe: Globe, shapes: Shapes, net: Net };
+const order = ['globe', 'shapes', 'net'];
+let cur = null, curId = 'globe';
 let running = true, visible = true, last = 0;
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -756,7 +755,7 @@ function select(id) {
 function setRunning(on) { running = on; playBtn.textContent = on ? '一時停止' : '再生'; last = performance.now(); }
 function loop(ts) {
   requestAnimationFrame(loop);
-  const dt = Math.min(0.05, (ts - last) / 1000 || 0.016);
+  const dt = clamp((ts - last) / 1000 || 0.016, 0, 0.05);
   last = ts;
   if (!running || !visible || !cur) return;
   cur.update(dt);
@@ -793,7 +792,7 @@ new MutationObserver(onTheme).observe(document.documentElement, { attributes: tr
 
 readColors();
 sizeCanvas();
-let initial = 'rail';
+let initial = 'globe';
 try { const s = localStorage.getItem('top-topology'); if (s && modules[s]) initial = s; } catch (e) { /* なし */ }
 setRunning(!reduceMotion);
 select(initial);
