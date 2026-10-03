@@ -15,7 +15,6 @@
   --muted: #8d9ab0;
   --line: #222e47;
   --edge: #34425f;
-  --water: #13213d;
   --accent: #6cc4ff;
   --accent2: #f5b14c;
   --c1: #5aa9ff;
@@ -30,14 +29,14 @@
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
-    --bg: #f3f5f9; --ink: #121a2b; --muted: #5a667c; --line: #d5dbe5; --edge: #bcc6d6; --water: #dde6f3;
+    --bg: #f3f5f9; --ink: #121a2b; --muted: #5a667c; --line: #d5dbe5; --edge: #bcc6d6;
     --accent: #1d6fd6; --accent2: #c7770c; --c1: #2f6fd6; --c2: #d9771f; --c3: #1f9e74; --c4: #d6456a; --c5: #7d55d9;
     --scrim: rgba(243, 245, 249, 0.82);
     color-scheme: light;
   }
 }
 :root[data-theme="light"] {
-  --bg: #f3f5f9; --ink: #121a2b; --muted: #5a667c; --line: #d5dbe5; --edge: #bcc6d6; --water: #dde6f3;
+  --bg: #f3f5f9; --ink: #121a2b; --muted: #5a667c; --line: #d5dbe5; --edge: #bcc6d6;
   --accent: #1d6fd6; --accent2: #c7770c; --c1: #2f6fd6; --c2: #d9771f; --c3: #1f9e74; --c4: #d6456a; --c5: #7d55d9;
   --scrim: rgba(243, 245, 249, 0.82);
   color-scheme: light;
@@ -161,7 +160,6 @@ main p { margin: 0; color: var(--muted); max-width: 44rem; }
 <div class="controls">
   <div class="tabs" role="tablist" aria-label="トポロジの案">
     <button class="tab" role="tab" id="tab-rail" data-id="rail" aria-selected="false"><span class="key">A-2</span>東京の鉄道</button>
-    <button class="tab" role="tab" id="tab-bridges" data-id="bridges" aria-selected="false"><span class="key">A-5</span>七つの橋</button>
     <button class="tab" role="tab" id="tab-globe" data-id="globe" aria-selected="false"><span class="key">C-1</span>地球</button>
     <button class="tab" role="tab" id="tab-shapes" data-id="shapes" aria-selected="false"><span class="key">C-5</span>有名なグラフ</button>
   </div>
@@ -210,7 +208,7 @@ function readColors() {
   const cs = getComputedStyle(document.documentElement);
   const g = (n) => hexRgb(cs.getPropertyValue(n));
   C = {
-    bg: g('--bg'), ink: g('--ink'), muted: g('--muted'), edge: g('--edge'), water: g('--water'),
+    bg: g('--bg'), ink: g('--ink'), muted: g('--muted'), edge: g('--edge'),
     accent: g('--accent'), accent2: g('--accent2'),
     L: ['--c1', '--c2', '--c3', '--c4', '--c5'].map(g),
   };
@@ -304,30 +302,9 @@ function dijkstra(n, adj, src) {
   return { dist, par, maxD };
 }
 
-/* ガブリエルグラフ(group が同じ点どうしだけを結ぶ) */
-function gabriel(pts, maxLen, group) {
-  const edges = [];
-  const n = pts.length, R2 = maxLen * maxLen;
-  for (let i = 0; i < n; i++) {
-    for (let j = i + 1; j < n; j++) {
-      if (group && group[i] !== group[j]) continue;
-      const dx = pts[j].x - pts[i].x, dy = pts[j].y - pts[i].y, d2 = dx * dx + dy * dy;
-      if (d2 > R2) continue;
-      const mx = pts[i].x + dx / 2, my = pts[i].y + dy / 2, rr = d2 / 4;
-      let ok = true;
-      for (let k = 0; k < n; k++) {
-        if (k === i || k === j || (group && group[k] !== group[i])) continue;
-        if ((pts[k].x - mx) ** 2 + (pts[k].y - my) ** 2 < rr) { ok = false; break; }
-      }
-      if (ok) edges.push([i, j]);
-    }
-  }
-  return edges;
-}
-
 /* =========================================================
    平面の型: 点のあいだを光が枝分かれしながら広がる
-   build() は { pts, edges, special?, decor?, key? } を返す
+   build() は { pts, edges, decor?, key? } を返す
    ========================================================= */
 function makeSpread(opts) {
   return {
@@ -338,7 +315,7 @@ function makeSpread(opts) {
       const n = g.pts.length;
       const adj = Array.from({ length: n }, () => []);
       for (const [a, b] of g.edges) {
-        const w = Math.hypot(g.pts[a].x - g.pts[b].x, g.pts[a].y - g.pts[b].y) * (opts.jitter ? rand(0.85, 1.25) : 1);
+        const w = Math.hypot(g.pts[a].x - g.pts[b].x, g.pts[a].y - g.pts[b].y);
         adj[a].push([b, w]); adj[b].push([a, w]);
       }
       const deg = adj.map((l) => l.length);
@@ -370,21 +347,13 @@ function makeSpread(opts) {
       this.timer = 0;
     },
     draw() {
-      const { pts, edges, special } = this.g;
+      const { pts, edges } = this.g;
       background(W * 0.62, H * 0.45, this.g.decor, this.g.key);
       ctx.beginPath();
       for (const [a, b] of edges) { ctx.moveTo(pts[a].x, pts[a].y); ctx.lineTo(pts[b].x, pts[b].y); }
       ctx.strokeStyle = rgba(C.edge, opts.edgeAlpha ?? 0.4);
       ctx.lineWidth = 0.9;
       ctx.stroke();
-      if (special) {
-        ctx.beginPath();
-        for (const [a, b] of special) { ctx.moveTo(pts[a].x, pts[a].y); ctx.lineTo(pts[b].x, pts[b].y); }
-        ctx.strokeStyle = rgba(C.ink, 0.55);
-        ctx.lineWidth = 3;
-        ctx.lineCap = 'round';
-        ctx.stroke();
-      }
       ctx.fillStyle = rgba(C.muted, 0.5);
       for (let i = 0; i < this.n; i++) {
         const r = this.deg[i] > 4 ? 2.2 : 1.2;
@@ -450,61 +419,6 @@ const Rail = makeSpread({
     const vis = [];
     g.pts.forEach((p, i) => { if (p.x > W * 0.3 && p.x < W * 0.95 && p.y > H * 0.1 && p.y < H * 0.9) vis.push(i); });
     return vis.length ? vis[(Math.random() * vis.length) | 0] : null;
-  },
-});
-
-/* ---------- A-5 七つの橋(ケーニヒスベルク) ---------- */
-const Bridges = makeSpread({
-  hint: 'クリックした場所から光が広がります。川を渡れるのは7本の橋だけ',
-  credit: '<b>Königsberg, 1736</b> · 七つの橋',
-  jitter: true,
-  build() {
-    // 正規化座標 (u, v) で川と4つの陸地を定める
-    const wN = 0.03;
-    const s = (u) => smooth(clamp((u - 0.12) / 0.16, 0, 1));
-    const yN = (u) => 0.5 - 0.12 * s(u) + 0.012 * Math.sin(u * 9);
-    const yS = (u) => 0.5 + 0.12 * s(u) + 0.012 * Math.sin(u * 7 + 1);
-    const XC = 0.58, wC = 0.022;
-    const water = (u, v) => Math.abs(v - yN(u)) < wN || Math.abs(v - yS(u)) < wN || (Math.abs(u - XC) < wC && v > yN(u) && v < yS(u));
-    const region = (u, v) => (water(u, v) ? -1 : v < yN(u) ? 0 : v > yS(u) ? 1 : u < XC ? 2 : 3);
-    const m = 0.014;
-    const bridgeEnds = [
-      ...[0.31, 0.46].map((u) => [[u, yN(u) - wN - m], [u, yN(u) + wN + m]]),
-      ...[0.33, 0.48].map((u) => [[u, yS(u) - wN - m], [u, yS(u) + wN + m]]),
-      [[XC - wC - m, 0.5], [XC + wC + m, 0.5]],
-      [[0.76, yN(0.76) - wN - m], [0.76, yN(0.76) + wN + m]],
-      [[0.73, yS(0.73) - wN - m], [0.73, yS(0.73) + wN + m]],
-    ];
-    const pts = [], group = [];
-    for (const pair of bridgeEnds) for (const [u, v] of pair) { pts.push({ x: (1 - u) * W, y: v * H }); group.push(region(u, v)); }
-    const N = Math.round(clamp((W * H) / 3800, 80, 340));
-    const r = Math.sqrt((W * H) / N) * 0.7;
-    let tries = 0;
-    while (pts.length < N + 14 && tries < N * 60) {
-      tries++;
-      const x = rand(-10, W + 10), y = rand(-10, H + 10);
-      const g = region(1 - x / W, y / H);
-      if (g < 0) continue;
-      let ok = true;
-      for (const p of pts) if ((p.x - x) ** 2 + (p.y - y) ** 2 < r * r) { ok = false; break; }
-      if (ok) { pts.push({ x, y }); group.push(g); }
-    }
-    const edges = gabriel(pts, r * 2.8, group);
-    const special = bridgeEnds.map((_, i) => [2 * i, 2 * i + 1]);
-    const decor = (b) => {
-      // 川は太い線で描く(北の支流・南の支流・島を分ける水路)
-      b.strokeStyle = rgba(C.water);
-      b.lineWidth = wN * 2 * H;
-      b.lineCap = 'butt';
-      for (const f of [yN, yS]) {
-        b.beginPath();
-        for (let i = 0; i <= 120; i++) { const u = -0.02 + (i / 120) * 1.04; i ? b.lineTo((1 - u) * W, f(u) * H) : b.moveTo((1 - u) * W, f(u) * H); }
-        b.stroke();
-      }
-      b.fillStyle = rgba(C.water);
-      b.fillRect((1 - XC - wC) * W, yN(XC) * H, wC * 2 * W, (yS(XC) - yN(XC)) * H);
-    };
-    return { pts, edges: [...edges, ...special], special, decor, key: 'bridges' };
   },
 });
 
@@ -814,8 +728,8 @@ const Shapes = makeCascade({
 });
 
 /* ---------- 共通の枠組み ---------- */
-const modules = { rail: Rail, bridges: Bridges, globe: Globe, shapes: Shapes };
-const order = ['rail', 'bridges', 'globe', 'shapes'];
+const modules = { rail: Rail, globe: Globe, shapes: Shapes };
+const order = ['rail', 'globe', 'shapes'];
 let cur = null, curId = 'rail';
 let running = true, visible = true, last = 0;
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
