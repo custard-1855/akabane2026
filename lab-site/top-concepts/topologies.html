@@ -1,0 +1,890 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>研究室トップ トポロジ案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: 全幅ステージ(ヒーローの試作)→ 案の切替。実在の形をしたグラフの上を光が伝わる */
+:root {
+  --bg: #0a1020;
+  --ink: #e9eef7;
+  --muted: #8d9ab0;
+  --line: #222e47;
+  --edge: #34425f;
+  --water: #13213d;
+  --accent: #6cc4ff;
+  --accent2: #f5b14c;
+  --c1: #5aa9ff;
+  --c2: #f59e4b;
+  --c3: #4fd1a5;
+  --c4: #f46b8a;
+  --c5: #b28dff;
+  --scrim: rgba(10, 16, 32, 0.74);
+  --font-display: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f3f5f9; --ink: #121a2b; --muted: #5a667c; --line: #d5dbe5; --edge: #bcc6d6; --water: #dde6f3;
+    --accent: #1d6fd6; --accent2: #c7770c; --c1: #2f6fd6; --c2: #d9771f; --c3: #1f9e74; --c4: #d6456a; --c5: #7d55d9;
+    --scrim: rgba(243, 245, 249, 0.82);
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #f3f5f9; --ink: #121a2b; --muted: #5a667c; --line: #d5dbe5; --edge: #bcc6d6; --water: #dde6f3;
+  --accent: #1d6fd6; --accent2: #c7770c; --c1: #2f6fd6; --c2: #d9771f; --c3: #1f9e74; --c4: #d6456a; --c5: #7d55d9;
+  --scrim: rgba(243, 245, 249, 0.82);
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 15px;
+  line-height: 1.7;
+}
+.stage {
+  position: relative;
+  height: clamp(440px, 76vh, 800px);
+  overflow: hidden;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  touch-action: pan-y;
+}
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; }
+.scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, var(--scrim) 0%, transparent 55%);
+  transition: opacity .4s;
+}
+.overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  padding: clamp(24px, 6vw, 72px) clamp(16px, 6vw, 80px);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+  transition: opacity .4s;
+}
+.brand { font-family: var(--font-mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.tagline {
+  margin: 0;
+  font-weight: 700;
+  font-size: clamp(26px, 4.6vw, 56px);
+  line-height: 1.3;
+  letter-spacing: .02em;
+  display: grid;
+}
+.tagline span { white-space: nowrap; }
+.themes { margin: 0; font-size: clamp(14px, 1.5vw, 16px); color: var(--muted); letter-spacing: .06em; }
+.stage.bare .overlay, .stage.bare .scrim { opacity: 0; }
+.credit {
+  position: absolute;
+  right: clamp(16px, 3vw, 28px);
+  bottom: 12px;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  pointer-events: none;
+  text-align: right;
+}
+.credit b { color: var(--ink); font-weight: 500; }
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding: 14px clamp(16px, 6vw, 80px);
+  border-bottom: 1px solid var(--line);
+}
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab, .btn {
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.tab .key { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.tab[aria-selected="true"] .key { color: var(--bg); opacity: .7; }
+.tab:hover, .btn:hover { border-color: var(--muted); }
+.tab:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.side { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.hint { margin: 0; font-size: 13px; color: var(--muted); }
+.btn-row { display: flex; gap: 6px; }
+main { padding: clamp(24px, 4vw, 40px) clamp(16px, 6vw, 80px) 64px; max-width: 1200px; }
+main p { margin: 0; color: var(--muted); max-width: 44rem; }
+@media (max-width: 640px) {
+  .scrim { background: linear-gradient(180deg, var(--scrim) 0%, transparent 60%); }
+  .overlay { justify-content: flex-start; }
+}
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <canvas id="cv" aria-label="研究テーマを表す動くグラフィック"></canvas>
+  <div class="scrim"></div>
+  <div class="overlay">
+    <div class="brand">◯◯ Laboratory · ◯◯研究室</div>
+    <h1 class="tagline"><span>つながりを読み解き、</span><span>学ぶしくみをつくる。</span></h1>
+    <p class="themes">グラフ理論 · 機械学習 · ネットワーク</p>
+  </div>
+  <p class="credit" id="credit"></p>
+</div>
+
+<div class="controls">
+  <div class="tabs" role="tablist" aria-label="トポロジの案">
+    <button class="tab" role="tab" id="tab-rail" data-id="rail" aria-selected="false"><span class="key">A-2</span>東京の鉄道</button>
+    <button class="tab" role="tab" id="tab-bridges" data-id="bridges" aria-selected="false"><span class="key">A-5</span>七つの橋</button>
+    <button class="tab" role="tab" id="tab-globe" data-id="globe" aria-selected="false"><span class="key">C-1</span>地球</button>
+    <button class="tab" role="tab" id="tab-shapes" data-id="shapes" aria-selected="false"><span class="key">C-5</span>有名なグラフ</button>
+  </div>
+  <div class="side">
+    <p class="hint" id="hint"></p>
+    <div class="btn-row">
+      <button class="btn" id="btn-play" type="button">一時停止</button>
+      <button class="btn" id="btn-bare" type="button" aria-pressed="false">文字を隠す</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <p>A-1(大学周辺の道路網)は、場所が決まってから地図データを用意して追加します。C-1 は海底ケーブルの代わりに、主要都市を近い順に結んだ網で仮に組んでいます。</p>
+</main>
+
+<script src="data/tokyo-rail.js"></script>
+<script src="data/world.js"></script>
+<script>
+(() => {
+'use strict';
+
+const $ = (s) => document.querySelector(s);
+const stage = $('#stage');
+const cv = $('#cv');
+const ctx = cv.getContext('2d');
+const hintEl = $('#hint');
+const creditEl = $('#credit');
+const playBtn = $('#btn-play');
+const bareBtn = $('#btn-bare');
+
+let W = 0, H = 0, DPR = 1;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rand = (a, b) => a + Math.random() * (b - a);
+const smooth = (t) => t * t * (3 - 2 * t);
+
+/* ---------- colors ---------- */
+let C = {};
+function hexRgb(h) {
+  h = h.replace('#', '').trim();
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  const n = parseInt(h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function readColors() {
+  const cs = getComputedStyle(document.documentElement);
+  const g = (n) => hexRgb(cs.getPropertyValue(n));
+  C = {
+    bg: g('--bg'), ink: g('--ink'), muted: g('--muted'), edge: g('--edge'), water: g('--water'),
+    accent: g('--accent'), accent2: g('--accent2'),
+    L: ['--c1', '--c2', '--c3', '--c4', '--c5'].map(g),
+  };
+  C.dark = (C.bg[0] + C.bg[1] + C.bg[2]) / 3 < 128;
+  C.pal = [C.accent, C.accent2, C.L[2], C.L[3], C.L[4]];
+  glowCache.clear();
+  bgKey = '';
+}
+const rgba = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
+const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+
+/* 光の粒(5色ぶんだけ作って使い回す) */
+const glowCache = new Map();
+function glow(ci, x, y, r, a) {
+  if (a <= 0.01) return;
+  let s = glowCache.get(ci);
+  if (!s) {
+    const c = C.pal[ci];
+    s = document.createElement('canvas');
+    s.width = s.height = 64;
+    const g = s.getContext('2d');
+    const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, rgba(c, 1));
+    gr.addColorStop(0.18, rgba(c, 0.55));
+    gr.addColorStop(0.5, rgba(c, 0.12));
+    gr.addColorStop(1, rgba(c, 0));
+    g.fillStyle = gr;
+    g.fillRect(0, 0, 64, 64);
+    glowCache.set(ci, s);
+  }
+  ctx.globalAlpha = Math.min(1, a);
+  ctx.drawImage(s, x - r, y - r, r * 2, r * 2);
+  ctx.globalAlpha = 1;
+}
+/* 背景(グラデーションと、案ごとの地形)は変わったときだけ描き直す */
+let bgCache = null, bgKey = '';
+function background(cx, cy, decor, key = '') {
+  const k = [W, H, cx | 0, cy | 0, key].join('|');
+  if (k !== bgKey) {
+    bgKey = k;
+    bgCache = document.createElement('canvas');
+    bgCache.width = W; bgCache.height = H;
+    const b = bgCache.getContext('2d');
+    const g = b.createRadialGradient(cx, cy, 0, cx, cy, Math.hypot(W, H) * 0.7);
+    g.addColorStop(0, rgba(mix(C.bg, C.accent, C.dark ? 0.07 : 0.05)));
+    g.addColorStop(1, rgba(C.bg));
+    b.fillStyle = g;
+    b.fillRect(0, 0, W, H);
+    if (decor) decor(b);
+  }
+  ctx.drawImage(bgCache, 0, 0, W, H);
+}
+const additive = () => { ctx.globalCompositeOperation = C.dark ? 'lighter' : 'source-over'; };
+const normal = () => { ctx.globalCompositeOperation = 'source-over'; };
+
+/* ---------- 共通: ダイクストラ法(二分ヒープ) ---------- */
+function dijkstra(n, adj, src) {
+  const dist = new Float64Array(n).fill(Infinity);
+  const par = new Int32Array(n).fill(-1);
+  const heap = [[0, src]];
+  dist[src] = 0;
+  let maxD = 0;
+  const push = (item) => {
+    heap.push(item);
+    let i = heap.length - 1;
+    while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; }
+  };
+  const pop = () => {
+    const top = heap[0], last = heap.pop();
+    if (heap.length) {
+      heap[0] = last;
+      let i = 0;
+      for (;;) {
+        const l = 2 * i + 1, r = l + 1;
+        let m = i;
+        if (l < heap.length && heap[l][0] < heap[m][0]) m = l;
+        if (r < heap.length && heap[r][0] < heap[m][0]) m = r;
+        if (m === i) break;
+        [heap[m], heap[i]] = [heap[i], heap[m]];
+        i = m;
+      }
+    }
+    return top;
+  };
+  while (heap.length) {
+    const [d, u] = pop();
+    if (d > dist[u]) continue;
+    maxD = d;
+    for (const [v, w] of adj[u]) if (d + w < dist[v]) { dist[v] = d + w; par[v] = u; push([dist[v], v]); }
+  }
+  return { dist, par, maxD };
+}
+
+/* ガブリエルグラフ(group が同じ点どうしだけを結ぶ) */
+function gabriel(pts, maxLen, group) {
+  const edges = [];
+  const n = pts.length, R2 = maxLen * maxLen;
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      if (group && group[i] !== group[j]) continue;
+      const dx = pts[j].x - pts[i].x, dy = pts[j].y - pts[i].y, d2 = dx * dx + dy * dy;
+      if (d2 > R2) continue;
+      const mx = pts[i].x + dx / 2, my = pts[i].y + dy / 2, rr = d2 / 4;
+      let ok = true;
+      for (let k = 0; k < n; k++) {
+        if (k === i || k === j || (group && group[k] !== group[i])) continue;
+        if ((pts[k].x - mx) ** 2 + (pts[k].y - my) ** 2 < rr) { ok = false; break; }
+      }
+      if (ok) edges.push([i, j]);
+    }
+  }
+  return edges;
+}
+
+/* =========================================================
+   平面の型: 点のあいだを光が枝分かれしながら広がる
+   build() は { pts, edges, special?, decor?, key? } を返す
+   ========================================================= */
+function makeSpread(opts) {
+  return {
+    hint: opts.hint,
+    credit: opts.credit,
+    init() {
+      const g = opts.build();
+      const n = g.pts.length;
+      const adj = Array.from({ length: n }, () => []);
+      for (const [a, b] of g.edges) {
+        const w = Math.hypot(g.pts[a].x - g.pts[b].x, g.pts[a].y - g.pts[b].y) * (opts.jitter ? rand(0.85, 1.25) : 1);
+        adj[a].push([b, w]); adj[b].push([a, w]);
+      }
+      const deg = adj.map((l) => l.length);
+      Object.assign(this, { g, n, adj, deg, waves: [], timer: 0, hue: 0 });
+      this.spawn();
+    },
+    resize() { this.init(); },
+    spawn(src) {
+      if (src === undefined) {
+        const cand = opts.pickSource ? opts.pickSource(this.g) : null;
+        src = cand ?? ((Math.random() * this.n) | 0);
+      }
+      const r = dijkstra(this.n, this.adj, src);
+      this.waves.push({ src, ...r, T: 0, speed: Math.hypot(W, H) / (opts.duration || 4.2), ci: this.hue++ % 5 });
+      if (this.waves.length > 4) this.waves.shift();
+    },
+    update(dt) {
+      this.timer += dt;
+      if (this.timer > (opts.interval || 2.6)) { this.timer = 0; this.spawn(); }
+      for (const w of this.waves) w.T += w.speed * dt;
+      this.waves = this.waves.filter((w) => w.T < w.maxD + w.speed * 3);
+    },
+    settle() { this.update(1.2); this.spawn(); for (let i = 0; i < 40; i++) this.update(0.05); },
+    pointer(type, x, y) {
+      if (type !== 'down') return;
+      let best = 0, bd = Infinity;
+      this.g.pts.forEach((p, i) => { const d = (p.x - x) ** 2 + (p.y - y) ** 2; if (d < bd) { bd = d; best = i; } });
+      this.spawn(best);
+      this.timer = 0;
+    },
+    draw() {
+      const { pts, edges, special } = this.g;
+      background(W * 0.62, H * 0.45, this.g.decor, this.g.key);
+      ctx.beginPath();
+      for (const [a, b] of edges) { ctx.moveTo(pts[a].x, pts[a].y); ctx.lineTo(pts[b].x, pts[b].y); }
+      ctx.strokeStyle = rgba(C.edge, opts.edgeAlpha ?? 0.4);
+      ctx.lineWidth = 0.9;
+      ctx.stroke();
+      if (special) {
+        ctx.beginPath();
+        for (const [a, b] of special) { ctx.moveTo(pts[a].x, pts[a].y); ctx.lineTo(pts[b].x, pts[b].y); }
+        ctx.strokeStyle = rgba(C.ink, 0.55);
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+      }
+      ctx.fillStyle = rgba(C.muted, 0.5);
+      for (let i = 0; i < this.n; i++) {
+        const r = this.deg[i] > 4 ? 2.2 : 1.2;
+        ctx.fillRect(pts[i].x - r / 2, pts[i].y - r / 2, r, r);
+      }
+
+      additive();
+      ctx.lineCap = 'round';
+      ctx.lineWidth = 1.7;
+      const LV = 6;
+      for (const w of this.waves) {
+        const { dist, par, T } = w;
+        const col = C.pal[w.ci];
+        const decay = w.speed * 0.9;
+        // 明るさを6段階にまとめて、段階ごとに1回で描く
+        const paths = Array.from({ length: LV }, () => new Path2D());
+        const heads = [];
+        for (let v = 0; v < this.n; v++) {
+          const p = par[v];
+          if (p < 0 || dist[p] > T) continue;
+          const f = clamp((T - dist[p]) / (dist[v] - dist[p] || 1), 0, 1);
+          const b = f < 1 ? 1 : Math.exp(-(T - dist[v]) / decay);
+          if (b < 0.03) continue;
+          const hx = pts[p].x + (pts[v].x - pts[p].x) * f, hy = pts[p].y + (pts[v].y - pts[p].y) * f;
+          const lv = Math.min(LV - 1, Math.floor(b * LV));
+          paths[lv].moveTo(pts[p].x, pts[p].y);
+          paths[lv].lineTo(hx, hy);
+          if (f < 1) heads.push(hx, hy);
+        }
+        paths.forEach((pa, lv) => { ctx.strokeStyle = rgba(col, 0.75 * ((lv + 1) / LV)); ctx.stroke(pa); });
+        for (let i = 0; i < heads.length; i += 2) glow(w.ci, heads[i], heads[i + 1], 9, 0.9);
+        for (let v = 0; v < this.n; v++) {
+          const age = T - dist[v];
+          if (age < 0 || age > decay * 1.6) continue;
+          const b = Math.exp(-age / decay);
+          glow(w.ci, pts[v].x, pts[v].y, (4 + 12 * b) * (this.deg[v] > 4 ? 1.5 : 1), b);
+        }
+        if (T < w.speed * 1.2) glow(w.ci, pts[w.src].x, pts[w.src].y, 40, 1 - T / (w.speed * 1.2));
+      }
+      normal();
+    },
+  };
+}
+
+/* ---------- A-2 東京の鉄道 ---------- */
+const Rail = makeSpread({
+  hint: 'クリックした駅から光が広がります',
+  credit: '<b>東京の鉄道網</b> · 537駅 · データ: Mini Tokyo 3D (MIT)',
+  duration: 5,
+  interval: 2.8,
+  edgeAlpha: 0.55,
+  build() {
+    const d = window.TOKYO_RAIL;
+    const wide = W > H * 1.3;
+    const lon0 = 139.735, lat0 = 35.69, k = Math.cos((lat0 * Math.PI) / 180);
+    const scale = H / (wide ? 0.21 : 0.17);
+    const cx = wide ? W * 0.6 : W * 0.5, cy = wide ? H * 0.5 : H * 0.58;
+    const pts = d.nodes.map(([lon, lat]) => ({ x: cx + (lon - lon0) * k * scale, y: cy - (lat - lat0) * scale }));
+    return { pts, edges: d.edges, key: 'rail' };
+  },
+  pickSource(g) {
+    // 画面に見えている駅から選ぶ
+    const vis = [];
+    g.pts.forEach((p, i) => { if (p.x > W * 0.3 && p.x < W * 0.95 && p.y > H * 0.1 && p.y < H * 0.9) vis.push(i); });
+    return vis.length ? vis[(Math.random() * vis.length) | 0] : null;
+  },
+});
+
+/* ---------- A-5 七つの橋(ケーニヒスベルク) ---------- */
+const Bridges = makeSpread({
+  hint: 'クリックした場所から光が広がります。川を渡れるのは7本の橋だけ',
+  credit: '<b>Königsberg, 1736</b> · 七つの橋',
+  jitter: true,
+  build() {
+    // 正規化座標 (u, v) で川と4つの陸地を定める
+    const wN = 0.03;
+    const s = (u) => smooth(clamp((u - 0.12) / 0.16, 0, 1));
+    const yN = (u) => 0.5 - 0.12 * s(u) + 0.012 * Math.sin(u * 9);
+    const yS = (u) => 0.5 + 0.12 * s(u) + 0.012 * Math.sin(u * 7 + 1);
+    const XC = 0.58, wC = 0.022;
+    const water = (u, v) => Math.abs(v - yN(u)) < wN || Math.abs(v - yS(u)) < wN || (Math.abs(u - XC) < wC && v > yN(u) && v < yS(u));
+    const region = (u, v) => (water(u, v) ? -1 : v < yN(u) ? 0 : v > yS(u) ? 1 : u < XC ? 2 : 3);
+    const m = 0.014;
+    const bridgeEnds = [
+      ...[0.31, 0.46].map((u) => [[u, yN(u) - wN - m], [u, yN(u) + wN + m]]),
+      ...[0.33, 0.48].map((u) => [[u, yS(u) - wN - m], [u, yS(u) + wN + m]]),
+      [[XC - wC - m, 0.5], [XC + wC + m, 0.5]],
+      [[0.76, yN(0.76) - wN - m], [0.76, yN(0.76) + wN + m]],
+      [[0.73, yS(0.73) - wN - m], [0.73, yS(0.73) + wN + m]],
+    ];
+    const pts = [], group = [];
+    for (const pair of bridgeEnds) for (const [u, v] of pair) { pts.push({ x: (1 - u) * W, y: v * H }); group.push(region(u, v)); }
+    const N = Math.round(clamp((W * H) / 3800, 80, 340));
+    const r = Math.sqrt((W * H) / N) * 0.7;
+    let tries = 0;
+    while (pts.length < N + 14 && tries < N * 60) {
+      tries++;
+      const x = rand(-10, W + 10), y = rand(-10, H + 10);
+      const g = region(1 - x / W, y / H);
+      if (g < 0) continue;
+      let ok = true;
+      for (const p of pts) if ((p.x - x) ** 2 + (p.y - y) ** 2 < r * r) { ok = false; break; }
+      if (ok) { pts.push({ x, y }); group.push(g); }
+    }
+    const edges = gabriel(pts, r * 2.8, group);
+    const special = bridgeEnds.map((_, i) => [2 * i, 2 * i + 1]);
+    const decor = (b) => {
+      // 川は太い線で描く(北の支流・南の支流・島を分ける水路)
+      b.strokeStyle = rgba(C.water);
+      b.lineWidth = wN * 2 * H;
+      b.lineCap = 'butt';
+      for (const f of [yN, yS]) {
+        b.beginPath();
+        for (let i = 0; i <= 120; i++) { const u = -0.02 + (i / 120) * 1.04; i ? b.lineTo((1 - u) * W, f(u) * H) : b.moveTo((1 - u) * W, f(u) * H); }
+        b.stroke();
+      }
+      b.fillStyle = rgba(C.water);
+      b.fillRect((1 - XC - wC) * W, yN(XC) * H, wC * 2 * W, (yS(XC) - yN(XC)) * H);
+    };
+    return { pts, edges: [...edges, ...special], special, decor, key: 'bridges' };
+  },
+});
+
+/* =========================================================
+   立体の型: 回転する立体のネットワークを色の信号が伝わる
+   shapes() は [{ name, nodes:[[x,y,z]], edges:[[a,b]], arc?, coast? }] を返す
+   ========================================================= */
+function makeCascade(opts) {
+  return {
+    hint: opts.hint,
+    get credit() { return opts.credit(this.shape); },
+    init() {
+      this.list = opts.shapes();
+      this.si = 0;
+      Object.assign(this, { rot: 0, tilt: opts.tilt ?? 0.25, yaw: 0, tiltT: opts.tilt ?? 0.25, yawT: 0, cid: 0, hue: 0, shapeT: 0, fade: 1 });
+      this.load(this.list[0]);
+    },
+    resize() {},
+    load(shape) {
+      const n = shape.nodes.length;
+      const nbrs = Array.from({ length: n }, () => []);
+      const arcs = new Map();
+      shape.edges.forEach(([a, b]) => {
+        nbrs[a].push(b); nbrs[b].push(a);
+        const pa = shape.nodes[a], pb = shape.nodes[b];
+        let line = [pa, pb];
+        if (shape.arc) {
+          // 球面上の大円に沿って、少し浮かせた弧にする
+          const ang = Math.acos(clamp(pa[0] * pb[0] + pa[1] * pb[1] + pa[2] * pb[2], -1, 1));
+          const steps = Math.max(2, Math.ceil(ang / 0.07));
+          line = [];
+          for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const s0 = Math.sin((1 - t) * ang) / Math.sin(ang || 1e-6), s1 = Math.sin(t * ang) / Math.sin(ang || 1e-6);
+            const lift = 1 + 0.1 * ang * Math.sin(Math.PI * t);
+            line.push([(pa[0] * s0 + pb[0] * s1) * lift, (pa[1] * s0 + pb[1] * s1) * lift, (pa[2] * s0 + pb[2] * s1) * lift]);
+          }
+        }
+        const len = line.reduce((acc, p, i) => (i ? acc + Math.hypot(p[0] - line[i - 1][0], p[1] - line[i - 1][1], p[2] - line[i - 1][2]) : 0), 0);
+        arcs.set(a * n + b, { line, len, rev: false });
+        arcs.set(b * n + a, { line, len, rev: true });
+      });
+      this.shape = shape;
+      this.nodes = shape.nodes.map((p) => ({ p, ci: 0, heat: 0, flash: 0, last: -1 }));
+      Object.assign(this, { n, nbrs, arcs, pulses: [], timer: 0 });
+      this.proj = this.nodes.map(() => ({ x: 0, y: 0, k: 1, d: 0 }));
+      creditEl.innerHTML = this.credit;
+      for (let i = 0; i < 3; i++) this.emit((Math.random() * n) | 0);
+    },
+    pulse(a, b, ci, ttl, id) {
+      const arc = this.arcs.get(a * this.n + b);
+      return { a, b, arc, t: 0, dur: 0.3 + arc.len * (opts.pace ?? 0.9), ci, ttl, id };
+    },
+    emit(i) {
+      const ci = this.hue++ % 5, id = ++this.cid;
+      Object.assign(this.nodes[i], { ci, heat: 1, flash: 1.4, last: id });
+      for (const j of this.nbrs[i]) this.pulses.push(this.pulse(i, j, ci, opts.ttl ?? 8, id));
+    },
+    update(dt) {
+      this.rot += dt * (opts.spin ?? 0.07);
+      this.tilt += (this.tiltT - this.tilt) * Math.min(1, dt * 2);
+      this.yaw += (this.yawT - this.yaw) * Math.min(1, dt * 2);
+      this.timer += dt;
+      if (this.timer > 1.4) { this.timer = 0; this.emit((Math.random() * this.n) | 0); }
+      // 複数の形を順に見せる
+      if (this.list.length > 1) {
+        this.shapeT += dt;
+        if (this.shapeT > 16) this.fade = Math.max(0, this.fade - dt * 1.5);
+        if (this.shapeT > 16 && this.fade === 0) {
+          this.si = (this.si + 1) % this.list.length;
+          this.load(this.list[this.si]);
+          this.shapeT = 0;
+        }
+        if (this.shapeT < 16) this.fade = Math.min(1, this.fade + dt * 1.5);
+      }
+      const next = [];
+      for (const q of this.pulses) {
+        q.t += dt;
+        if (q.t < q.dur) { next.push(q); continue; }
+        const node = this.nodes[q.b];
+        if (node.last === q.id) continue;
+        Object.assign(node, { ci: q.ci, heat: 1, flash: 1, last: q.id });
+        if (q.ttl <= 0) continue;
+        for (const k of this.nbrs[q.b]) {
+          if (k === q.a || Math.random() > (opts.branch ?? 0.7) || next.length > 240) continue;
+          next.push(this.pulse(q.b, k, q.ci, q.ttl - 1, q.id));
+        }
+      }
+      this.pulses = next;
+      const cool = Math.exp(-dt * 0.15), fl = Math.exp(-dt * 2.4);
+      for (const nd of this.nodes) { nd.heat *= cool; nd.flash *= fl; }
+    },
+    settle() { for (let i = 0; i < 90; i++) this.update(1 / 30); },
+    pointer(type, x, y) {
+      if (type === 'move') { this.tiltT = (opts.tilt ?? 0.25) + (y / H - 0.5) * 0.6; this.yawT = (x / W - 0.5) * 0.9; }
+      if (type === 'leave') { this.tiltT = opts.tilt ?? 0.25; this.yawT = 0; }
+      if (type === 'down') {
+        let best = 0, bd = Infinity;
+        this.proj.forEach((q, i) => { const d = (q.x - x) ** 2 + (q.y - y) ** 2 - q.d * 400; if (d < bd) { bd = d; best = i; } });
+        this.emit(best);
+      }
+    },
+    view() {
+      const wide = W > H * 1.3;
+      const cx = wide ? W * 0.63 : W / 2, cy = wide ? H / 2 : H * 0.6;
+      const S = (wide ? Math.min(H * 0.6, W * 0.34) : Math.min(W, H) * 0.56) * (opts.size ?? 1) * (0.85 + 0.15 * smooth(this.fade));
+      const ry = this.rot + this.yaw;
+      const m = [Math.cos(ry), Math.sin(ry), Math.cos(this.tilt), Math.sin(this.tilt)];
+      const P = (p, out) => {
+        const x = p[0] * m[0] + p[2] * m[1], z1 = -p[0] * m[1] + p[2] * m[0];
+        const y = -p[1] * m[2] - z1 * m[3], z = -p[1] * m[3] + z1 * m[2];
+        const k = 3 / (3 - z);
+        out.x = cx + x * S * k; out.y = cy + y * S * k; out.k = k; out.d = clamp((z + 1.2) / 2.4, 0, 1);
+        return out;
+      };
+      return { cx, cy, S, P };
+    },
+    draw() {
+      const { cx, cy, S, P } = this.view();
+      background(cx, cy, null, 'cascade');
+      const a0 = smooth(this.fade);
+      this.nodes.forEach((nd, i) => P(nd.p, this.proj[i]));
+      const Q = this.proj, tmp = { x: 0, y: 0, k: 1, d: 0 };
+
+      // 海岸線(手前だけ濃く)
+      if (this.shape.coast) {
+        const front = [], back = [];
+        for (const p of this.shape.coast) { P(p, tmp); (tmp.d > 0.5 ? front : back).push(tmp.x, tmp.y, tmp.d); }
+        ctx.fillStyle = rgba(C.muted, 0.12 * a0);
+        for (let i = 0; i < back.length; i += 3) ctx.fillRect(back[i], back[i + 1], 1, 1);
+        ctx.fillStyle = rgba(C.muted, 0.5 * a0);
+        for (let i = 0; i < front.length; i += 3) ctx.fillRect(front[i] - 0.7, front[i + 1] - 0.7, 1.4, 1.4);
+        ctx.beginPath();
+        ctx.arc(cx, cy, S * 1.0, 0, Math.PI * 2);
+        ctx.strokeStyle = rgba(C.edge, 0.35 * a0);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // 辺(奥行きで3段階)
+      const bands = [new Path2D(), new Path2D(), new Path2D()];
+      this.shape.edges.forEach(([a, b]) => {
+        const arc = this.arcs.get(a * this.n + b);
+        const d = (Q[a].d + Q[b].d) / 2;
+        const path = bands[Math.min(2, Math.floor(d * 3))];
+        arc.line.forEach((p, i) => { P(p, tmp); i ? path.lineTo(tmp.x, tmp.y) : path.moveTo(tmp.x, tmp.y); });
+      });
+      ctx.lineWidth = 1;
+      bands.forEach((pa, i) => { ctx.strokeStyle = rgba(C.edge, (0.22 + i * 0.22) * a0); ctx.stroke(pa); });
+
+      additive();
+      // 信号: 尾は色ごとにまとめて描く
+      const tails = Array.from({ length: 5 }, () => new Path2D());
+      const heads = [];
+      const at = (arc, t) => {
+        const L = arc.line, f = (arc.rev ? 1 - t : t) * (L.length - 1);
+        const i = Math.min(L.length - 2, Math.floor(f)), r = f - i;
+        const p = L[i], q = L[i + 1];
+        return P([p[0] + (q[0] - p[0]) * r, p[1] + (q[1] - p[1]) * r, p[2] + (q[2] - p[2]) * r], { x: 0, y: 0, k: 1, d: 0 });
+      };
+      for (const q of this.pulses) {
+        const t = Math.min(1, q.t / q.dur);
+        const h = at(q.arc, t), tl = at(q.arc, Math.max(0, t - 0.3));
+        tails[q.ci].moveTo(tl.x, tl.y);
+        tails[q.ci].lineTo(h.x, h.y);
+        heads.push(q.ci, h);
+      }
+      ctx.lineCap = 'round';
+      ctx.lineWidth = 1.8;
+      tails.forEach((pa, ci) => { ctx.strokeStyle = rgba(C.pal[ci], 0.55 * a0); ctx.stroke(pa); });
+      for (let i = 0; i < heads.length; i += 2) { const h = heads[i + 1]; glow(heads[i], h.x, h.y, 10 * h.k, (0.4 + 0.5 * h.d) * a0); }
+      for (let i = 0; i < this.n; i++) {
+        const nd = this.nodes[i], q = Q[i];
+        if (nd.flash > 0.05) glow(nd.ci, q.x, q.y, (10 + 26 * nd.flash) * q.k, 0.75 * nd.flash * (0.3 + 0.7 * q.d) * a0);
+      }
+      normal();
+      for (let i = 0; i < this.n; i++) {
+        const nd = this.nodes[i], q = Q[i];
+        const col = mix(C.muted, C.dark ? mix(C.pal[nd.ci], C.ink, 0.2) : C.pal[nd.ci], nd.heat);
+        ctx.beginPath();
+        ctx.arc(q.x, q.y, (1.5 + 1.8 * q.d) * q.k, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(col, (0.3 + 0.7 * q.d) * a0);
+        ctx.fill();
+      }
+    },
+  };
+}
+
+/* 頂点が連結になるよう、近い順に辺を足す(k近傍 + 最短の橋渡し) */
+function knnGraph(nodes, k, dist) {
+  const n = nodes.length, has = new Set(), edges = [];
+  const add = (a, b) => { const key = a < b ? a * n + b : b * n + a; if (a !== b && !has.has(key)) { has.add(key); edges.push([a, b]); } };
+  const pairs = [];
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) pairs.push([dist(nodes[i], nodes[j]), i, j]);
+  pairs.sort((x, y) => x[0] - y[0]);
+  const near = Array.from({ length: n }, () => []);
+  for (const [, i, j] of pairs) { if (near[i].length < k) near[i].push(j); if (near[j].length < k) near[j].push(i); }
+  near.forEach((l, i) => l.forEach((j) => add(i, j)));
+  const root = [...Array(n).keys()];
+  const find = (x) => (root[x] === x ? x : (root[x] = find(root[x])));
+  edges.forEach(([a, b]) => { root[find(a)] = find(b); });
+  for (const [, i, j] of pairs) if (find(i) !== find(j)) { root[find(i)] = find(j); add(i, j); }
+  return edges;
+}
+const ll = ([lon, lat]) => {
+  const a = (lon * Math.PI) / 180, b = (lat * Math.PI) / 180;
+  return [Math.cos(b) * Math.cos(a), Math.sin(b), -Math.cos(b) * Math.sin(a)];
+};
+
+/* ---------- C-1 地球 ---------- */
+const Globe = makeCascade({
+  hint: 'クリックした都市から光が伝わります。カーソルで地球が傾きます',
+  credit: () => '<b>世界の主要都市</b> · 243都市 · 地図: Natural Earth',
+  tilt: -0.4,
+  size: 0.72,
+  spin: 0.09,
+  pace: 1.4,
+  ttl: 10,
+  branch: 0.75,
+  shapes() {
+    const nodes = window.WORLD.cities.map(ll);
+    const edges = knnGraph(nodes, 3, (a, b) => Math.acos(clamp(a[0] * b[0] + a[1] * b[1] + a[2] * b[2], -1, 1)));
+    return [{ name: 'globe', nodes, edges, arc: true, coast: window.WORLD.coast.map(ll) }];
+  },
+});
+
+/* ---------- C-5 有名なグラフ ---------- */
+function normalize(pts) {
+  const r = Math.max(...pts.map((p) => Math.hypot(...p)));
+  return pts.map((p) => p.map((v) => v / r));
+}
+function byLength(pts, eps = 1e-3) {
+  let min = Infinity;
+  for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) min = Math.min(min, Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1], pts[i][2] - pts[j][2]));
+  const edges = [];
+  for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
+    if (Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1], pts[i][2] - pts[j][2]) < min * (1 + eps)) edges.push([i, j]);
+  }
+  return edges;
+}
+function fullerene() {
+  const f = (1 + Math.sqrt(5)) / 2, pts = [];
+  const base = [[0, 1, 3 * f], [1, 2 + f, 2 * f], [f, 2, 2 * f + 1]];
+  for (const b of base) {
+    for (const sx of [1, -1]) for (const sy of [1, -1]) for (const sz of [1, -1]) {
+      const v = [b[0] * sx, b[1] * sy, b[2] * sz];
+      for (const c of [[0, 1, 2], [1, 2, 0], [2, 0, 1]]) {
+        const p = [v[c[0]], v[c[1]], v[c[2]]];
+        if (!pts.some((q) => Math.hypot(q[0] - p[0], q[1] - p[1], q[2] - p[2]) < 1e-6)) pts.push(p);
+      }
+    }
+  }
+  return { name: 'C60 フラーレン', nodes: normalize(pts), edges: byLength(pts) };
+}
+function torus() {
+  const A = 32, B = 11, R = 0.72, r = 0.28, nodes = [], edges = [];
+  for (let i = 0; i < A; i++) for (let j = 0; j < B; j++) {
+    const a = (i / A) * Math.PI * 2, b = (j / B) * Math.PI * 2;
+    nodes.push([(R + r * Math.cos(b)) * Math.cos(a), r * Math.sin(b), (R + r * Math.cos(b)) * Math.sin(a)]);
+    edges.push([i * B + j, ((i + 1) % A) * B + j], [i * B + j, i * B + ((j + 1) % B)]);
+  }
+  return { name: 'トーラス', nodes, edges };
+}
+function hypercube() {
+  const f = (1 + Math.sqrt(5)) / 2;
+  const axes = [[0, 1, f], [0, 1, -f], [1, f, 0], [1, -f, 0], [f, 0, 1], [-f, 0, 1]].map((v) => v.map((x) => x / Math.hypot(...v)));
+  const nodes = [], edges = [];
+  for (let m = 0; m < 64; m++) {
+    const p = [0, 0, 0];
+    axes.forEach((ax, k) => { const s = m & (1 << k) ? 1 : -1; for (let d = 0; d < 3; d++) p[d] += s * ax[d]; });
+    nodes.push(p);
+    for (let k = 0; k < 6; k++) if (!(m & (1 << k))) edges.push([m, m | (1 << k)]);
+  }
+  return { name: '6次元超立方体', nodes: normalize(nodes), edges };
+}
+function geodesic() {
+  const f = (1 + Math.sqrt(5)) / 2;
+  let V = [[-1, f, 0], [1, f, 0], [-1, -f, 0], [1, -f, 0], [0, -1, f], [0, 1, f], [0, -1, -f], [0, 1, -f], [f, 0, -1], [f, 0, 1], [-f, 0, -1], [-f, 0, 1]].map((v) => v.map((x) => x / Math.hypot(...v)));
+  let F = [[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11], [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+    [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9], [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]];
+  for (let s = 0; s < 2; s++) {
+    const cache = new Map(), NF = [];
+    const mid = (a, b) => {
+      const key = a < b ? `${a},${b}` : `${b},${a}`;
+      if (cache.has(key)) return cache.get(key);
+      const p = V[a].map((x, i) => x + V[b][i]), l = Math.hypot(...p);
+      V.push(p.map((x) => x / l));
+      cache.set(key, V.length - 1);
+      return V.length - 1;
+    };
+    for (const [a, b, c] of F) { const ab = mid(a, b), bc = mid(b, c), ca = mid(c, a); NF.push([a, ab, ca], [b, bc, ab], [c, ca, bc], [ab, bc, ca]); }
+    F = NF;
+  }
+  const has = new Set(), edges = [];
+  for (const [a, b, c] of F) for (const [x, y] of [[a, b], [b, c], [c, a]]) {
+    const key = x < y ? `${x},${y}` : `${y},${x}`;
+    if (!has.has(key)) { has.add(key); edges.push([x, y]); }
+  }
+  return { name: 'ジオデシック球', nodes: V, edges };
+}
+const Shapes = makeCascade({
+  hint: 'クリックした点から光が伝わります。形は16秒ごとに変わります',
+  credit: (s) => `<b>${s ? s.name : ''}</b>`,
+  size: 0.72,
+  pace: 1.6,
+  shapes() { return [fullerene(), torus(), hypercube(), geodesic()]; },
+});
+
+/* ---------- 共通の枠組み ---------- */
+const modules = { rail: Rail, bridges: Bridges, globe: Globe, shapes: Shapes };
+const order = ['rail', 'bridges', 'globe', 'shapes'];
+let cur = null, curId = 'rail';
+let running = true, visible = true, last = 0;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function sizeCanvas() {
+  const r = stage.getBoundingClientRect();
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = Math.max(1, Math.round(r.width));
+  H = Math.max(1, Math.round(r.height));
+  cv.width = W * DPR; cv.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+function select(id) {
+  curId = id;
+  cur = modules[id];
+  cur.init();
+  if (!running) cur.settle();
+  cur.draw();
+  hintEl.textContent = cur.hint;
+  creditEl.innerHTML = cur.credit;
+  document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.id === id)));
+  try { localStorage.setItem('top-topology', id); } catch (e) { /* 保存できなくても動く */ }
+}
+function setRunning(on) { running = on; playBtn.textContent = on ? '一時停止' : '再生'; last = performance.now(); }
+function loop(ts) {
+  requestAnimationFrame(loop);
+  const dt = Math.min(0.05, (ts - last) / 1000 || 0.016);
+  last = ts;
+  if (!running || !visible || !cur) return;
+  cur.update(dt);
+  cur.draw();
+}
+const local = (e) => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+cv.addEventListener('pointermove', (e) => { cur.pointer('move', ...local(e)); if (!running) cur.draw(); });
+cv.addEventListener('pointerleave', (e) => { cur.pointer('leave', ...local(e)); if (!running) cur.draw(); });
+cv.addEventListener('pointerdown', (e) => { cur.pointer('down', ...local(e)); if (!running) { cur.settle(); cur.draw(); } });
+document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => select(t.dataset.id)));
+document.querySelector('.tabs').addEventListener('keydown', (e) => {
+  const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+  if (!d) return;
+  const next = order[(order.indexOf(curId) + d + order.length) % order.length];
+  select(next);
+  document.getElementById('tab-' + next).focus();
+});
+playBtn.addEventListener('click', () => setRunning(!running));
+bareBtn.addEventListener('click', () => {
+  const on = stage.classList.toggle('bare');
+  bareBtn.setAttribute('aria-pressed', String(on));
+  bareBtn.textContent = on ? '文字を表示' : '文字を隠す';
+});
+new ResizeObserver(() => {
+  const pw = W, ph = H;
+  sizeCanvas();
+  if (cur && (pw !== W || ph !== H)) { cur.resize(); cur.draw(); }
+}).observe(stage);
+new IntersectionObserver((es) => { visible = es[0].isIntersecting; }).observe(stage);
+document.addEventListener('visibilitychange', () => { visible = !document.hidden; last = performance.now(); });
+function onTheme() { readColors(); if (cur) cur.draw(); }
+matchMedia('(prefers-color-scheme: light)').addEventListener('change', onTheme);
+new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+readColors();
+sizeCanvas();
+let initial = 'rail';
+try { const s = localStorage.getItem('top-topology'); if (s && modules[s]) initial = s; } catch (e) { /* なし */ }
+setRunning(!reduceMotion);
+select(initial);
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
