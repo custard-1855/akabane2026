@@ -1,7 +1,7 @@
 # 研究室サイト
 
 公開するのは `index.html`(トップのヒーロー)。`prototypes/` は検討の記録で、ビルドと公開の対象外(凍結)。
-経緯は `docs/lab_site_top_concepts.md`。
+経緯は `docs/lab_site_top_concepts.md`、実装方針は `docs/implementation_policy.md`。
 
 ## 構成
 
