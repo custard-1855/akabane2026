@@ -20,6 +20,8 @@
   --c3: #4fd1a5;
   --c4: #f46b8a;
   --c5: #b28dff;
+  --c6: #4cc9e0;
+  --c7: #e6cf5c;
   --scrim: rgba(10, 16, 32, 0.74);
   --font-display: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -28,14 +30,14 @@
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
     --bg: #f3f5f9; --ink: #121a2b; --muted: #5a667c; --line: #d5dbe5; --edge: #bcc6d6;
-    --accent: #1d6fd6; --accent2: #c7770c; --c3: #1f9e74; --c4: #d6456a; --c5: #7d55d9;
+    --accent: #1d6fd6; --accent2: #c7770c; --c3: #1f9e74; --c4: #d6456a; --c5: #7d55d9; --c6: #0f8ba0; --c7: #a8860a;
     --scrim: rgba(243, 245, 249, 0.82);
     color-scheme: light;
   }
 }
 :root[data-theme="light"] {
   --bg: #f3f5f9; --ink: #121a2b; --muted: #5a667c; --line: #d5dbe5; --edge: #bcc6d6;
-  --accent: #1d6fd6; --accent2: #c7770c; --c3: #1f9e74; --c4: #d6456a; --c5: #7d55d9;
+  --accent: #1d6fd6; --accent2: #c7770c; --c3: #1f9e74; --c4: #d6456a; --c5: #7d55d9; --c6: #0f8ba0; --c7: #a8860a;
   --scrim: rgba(243, 245, 249, 0.82);
   color-scheme: light;
 }
@@ -153,9 +155,9 @@ function readColors() {
   const cs = getComputedStyle(document.documentElement);
   const g = (n) => hexRgb(cs.getPropertyValue(n));
   C = { bg: g('--bg'), ink: g('--ink'), muted: g('--muted'), edge: g('--edge'), accent: g('--accent') };
-  C.pal = ['--accent', '--accent2', '--c3', '--c4', '--c5'].map(g);
+  C.base = { accent: g('--accent'), accent2: g('--accent2'), c3: g('--c3'), c4: g('--c4'), c5: g('--c5'), c6: g('--c6'), c7: g('--c7') };
   C.dark = (C.bg[0] + C.bg[1] + C.bg[2]) / 3 < 128;
-  glowCache.clear();
+  applyScheme();
   bgKey = '';
 }
 
@@ -277,13 +279,25 @@ function geodesic() {
 
 /* ---------- 回転するグラフと、その上を伝わる信号 ---------- */
 const BASE_TILT = 0.25;
-// 幅優先探索の距離に応じた色(青 → 緑 → 紫 → 赤 → 橙)
-const RAMP = [0, 2, 4, 3, 1];
+/* 色: 基本は2色。常時の信号は青、クリックで起こした処理は橙(先頭ほど明るい)。
+   塗り分けの処理を入れるときは cat の色(最大7色)を使う */
+const PAL = {
+  AMB: 0,
+  ramp: (t) => 1 + Math.min(2, Math.floor(t * 3)),
+  cat: (k) => 5 + (k % 7),
+  BAD: 12,
+};
+function applyScheme() {
+  const b = C.base;
+  C.pal = [b.accent, b.accent2, mix(b.accent2, C.bg, 0.3), mix(b.accent2, C.bg, 0.5), mix(b.accent, C.bg, 0.4),
+    b.accent, b.accent2, b.c3, b.c4, b.c5, b.c6, b.c7, C.ink];
+  glowCache.clear();
+}
 const Scene = {
   init() {
     this.list = [fullerene(), torus(), hypercube(), geodesic()];
     Object.assign(this, {
-      si: 0, rot: 0, tilt: BASE_TILT, vRot: 0, vTilt: 0, cid: 0, hue: 0, shapeT: 0, fade: 1,
+      si: 0, rot: 0, tilt: BASE_TILT, vRot: 0, vTilt: 0, cid: 0, shapeT: 0, fade: 1,
       dragging: false, idle: 99, hover: -1, hoverA: 0, ptr: { x: 0, y: 0, inside: false, mouse: false },
     });
     this.load(this.list[0]);
@@ -306,7 +320,7 @@ const Scene = {
   pulse(a, b, ci, ttl, id) { return { a, b, t: 0, dur: 0.3 + this.len.get(a * this.n + b) * CFG.pace, ci, ttl, id }; },
   // 環境の信号: ランダムに枝分かれしながら伝わる
   emit(i) {
-    const ci = this.hue++ % 5, id = ++this.cid;
+    const ci = PAL.AMB, id = ++this.cid;
     Object.assign(this.nodes[i], { ci, heat: 1, flash: 1.4, last: id });
     for (const j of this.nbrs[i]) this.pulses.push(this.pulse(i, j, ci, CFG.ttl, id));
   },
@@ -325,7 +339,7 @@ const Scene = {
     if (this.waves.length > 2) this.waves.shift();
     return wave;
   },
-  levelColor(w, d) { return RAMP[Math.min(4, Math.floor((d / (w.maxD + 1)) * 5))]; },
+  levelColor(w, d) { return PAL.ramp(d / (w.maxD + 1)); },
   update(dt) {
     this.idle += dt;
     if (!this.dragging) {
@@ -445,7 +459,7 @@ const Scene = {
     for (const w of this.waves) {
       const lv = w.t / CFG.bfsStep;
       const out = clamp((w.end - w.t) / 0.8, 0, 1) * a0;
-      const paths = Array.from({ length: 5 }, () => new Path2D());
+      const paths = C.pal.map(() => new Path2D());
       for (let v = 0; v < this.n; v++) {
         const d = w.dist[v];
         if (d < 0 || lv < d - 1) continue;
@@ -461,11 +475,11 @@ const Scene = {
       }
       ctx.lineWidth = 2;
       paths.forEach((pa, ci) => { ctx.strokeStyle = rgba(C.pal[ci], 0.75 * out); ctx.stroke(pa); });
-      if (lv < 1.5) glow(RAMP[0], Q[w.src].x, Q[w.src].y, 46 * Q[w.src].k, (1 - lv / 1.5) * out);
+      if (lv < 1.5) glow(PAL.ramp(0), Q[w.src].x, Q[w.src].y, 46 * Q[w.src].k, (1 - lv / 1.5) * out);
     }
 
     // 環境の信号: 尾は色ごとにまとめて描く
-    const tails = Array.from({ length: 5 }, () => new Path2D());
+    const tails = C.pal.map(() => new Path2D());
     const heads = [];
     for (const q of this.pulses) {
       const t = Math.min(1, q.t / q.dur), t0 = Math.max(0, t - CFG.tail);
