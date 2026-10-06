@@ -122,6 +122,13 @@ test.describe("テーマ", () => {
 });
 
 test.describe("検証用の図形切り替え", () => {
+  test("公開版では、URL に ?dev を付けたときだけ出す", async ({ hero, page }) => {
+    await hero.open({ path: "./" });
+    await expect(page.locator("#dev")).toHaveCount(0);
+    await page.goto("./?dev");
+    await expect(page.locator("#dev button")).toHaveCount(5);
+  });
+
   test("自動と4つの形のボタンがあり、押した1つだけが押された状態になる", async ({ hero, page }) => {
     await hero.open();
     const btns = page.locator("#dev button");

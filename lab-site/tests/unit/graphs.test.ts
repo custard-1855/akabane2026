@@ -84,7 +84,7 @@ test("ジオデシック球: 正二十面体を2回分割し、162頂点・480�
 });
 
 test("形の並びと、形ごとに割り当てた処理(検討メモ 9章)", () => {
-  expect(hero.Scene.list.map((s: any) => [s.name, s.algo])).toEqual([
+  expect(hero.showcase().map((s: any) => [s.name, s.algo])).toEqual([
     ["C60 フラーレン", "edges"],
     ["トーラス", "bfs"],
     ["6次元超立方体", "bipartite"],
