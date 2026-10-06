@@ -69,13 +69,15 @@ export function loadHero({ seed = 1 }: { seed?: number } = {}) {
     throw new Error("スクリプトが即時関数の形になっていない");
   }
   const source =
-    body.slice("(() => {".length, -"})();".length) + `\nglobalThis.__hero = { ${EXPORTS.join(", ")} };`;
+    body.slice("(() => {".length, -"})();".length) +
+    `\nglobalThis.__hero = { ${EXPORTS.join(", ")} };`;
 
   const element = () => {
     const el = blackhole();
     return new Proxy(el, {
       get: (t, key) => {
-        if (key === "getBoundingClientRect") return () => ({ left: 0, top: 0, width: 1280, height: 640 });
+        if (key === "getBoundingClientRect")
+          return () => ({ left: 0, top: 0, width: 1280, height: 640 });
         if (key === "textContent") return "";
         return t[key as any];
       },
@@ -98,10 +100,19 @@ export function loadHero({ seed = 1 }: { seed?: number } = {}) {
     localStorage: { getItem: () => null, setItem: () => {} },
     requestAnimationFrame: () => 0,
     performance: { now: () => 0 },
-    ResizeObserver: class { observe() {} },
-    IntersectionObserver: class { observe() {} },
-    MutationObserver: class { observe() {} },
-    Path2D: class { moveTo() {} lineTo() {} },
+    ResizeObserver: class {
+      observe() {}
+    },
+    IntersectionObserver: class {
+      observe() {}
+    },
+    MutationObserver: class {
+      observe() {}
+    },
+    Path2D: class {
+      moveTo() {}
+      lineTo() {}
+    },
     devicePixelRatio: 1,
   };
   context.window = context;

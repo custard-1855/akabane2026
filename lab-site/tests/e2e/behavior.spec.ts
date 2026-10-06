@@ -35,7 +35,9 @@ test.describe("クリック", () => {
     ["ジオデシック球", "3色の塗り分け"],
   ];
   for (const [shape, algo] of ASSIGNED) {
-    test(`${shape}: 頂点をクリックすると「${algo}」を実行し、名前を出して、終わると消す`, async ({ hero }) => {
+    test(`${shape}: 頂点をクリックすると「${algo}」を実行し、名前を出して、終わると消す`, async ({
+      hero,
+    }) => {
       await hero.open();
       await hero.devButton(shape).click();
       expect(await hero.algoName()).toBe("");
@@ -70,7 +72,10 @@ test.describe("クリック", () => {
 });
 
 test.describe("テーマ", () => {
-  test("ボタンで 自動 → ライト → ダーク → 自動 と切り替わり、data-theme に反映される", async ({ hero, page }) => {
+  test("ボタンで 自動 → ライト → ダーク → 自動 と切り替わり、data-theme に反映される", async ({
+    hero,
+    page,
+  }) => {
     await hero.open();
     const btn = page.locator("#theme-btn");
     const theme = () => page.evaluate(() => document.documentElement.getAttribute("data-theme"));
@@ -92,12 +97,17 @@ test.describe("テーマ", () => {
     await page.locator("#theme-btn").click();
     await page.reload();
     await expect(page.locator("#theme-btn")).toHaveText("テーマ: ライト");
-    expect(await page.evaluate(() => document.documentElement.getAttribute("data-theme"))).toBe("light");
+    expect(await page.evaluate(() => document.documentElement.getAttribute("data-theme"))).toBe(
+      "light",
+    );
   });
 
   test("ボタンに今のテーマを含む読み上げ用の名前が付く", async ({ hero, page }) => {
     await hero.open();
-    await expect(page.locator("#theme-btn")).toHaveAttribute("aria-label", "テーマを切り替える(いまは自動)");
+    await expect(page.locator("#theme-btn")).toHaveAttribute(
+      "aria-label",
+      "テーマを切り替える(いまは自動)",
+    );
   });
 
   test("テーマを切り替えると canvas の色も変わる", async ({ hero, page }) => {
@@ -115,7 +125,13 @@ test.describe("検証用の図形切り替え", () => {
   test("自動と4つの形のボタンがあり、押した1つだけが押された状態になる", async ({ hero, page }) => {
     await hero.open();
     const btns = page.locator("#dev button");
-    await expect(btns).toHaveText(["自動", "C60 フラーレン", "トーラス", "6次元超立方体", "ジオデシック球"]);
+    await expect(btns).toHaveText([
+      "自動",
+      "C60 フラーレン",
+      "トーラス",
+      "6次元超立方体",
+      "ジオデシック球",
+    ]);
     await expect(btns.first()).toHaveAttribute("aria-pressed", "true");
     await hero.devButton("トーラス").click();
     expect(await btns.evaluateAll((l) => l.map((b) => b.getAttribute("aria-pressed")))).toEqual([
@@ -175,7 +191,9 @@ test.describe("レイアウト", () => {
     test(`${viewport.width}×${viewport.height}: 横にはみ出さない`, async ({ hero, page }) => {
       await page.setViewportSize(viewport);
       await hero.open();
-      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - window.innerWidth,
+      );
       expect(overflow).toBeLessThanOrEqual(0);
     });
   }

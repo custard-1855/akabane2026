@@ -9,6 +9,8 @@
 npm install
 npm run dev        # 開発サーバー
 npm run build      # dist/ に公開用のファイルを出力
+npm run check      # 整形・ESLint・型チェック・処理のテストをまとめて確認
+npm run format     # Prettier で整形する
 ```
 
 ## テスト

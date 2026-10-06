@@ -14,7 +14,9 @@ class Hero {
     page.on("pageerror", (e) => this.errors.push(e.message));
     page.on("console", (m) => m.type() === "error" && this.errors.push(m.text()));
     // Web フォントは canvas の絵に関係しない。ネットワークに左右されないよう読み込まない
-    await page.route(/fonts\.googleapis\.com/, (r) => r.fulfill({ contentType: "text/css", body: "" }));
+    await page.route(/fonts\.googleapis\.com/, (r) =>
+      r.fulfill({ contentType: "text/css", body: "" }),
+    );
     await page.addInitScript((seed) => {
       let s = seed | 0;
       Math.random = () => {
@@ -69,7 +71,11 @@ class Hero {
       const [r0, g0, b0] = data;
       let count = 0;
       for (let i = 0; i < data.length; i += 4) {
-        if (Math.max(Math.abs(data[i] - r0), Math.abs(data[i + 1] - g0), Math.abs(data[i + 2] - b0)) > 40) count++;
+        if (
+          Math.max(Math.abs(data[i] - r0), Math.abs(data[i + 1] - g0), Math.abs(data[i + 2] - b0)) >
+          40
+        )
+          count++;
       }
       return count;
     });
@@ -92,7 +98,10 @@ class Hero {
     const { width, height } = this.page.viewportSize()!;
     const heroH = Math.min(820, Math.max(440, height * 0.8));
     const wide = width > heroH * 1.3;
-    return this.page.mouse.click(wide ? width * 0.63 : width / 2, wide ? heroH / 2 + 80 : heroH * 0.6);
+    return this.page.mouse.click(
+      wide ? width * 0.63 : width / 2,
+      wide ? heroH / 2 + 80 : heroH * 0.6,
+    );
   }
 }
 
