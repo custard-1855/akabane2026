@@ -84,6 +84,45 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-display
 .tagline span { white-space: nowrap; }
 .themes { margin: 0; font-size: clamp(14px, 1.5vw, 16px); color: var(--muted); letter-spacing: .06em; }
 #algo-name:not(:empty)::before { content: ' · '; }
+.theme-btn {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  right: clamp(16px, 3vw, 28px);
+  z-index: 2;
+  font: inherit;
+  font-size: 12px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+.theme-btn:hover { color: var(--ink); border-color: var(--muted); }
+.theme-btn:focus-visible, .dev button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* 検証用の図形切り替え(公開時は .dev ごと外す) */
+.dev {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 12px clamp(16px, 6vw, 80px);
+  border-top: 1px dashed var(--line);
+  font-size: 13px;
+  color: var(--muted);
+}
+.dev .tag { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; }
+.dev button {
+  font: inherit;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 11px;
+  cursor: pointer;
+}
+.dev button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.dev button:hover { border-color: var(--muted); }
 .shape-name {
   position: absolute;
   right: clamp(16px, 3vw, 28px);
@@ -104,6 +143,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-display
 <body>
 
 <header class="hero" id="hero">
+  <button class="theme-btn" id="theme-btn" type="button"></button>
   <canvas id="cv" aria-hidden="true"></canvas>
   <div class="scrim"></div>
   <div class="copy">
@@ -113,6 +153,10 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-display
   </div>
   <p class="shape-name"><span id="shape-name"></span><span id="algo-name"></span></p>
 </header>
+
+<nav class="dev" id="dev" aria-label="検証用の図形切り替え">
+  <span class="tag">検証用 · 図形</span>
+</nav>
 
 <script>
 (() => {
@@ -507,7 +551,7 @@ const Scene = {
       { ...geodesic(), algo: 'three' },      // 3色では塗れず、4色で塗り直す
     ];
     Object.assign(this, {
-      si: 0, rot: 0, tilt: BASE_TILT, vRot: 0, vTilt: 0, cid: 0, shapeT: 0, fade: 1,
+      si: 0, lock: null, rot: 0, tilt: BASE_TILT, vRot: 0, vTilt: 0, cid: 0, shapeT: 0, fade: 1,
       dragging: false, idle: 99, hover: -1, hoverA: 0, ptr: { x: 0, y: 0, inside: false, mouse: false },
     });
     this.load(this.list[0]);
@@ -558,7 +602,7 @@ const Scene = {
     this.timer += dt;
     if (this.timer > CFG.interval) { this.timer = 0; if (!this.waves.length) this.emit((Math.random() * this.n) | 0); }
     // 触っている間と探索の波が出ている間は、形を切り替えない
-    if (!this.dragging && !this.waves.length && this.idle > 4) this.shapeT += dt;
+    if (this.lock === null && !this.dragging && !this.waves.length && this.idle > 4) this.shapeT += dt;
     if (this.shapeT > CFG.hold) {
       this.fade = Math.max(0, this.fade - dt * 1.5);
       if (this.fade === 0) { this.si = (this.si + 1) % this.list.length; this.load(this.list[this.si]); this.shapeT = 0; }
@@ -585,6 +629,15 @@ const Scene = {
     const cool = Math.exp(-dt * 0.15), fl = Math.exp(-dt * 2.4);
     for (const nd of this.nodes) { nd.heat *= cool; nd.flash *= fl; }
     this.hoverA += ((this.hoverOn ? 1 : 0) - this.hoverA) * Math.min(1, dt * 8);
+  },
+  // 検証用: 形を選んで固定する(null で自動の切り替えに戻す)
+  setShape(i) {
+    this.lock = i;
+    if (i === null) { this.shapeT = 0; return; }
+    this.si = i;
+    this.load(this.list[i]);
+    this.shapeT = 0;
+    this.fade = 0;
   },
   // 信号を3秒ぶん進める(形は切り替えない)
   settle() {
@@ -816,9 +869,45 @@ const algoEl = document.getElementById('algo-name');
 const resultEl = { set textContent(v) { /* ヒーローでは結果の文は出さない */ } };
 function nextAlgo() { algo = ALGOS[Scene.shape.algo]; algoEl.textContent = algo.name; }
 
+/* テーマ: 自動(端末の設定に従う)/ ライト / ダーク を手動でも切り替えられる。選択は端末に保存 */
+const themeBtn = document.getElementById('theme-btn');
+const THEMES = [['auto', '自動'], ['light', 'ライト'], ['dark', 'ダーク']];
+let themeIdx = 0;
+function applyTheme(i) {
+  themeIdx = i;
+  const [id, label] = THEMES[i];
+  if (id === 'auto') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', id);
+  themeBtn.textContent = `テーマ: ${label}`;
+  themeBtn.setAttribute('aria-label', `テーマを切り替える(いまは${label})`);
+  try { localStorage.setItem('hero-theme', id); } catch (e) { /* 保存できなくても動く */ }
+}
+themeBtn.addEventListener('click', () => applyTheme((themeIdx + 1) % THEMES.length));
+try {
+  const saved = localStorage.getItem('hero-theme');
+  const i = THEMES.findIndex(([id]) => id === saved);
+  applyTheme(i >= 0 ? i : 0);
+} catch (e) { applyTheme(0); }
+
 readColors();
 sizeCanvas();
 Scene.init();
+
+/* 検証用: 図形の切り替え。「自動」で16秒ごとの切り替えに戻る */
+const devEl = document.getElementById('dev');
+const devBtns = [['自動', null], ...Scene.list.map((sh, i) => [sh.name, i])].map(([label, i]) => {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.textContent = label;
+  b.addEventListener('click', () => {
+    Scene.setShape(i);
+    devBtns.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    Scene.draw();
+  });
+  devEl.appendChild(b);
+  return b;
+});
+devBtns[0].setAttribute('aria-pressed', 'true');
 if (reduceMotion) {
   // 動きを減らす設定では、信号が広がった状態の1枚で止める(ドラッグとクリックには応じる)
   Scene.settle();
