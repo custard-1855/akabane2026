@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>参加証(検証用)</title>
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #fff; color: #111; text-align: center; }
+  main { padding: 24px 16px; }
+  #qr svg { width: min(80vw, 360px); height: auto; }
+  #code { font: 700 56px/1.2 ui-monospace, monospace; letter-spacing: 0.15em; margin: 16px 0; }
+  p { color: #555; font-size: 14px; }
+  button { font-size: 16px; padding: 8px 16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>参加証</h1>
+  <div id="qr"></div>
+  <div id="code"></div>
+  <p>展示用端末のカメラにこのQRを見せてください。<br>読めないときは画面を明るくしてください。</p>
+  <button id="renew" type="button">別のコードにする(検証用)</button>
+</main>
+<script src="vendor/qrcode.js"></script>
+<script>
+// 紛らわしい文字(0/O、1/I/L)を除いた英数字
+const ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+const KEY = "akabane.pass.code";
+
+function randomCode(len = 5) {
+  const buf = crypto.getRandomValues(new Uint32Array(len));
+  return Array.from(buf, (n) => ALPHABET[n % ALPHABET.length]).join("");
+}
+
+function load(key) { try { return localStorage.getItem(key); } catch { return null; } }
+function save(key, v) { try { localStorage.setItem(key, v); } catch {} }
+
+function show(code) {
+  save(KEY, code);
+  if (location.hash.slice(1) !== code) history.replaceState(null, "", "#" + code);
+  const qr = qrcode(0, "M");  // 型番は自動。誤り訂正 M
+  qr.addData(code);
+  qr.make();
+  document.getElementById("qr").innerHTML = qr.createSvgTag({ cellSize: 8, margin: 4, scalable: true });
+  document.getElementById("code").textContent = code;
+}
+
+// 本番は受付が発行したコードを # 以降で受け取る。検証用に、無ければ乱数で作る
+show(location.hash.slice(1).toUpperCase() || load(KEY) || randomCode());
+document.getElementById("renew").onclick = () => show(randomCode());
+window.addEventListener("hashchange", () => show(location.hash.slice(1).toUpperCase()));
+</script>
+</body>
+</html>
