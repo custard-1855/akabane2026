@@ -83,6 +83,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-display
 }
 .tagline span { white-space: nowrap; }
 .themes { margin: 0; font-size: clamp(14px, 1.5vw, 16px); color: var(--muted); letter-spacing: .06em; }
+#algo-name:not(:empty)::before { content: ' · '; }
 .shape-name {
   position: absolute;
   right: clamp(16px, 3vw, 28px);
@@ -110,7 +111,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-display
     <h1 class="tagline"><span>つながりを読み解き、</span><span>学ぶしくみをつくる。</span></h1>
     <p class="themes">グラフ理論 · 機械学習 · ネットワーク</p>
   </div>
-  <p class="shape-name" id="shape-name"></p>
+  <p class="shape-name"><span id="shape-name"></span><span id="algo-name"></span></p>
 </header>
 
 <script>
@@ -279,13 +280,14 @@ function geodesic() {
 
 /* ---------- 回転するグラフと、その上を伝わる信号 ---------- */
 const BASE_TILT = 0.25;
-/* 色: 基本は2色。常時の信号は青、クリックで起こした処理は橙(先頭ほど明るい)。
-   塗り分けの処理を入れるときは cat の色(最大7色)を使う */
+/* ---------- 色 ----------
+   基本は2色: 常時の信号は青、クリックで起こした処理は橙(先頭ほど明るい)。
+   彩色の処理だけ、塗り分けの色(最大7色)を使う */
 const PAL = {
-  AMB: 0,
-  ramp: (t) => 1 + Math.min(2, Math.floor(t * 3)),
-  cat: (k) => 5 + (k % 7),
-  BAD: 12,
+  AMB: 0,                                              // 常時の信号
+  ramp: (t) => 1 + Math.min(2, Math.floor(t * 3)),     // 処理の進み具合 0〜1(橙の濃淡)
+  cat: (k) => 5 + (k % 7),                             // 塗り分けの色番号
+  BAD: 12,                                             // ぶつかった・失敗した印
 };
 function applyScheme() {
   const b = C.base;
@@ -293,6 +295,207 @@ function applyScheme() {
     b.accent, b.accent2, b.c3, b.c4, b.c5, b.c6, b.c7, C.ink];
   glowCache.clear();
 }
+
+/* ---------- クリックで実行する処理 ----------
+   run() は実際にその処理を実行し、起きた順に出来事の列を返す。
+   { e: 1, a, b, t, dur, c, fade?, w?, key? } … 辺 a→b を時刻 t から dur 秒で伸ばす。
+       fade があれば残光として消える。key が同じ後の出来事で上書きされ、c = -1 なら消える
+   { e: 0, v, t, c, big? }                    … 頂点 v に色 c を付ける(c = -1 で色を外す) */
+const edgeEv = (a, b, t, dur, c, fade, w, key) => ({ e: 1, a, b, t, dur, c, fade, w, key });
+const nodeEv = (v, t, c, big) => ({ e: 0, v, t, c, big });
+function bfsTree(G, src) {
+  const dist = new Int16Array(G.n).fill(-1), par = new Int32Array(G.n).fill(-1), order = [src];
+  dist[src] = 0;
+  for (let h = 0; h < order.length; h++) {
+    const u = order[h];
+    for (const v of G.nbrs[u]) if (dist[v] < 0) { dist[v] = dist[u] + 1; par[v] = u; order.push(v); }
+  }
+  return { dist, par, order, maxD: dist[order[order.length - 1]] };
+}
+// 1手 = 1単位で作った出来事の時刻を、全体が total 秒前後に収まるよう伸縮する
+function pace(ev, from, total, min = 0.012, max = 0.09) {
+  const units = Math.max(1, ...ev.map((e) => e.t + (e.dur || 0)));
+  const s = clamp(total / units, min, max);
+  for (const e of ev) { e.t = from + e.t * s; if (e.dur) e.dur *= s; }
+  return from + units * s;
+}
+
+/* k 色での塗り分け: 「まだ選べる色が一番少ない頂点」から順に塗り(DSatur)、
+   どの色も置けなければ1つ前に戻って別の色を試す(バックトラック) */
+function kColoring(G, src, k, limit) {
+  const col = new Int8Array(G.n).fill(-1), stack = [], ev = [];
+  let t = 0, tries = 0, backs = 0;
+  const pick = () => {
+    let best = -1, bs = -1, bd = -1;
+    for (let v = 0; v < G.n; v++) {
+      if (col[v] >= 0) continue;
+      const sat = new Set();
+      let deg = 0;
+      for (const u of G.nbrs[v]) { if (col[u] >= 0) sat.add(col[u]); else deg++; }
+      if (sat.size > bs || (sat.size === bs && deg > bd)) { bs = sat.size; bd = deg; best = v; }
+    }
+    return best;
+  };
+  let v = src, c0 = 0;
+  for (;;) {
+    if (tries > limit) return { ok: false, cut: true, ev, tries, backs };
+    let placed = false;
+    for (let c = c0; c < k; c++) {
+      tries++;
+      const bad = G.nbrs[v].find((u) => col[u] === c);
+      if (bad === undefined) {
+        col[v] = c; stack.push([v, c]); ev.push(nodeEv(v, t, PAL.cat(c), true)); t += 1; placed = true; break;
+      }
+      ev.push(edgeEv(v, bad, t, 0.5, PAL.BAD, 0.35)); t += 0.5;
+    }
+    if (placed) {
+      if (stack.length === G.n) return { ok: true, ev, tries, backs };
+      v = pick(); c0 = 0;
+    } else {
+      if (!stack.length) return { ok: false, ev, tries, backs };
+      backs++;
+      const [pv, pc] = stack.pop();
+      col[pv] = -1; ev.push(nodeEv(pv, t, -1)); t += 0.5;
+      v = pv; c0 = pc + 1;
+    }
+  }
+}
+/* 辺の塗り分け: 1つの頂点に集まる辺がすべて違う色になるように塗る(制約の多い辺から、バックトラックつき) */
+function edgeColoring(G, k, limit) {
+  const m = G.shape.edges.length, col = new Int8Array(m).fill(-1), stack = [], ev = [];
+  const inc = Array.from({ length: G.n }, () => []);
+  G.shape.edges.forEach(([a, b], e) => { inc[a].push(e); inc[b].push(e); });
+  const adj = G.shape.edges.map(([a, b], e) => [...inc[a], ...inc[b]].filter((f) => f !== e));
+  const pick = () => {
+    let best = -1, bs = -1;
+    for (let e = 0; e < m; e++) {
+      if (col[e] >= 0) continue;
+      const sat = new Set(adj[e].map((f) => col[f]).filter((c) => c >= 0)).size;
+      if (sat > bs) { bs = sat; best = e; }
+    }
+    return best;
+  };
+  let e = (Math.random() * m) | 0, c0 = 0, t = 0, tries = 0;
+  for (;;) {
+    if (tries > limit) return { ok: false, cut: true, ev };
+    let placed = false;
+    const [a, b] = G.shape.edges[e];
+    for (let c = c0; c < k; c++) {
+      tries++;
+      const bad = adj[e].find((f) => col[f] === c);
+      if (bad === undefined) {
+        col[e] = c; stack.push([e, c]);
+        ev.push({ ...edgeEv(a, b, t, 1, PAL.cat(c), 0, 2.6, 'e' + e), alpha: 0.42 }); t += 1; placed = true; break;
+      }
+      const [x, y] = G.shape.edges[bad];
+      ev.push(edgeEv(x, y, t, 0.5, PAL.BAD, 0.35)); t += 0.5;
+    }
+    if (placed) {
+      if (stack.length === m) return { ok: true, ev };
+      e = pick(); c0 = 0;
+    } else {
+      if (!stack.length) return { ok: false, ev };
+      const [pe, pc] = stack.pop();
+      col[pe] = -1;
+      const [x, y] = G.shape.edges[pe];
+      ev.push(edgeEv(x, y, t, 0.5, -1, 0, 2.6, 'e' + pe)); t += 0.5;
+      e = pe; c0 = pc + 1;
+    }
+  }
+}
+
+const ALGOS = {
+  bfs: {
+    group: 'explore', name: '幅優先探索',
+    note: '近い順に1ホップずつ、波のように全体へ広がる',
+    run(G, src) {
+      const { dist, par, order, maxD } = bfsTree(G, src), s = CFG.bfsStep, ev = [nodeEv(src, 0, PAL.ramp(0))];
+      for (const v of order.slice(1)) {
+        const d = dist[v], c = PAL.ramp(d / (maxD + 1));
+        ev.push(edgeEv(par[v], v, (d - 1) * s, s, c), nodeEv(v, d * s, c));
+      }
+      return { ev };
+    },
+  },
+  greedy: {
+    group: 'color', name: '貪欲彩色',
+    note: '近い順に、隣と違う色のうち一番若い色で塗る。速いが、必要以上の色を使うことがある',
+    run(G, src) {
+      const { order } = bfsTree(G, src), s = Math.min(0.1, 4 / G.n), col = new Int8Array(G.n).fill(-1), ev = [];
+      let used = 0;
+      order.forEach((v, i) => {
+        const taken = new Set(G.nbrs[v].map((u) => col[u]));
+        let c = 0;
+        while (taken.has(c)) c++;
+        col[v] = c; used = Math.max(used, c + 1);
+        ev.push(nodeEv(v, i * s, PAL.cat(c), true));
+      });
+      return { ev, result: `${used}色を使った` };
+    },
+  },
+  three: {
+    group: 'color', name: '3色の塗り分け',
+    note: '隣どうしが同じ色にならないよう、3色だけで塗れるかを試す。行き詰まったら戻って塗り直す(白い線はぶつかった所)。3色で無理なら4色で塗る',
+    run(G, src) {
+      const r3 = kColoring(G, src, 3, 4000);
+      const ev = r3.ev;
+      let t = pace(ev, 0, 5);
+      if (r3.ok) {
+        const used = new Set(ev.filter((e) => e.e === 0 && e.c >= 0).map((e) => e.c)).size;
+        return { ev, result: used < 3 ? `${used}色で塗れた(3色も要らなかった)` : '3色で塗れた' };
+      }
+      // 3色では塗れないと分かったら、少し間を置いて4色で塗り直す
+      t += 0.8;
+      for (let v = 0; v < G.n; v++) ev.push(nodeEv(v, t, -1));
+      let r4 = kColoring(G, src, 4, 6000);
+      for (let i = 0; i < 3 && !r4.ok; i++) r4 = kColoring(G, (Math.random() * G.n) | 0, 4, 6000);
+      pace(r4.ev, t + 0.2, 3);
+      return { ev: ev.concat(r4.ev), result: r3.cut ? '3色では途中で打ち切り → 4色で塗った' : '3色では塗れない → 4色で塗った' };
+    },
+  },
+  bipartite: {
+    group: 'color', name: '2色の塗り分け',
+    note: '近い順に2色を交互に塗る(二部グラフの判定)。同じ色どうしがつながったら、その原因の奇数の輪を示して止まる',
+    run(G, src) {
+      const s = Math.min(0.12, 4 / G.n), col = new Int8Array(G.n).fill(-1), par = new Int32Array(G.n).fill(-1), queue = [src], ev = [];
+      col[src] = 0;
+      ev.push(nodeEv(src, 0, PAL.cat(0), true));
+      let t = 0;
+      for (let h = 0; h < queue.length; h++) {
+        const u = queue[h];
+        for (const w of G.nbrs[u]) {
+          if (col[w] < 0) {
+            col[w] = 1 - col[u]; par[w] = u; queue.push(w);
+            t += s; ev.push(nodeEv(w, t, PAL.cat(col[w]), true));
+          } else if (col[w] === col[u]) {
+            // u と w の共通の祖先までをたどると、奇数の長さの輪になる
+            const up = (x) => { const p = []; for (; x >= 0; x = par[x]) p.push(x); return p; };
+            const pu = up(u), pw = up(w), inW = new Set(pw);
+            const lca = pu.find((x) => inW.has(x));
+            const cyc = [...pu.slice(0, pu.indexOf(lca) + 1), ...pw.slice(0, pw.indexOf(lca)).reverse(), u];
+            t += 0.4;
+            for (let i = 0; i + 1 < cyc.length; i++) ev.push(edgeEv(cyc[i], cyc[i + 1], t + i * 0.08, 0.08, PAL.BAD, 0, 3.2));
+            return { ev, result: `${cyc.length - 1}本の辺の輪があるので2色では塗れない` };
+          }
+        }
+      }
+      return { ev, result: '2色で塗れた(二部グラフ)' };
+    },
+  },
+  edges: {
+    group: 'color', name: '辺の塗り分け',
+    note: '1つの点に集まる辺がすべて違う色になるよう、辺を塗る。集まる辺の最大本数と同じ色数で塗れるかを試す',
+    run(G) {
+      const D = Math.max(...G.nbrs.map((l) => l.length));
+      let r = edgeColoring(G, D, 4000), k = D;
+      if (!r.ok) { r = edgeColoring(G, D + 1, 20000); k = D + 1; }
+      pace(r.ev, 0, 6, 0.008, 0.06);
+      return { ev: r.ev, result: `${k}色で塗れた(1点に集まる辺は最大${D}本)` };
+    },
+  },
+};
+let algo = ALGOS.bfs;
+
 const Scene = {
   init() {
     this.list = [fullerene(), torus(), hypercube(), geodesic()];
@@ -324,22 +527,16 @@ const Scene = {
     Object.assign(this.nodes[i], { ci, heat: 1, flash: 1.4, last: id });
     for (const j of this.nbrs[i]) this.pulses.push(this.pulse(i, j, ci, CFG.ttl, id));
   },
-  // クリック: 幅優先探索を実際に実行し、距離の順に波として見せる
-  bfs(src) {
-    const n = this.n, dist = new Int16Array(n).fill(-1), par = new Int32Array(n).fill(-1);
-    const queue = [src];
-    dist[src] = 0;
-    for (let h = 0; h < queue.length; h++) {
-      const u = queue[h];
-      for (const v of this.nbrs[u]) if (dist[v] < 0) { dist[v] = dist[u] + 1; par[v] = u; queue.push(v); }
-    }
-    const maxD = dist[queue[queue.length - 1]];
-    const wave = { src, dist, par, maxD, t: 0, end: (maxD + 1) * CFG.bfsStep + 3 };
-    this.waves.push(wave);
-    if (this.waves.length > 2) this.waves.shift();
+  // クリック: 選んだ処理を実際に実行し、出来事の列を起きた順に再生する
+  start(src) {
+    const { ev, result } = algo.run(this, src);
+    const events = ev.sort((x, y) => x.t - y.t);
+    const last = Math.max(...events.map((e) => e.t + (e.dur || 0)));
+    const wave = { src, events, last, t: 0, end: last + 3, c0: events[0] ? Math.max(0, events[0].c) : 1 };
+    this.waves = [wave];
+    resultEl.textContent = result ? `結果: ${result}` : '';
     return wave;
   },
-  levelColor(w, d) { return PAL.ramp(d / (w.maxD + 1)); },
   update(dt) {
     this.idle += dt;
     if (!this.dragging) {
@@ -363,6 +560,7 @@ const Scene = {
     }
     for (const w of this.waves) w.t += dt;
     this.waves = this.waves.filter((w) => w.t < w.end);
+    if (!this.waves.length && algoEl.textContent) algoEl.textContent = '';
     const next = [];
     for (const q of this.pulses) {
       q.t += dt;
@@ -395,8 +593,9 @@ const Scene = {
     this.idle = 0;
     const i = this.nearest(x, y, 80);
     if (i < 0) return;
-    const w = this.bfs(i);
-    if (reduceMotion) w.t = (w.maxD + 1) * CFG.bfsStep;
+    nextAlgo();
+    const w = this.start(i);
+    if (reduceMotion) w.t = w.last;
   },
   draw() {
     const wide = W > H * 1.3;
@@ -454,28 +653,49 @@ const Scene = {
 
     ctx.globalCompositeOperation = C.dark ? 'lighter' : 'source-over';
     ctx.lineCap = 'round';
-    // 探索の波: 探索木の辺を、距離 d の頂点に届く時刻 d × bfsStep に合わせて伸ばす
-    const waveCol = new Int8Array(this.n).fill(-1), waveA = new Float32Array(this.n);
+    // クリックした処理: 出来事を時刻順にたどり、済んだ分だけ描く
+    const waveCol = new Int8Array(this.n).fill(-1), waveA = new Float32Array(this.n), waveBig = new Uint8Array(this.n);
     for (const w of this.waves) {
-      const lv = w.t / CFG.bfsStep;
-      const out = clamp((w.end - w.t) / 0.8, 0, 1) * a0;
-      const paths = C.pal.map(() => new Path2D());
-      for (let v = 0; v < this.n; v++) {
-        const d = w.dist[v];
-        if (d < 0 || lv < d - 1) continue;
-        const ci = this.levelColor(w, d);
-        if (lv >= d) { waveCol[v] = ci; waveA[v] = out; }
-        if (d === 0) continue;
-        const p = w.par[v], f = Math.min(1, lv - (d - 1));
-        const hx = Q[p].x + (Q[v].x - Q[p].x) * f, hy = Q[p].y + (Q[v].y - Q[p].y) * f;
-        paths[ci].moveTo(Q[p].x, Q[p].y);
-        paths[ci].lineTo(hx, hy);
-        if (f < 1) glow(ci, hx, hy, 8 * Q[v].k, 0.9 * out);
-        else if (lv - d < 1.2) glow(ci, Q[v].x, Q[v].y, (10 + 14 * (1 - (lv - d) / 1.2)) * Q[v].k, (1 - (lv - d) / 1.2) * out);
+      const tt = w.t, out = clamp((w.end - tt) / 0.8, 0, 1) * a0;
+      const kept = new Map();   // 残る辺(同じ key は後の出来事で上書き)
+      let idx = 0;
+      for (const ev of w.events) {
+        if (tt < ev.t) break;
+        if (ev.e) {
+          if (ev.fade) {
+            const al = Math.exp(-Math.max(0, tt - ev.t - ev.dur) / ev.fade) * out;
+            if (al < 0.02) continue;
+            const A = Q[ev.a], B = Q[ev.b], f = Math.min(1, (tt - ev.t) / ev.dur);
+            ctx.strokeStyle = rgba(C.pal[ev.c], 0.85 * al);
+            ctx.lineWidth = ev.w || 2;
+            ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(A.x + (B.x - A.x) * f, A.y + (B.y - A.y) * f); ctx.stroke();
+          } else {
+            const key = ev.key || 'i' + idx++;
+            if (ev.c < 0) kept.delete(key); else kept.set(key, ev);
+          }
+        } else {
+          waveCol[ev.v] = ev.c; waveA[ev.v] = out; waveBig[ev.v] = ev.big ? 1 : 0;
+          const age = tt - ev.t;
+          if (ev.c >= 0 && age < 0.6) glow(ev.c, Q[ev.v].x, Q[ev.v].y, (10 + 14 * (1 - age / 0.6)) * Q[ev.v].k, (1 - age / 0.6) * out);
+        }
       }
-      ctx.lineWidth = 2;
-      paths.forEach((pa, ci) => { ctx.strokeStyle = rgba(C.pal[ci], 0.75 * out); ctx.stroke(pa); });
-      if (lv < 1.5) glow(PAL.ramp(0), Q[w.src].x, Q[w.src].y, 46 * Q[w.src].k, (1 - lv / 1.5) * out);
+      const groups = new Map();
+      for (const ev of kept.values()) {
+        const A = Q[ev.a], B = Q[ev.b], f = Math.min(1, (tt - ev.t) / ev.dur);
+        const hx = A.x + (B.x - A.x) * f, hy = A.y + (B.y - A.y) * f;
+        const g = `${ev.c}|${ev.w || 2}|${ev.alpha || 0.8}`;
+        if (!groups.has(g)) groups.set(g, new Path2D());
+        groups.get(g).moveTo(A.x, A.y);
+        groups.get(g).lineTo(hx, hy);
+        if (f < 1) glow(ev.c, hx, hy, 8 * B.k, 0.9 * out);
+      }
+      for (const [g, pa] of groups) {
+        const [c, lw, al] = g.split('|').map(Number);
+        ctx.strokeStyle = rgba(C.pal[c], al * out);
+        ctx.lineWidth = lw;
+        ctx.stroke(pa);
+      }
+      if (tt < 0.5) glow(w.c0, Q[w.src].x, Q[w.src].y, 46 * Q[w.src].k, (1 - tt / 0.5) * out);
     }
 
     // 環境の信号: 尾は色ごとにまとめて描く
@@ -502,7 +722,7 @@ const Scene = {
       let col = mix(C.muted, C.dark ? mix(C.pal[nd.ci], C.ink, 0.2) : C.pal[nd.ci], nd.heat);
       if (waveCol[i] >= 0) col = mix(col, C.dark ? mix(C.pal[waveCol[i]], C.ink, 0.15) : C.pal[waveCol[i]], waveA[i]);
       ctx.beginPath();
-      ctx.arc(q.x, q.y, (1.5 + 1.8 * q.d) * q.k + (waveCol[i] >= 0 ? waveA[i] : 0), 0, Math.PI * 2);
+      ctx.arc(q.x, q.y, (1.5 + 1.8 * q.d) * q.k + (waveCol[i] >= 0 ? waveA[i] * (waveBig[i] ? 3 : 1) : 0), 0, Math.PI * 2);
       ctx.fillStyle = rgba(col, (0.3 + 0.7 * q.d) * a0);
       ctx.fill();
     }
@@ -583,6 +803,13 @@ document.addEventListener('visibilitychange', () => { visible = !document.hidden
 function onTheme() { readColors(); Scene.draw(); }
 matchMedia('(prefers-color-scheme: light)').addEventListener('change', onTheme);
 new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+// クリックするたびに、処理を順番に切り替える
+const ORDER = ['bfs', 'greedy', 'three', 'bipartite', 'edges'];
+const algoEl = document.getElementById('algo-name');
+let turn = 0;
+const resultEl = { set textContent(v) { /* ヒーローでは結果の文は出さない */ } };
+function nextAlgo() { algo = ALGOS[ORDER[turn++ % ORDER.length]]; algoEl.textContent = algo.name; }
 
 readColors();
 sizeCanvas();

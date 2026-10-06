@@ -415,7 +415,7 @@ function edgeColoring(G, k, limit) {
       const bad = adj[e].find((f) => col[f] === c);
       if (bad === undefined) {
         col[e] = c; stack.push([e, c]);
-        ev.push(edgeEv(a, b, t, 1, PAL.cat(c), 0, 3.2, 'e' + e)); t += 1; placed = true; break;
+        ev.push({ ...edgeEv(a, b, t, 1, PAL.cat(c), 0, 2.6, 'e' + e), alpha: 0.42 }); t += 1; placed = true; break;
       }
       const [x, y] = G.shape.edges[bad];
       ev.push(edgeEv(x, y, t, 0.5, PAL.BAD, 0.35)); t += 0.5;
@@ -428,7 +428,7 @@ function edgeColoring(G, k, limit) {
       const [pe, pc] = stack.pop();
       col[pe] = -1;
       const [x, y] = G.shape.edges[pe];
-      ev.push(edgeEv(x, y, t, 0.5, -1, 0, 3.2, 'e' + pe)); t += 0.5;
+      ev.push(edgeEv(x, y, t, 0.5, -1, 0, 2.6, 'e' + pe)); t += 0.5;
       e = pe; c0 = pc + 1;
     }
   }
@@ -443,78 +443,6 @@ const ALGOS = {
       for (const v of order.slice(1)) {
         const d = dist[v], c = PAL.ramp(d / (maxD + 1));
         ev.push(edgeEv(par[v], v, (d - 1) * s, s, c), nodeEv(v, d * s, c));
-      }
-      return { ev };
-    },
-  },
-  dfs: {
-    group: 'explore', name: '深さ優先探索',
-    note: '行けるところまで1本の線で進み、行き止まりで戻って別の道へ',
-    run(G, src) {
-      const s = Math.min(0.12, 6 / G.n), seen = new Uint8Array(G.n), stack = [[src, 0]], ev = [nodeEv(src, 0, PAL.ramp(0))];
-      seen[src] = 1;
-      let k = 0;
-      while (stack.length) {
-        const top = stack[stack.length - 1], u = top[0];
-        if (top[1] >= G.nbrs[u].length) { stack.pop(); continue; }
-        const v = G.nbrs[u][top[1]++];
-        if (seen[v]) continue;
-        seen[v] = 1;
-        const c = PAL.ramp(k / G.n);
-        ev.push(edgeEv(u, v, k * s, s, c), nodeEv(v, (k + 1) * s, c));
-        k++;
-        stack.push([v, 0]);
-      }
-      return { ev };
-    },
-  },
-  path: {
-    group: 'explore', name: '最も遠い点への最短路',
-    note: 'クリックした点から一番遠い点までの最短の道を1本だけ引く',
-    run(G, src) {
-      const { dist, par, maxD } = bfsTree(G, src), s = 0.18, far = [];
-      for (let v = 0; v < G.n; v++) if (dist[v] === maxD) far.push(v);
-      const path = [];
-      for (let v = far[(Math.random() * far.length) | 0]; v >= 0; v = par[v]) path.unshift(v);
-      const ev = [nodeEv(src, 0, PAL.ramp(0), true)];
-      for (let i = 1; i < path.length; i++) {
-        const c = PAL.ramp(i / path.length);
-        ev.push(edgeEv(path[i - 1], path[i], (i - 1) * s, s, c), nodeEv(path[i], i * s, c, i === path.length - 1));
-      }
-      return { ev, result: `${maxD}ホップ` };
-    },
-  },
-  kruskal: {
-    group: 'explore', name: '最小全域木',
-    note: '短い辺から順に、輪ができない辺だけを選ぶ(クラスカル法)。小さな木どうしがつながって1本の木になる',
-    run(G) {
-      const root = [...Array(G.n).keys()], find = (x) => (root[x] === x ? x : (root[x] = find(root[x])));
-      const edges = G.shape.edges.map(([a, b]) => [G.len.get(a * G.n + b) * (1 + Math.random() * 1e-3), a, b]).sort((x, y) => x[0] - y[0]);
-      const s = Math.min(0.12, 5 / (G.n - 1)), ev = [], touched = new Uint8Array(G.n);
-      let k = 0;
-      for (const [, a, b] of edges) {
-        if (find(a) === find(b)) continue;
-        root[find(a)] = find(b);
-        const c = PAL.ramp(k / (G.n - 1));
-        ev.push(edgeEv(a, b, k * s, s, c));
-        for (const v of [a, b]) if (!touched[v]) { touched[v] = 1; ev.push(nodeEv(v, (k + 1) * s, c)); }
-        k++;
-      }
-      return { ev };
-    },
-  },
-  walk: {
-    group: 'explore', name: 'ランダムウォーク',
-    note: '隣の点へでたらめに1歩ずつ進む。よく通った点ほど色が濃くなる',
-    run(G, src) {
-      const s = 0.12, visits = new Uint16Array(G.n), ev = [nodeEv(src, 0, PAL.ramp(0))];
-      let cur = src;
-      for (let i = 0; i < 80; i++) {
-        const nb = G.nbrs[cur], nxt = nb[(Math.random() * nb.length) | 0];
-        visits[nxt]++;
-        const c = PAL.ramp(1 - Math.min(1, visits[nxt] / 4));
-        ev.push(edgeEv(cur, nxt, i * s, s, c, 1.6), nodeEv(nxt, (i + 1) * s, c));
-        cur = nxt;
       }
       return { ev };
     },
@@ -783,15 +711,15 @@ const Scene = {
       for (const ev of kept.values()) {
         const A = Q[ev.a], B = Q[ev.b], f = Math.min(1, (tt - ev.t) / ev.dur);
         const hx = A.x + (B.x - A.x) * f, hy = A.y + (B.y - A.y) * f;
-        const g = `${ev.c}|${ev.w || 2}`;
+        const g = `${ev.c}|${ev.w || 2}|${ev.alpha || 0.8}`;
         if (!groups.has(g)) groups.set(g, new Path2D());
         groups.get(g).moveTo(A.x, A.y);
         groups.get(g).lineTo(hx, hy);
         if (f < 1) glow(ev.c, hx, hy, 8 * B.k, 0.9 * out);
       }
       for (const [g, pa] of groups) {
-        const [c, lw] = g.split('|').map(Number);
-        ctx.strokeStyle = rgba(C.pal[c], 0.8 * out);
+        const [c, lw, al] = g.split('|').map(Number);
+        ctx.strokeStyle = rgba(C.pal[c], al * out);
         ctx.lineWidth = lw;
         ctx.stroke(pa);
       }
