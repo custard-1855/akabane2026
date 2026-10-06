@@ -3,15 +3,14 @@ import { loadHero } from "./load-hero";
 
 export type Hero = ReturnType<typeof loadHero>;
 export type Shape = { name: string; nodes: number[][]; edges: [number, number][] };
-/** 処理に渡すグラフ(実装では Scene がこの形を兼ねている) */
+/** 処理に渡すグラフ */
 export type Graph = { n: number; nbrs: number[][]; shape: Shape };
 
 export const SHAPES = ["fullerene", "torus", "hypercube", "geodesic"] as const;
 
 export function graphOf(hero: Hero, shape: Shape): Graph {
-  hero.Scene.load(shape);
-  const { n, nbrs } = hero.Scene;
-  return { n, nbrs: nbrs.map((l: number[]) => [...l]), shape };
+  const { n, nbrs } = hero.toGraph(shape);
+  return { n, nbrs, shape };
 }
 
 /** 頂点への出来事を時刻順に適用し、最後に付いている色(パレット番号、-1 は色なし)を返す */
