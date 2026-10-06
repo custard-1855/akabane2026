@@ -322,7 +322,8 @@ const PAL = {
 function applyScheme() {
   const b = C.base;
   C.pal = [b.accent, b.accent2, mix(b.accent2, C.bg, 0.3), mix(b.accent2, C.bg, 0.5), mix(b.accent, C.bg, 0.4),
-    b.accent, b.accent2, b.c3, b.c4, b.c5, b.c6, b.c7, C.ink];
+    // 塗り分けの色は、常時の信号の青と混ざらないよう橙から始め、青は最後に回す
+    b.accent2, b.c3, b.c4, b.c5, b.c6, b.c7, b.accent, C.ink];
   glowCache.clear();
 }
 
