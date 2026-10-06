@@ -1,10 +1,10 @@
-# Raspberry Pi 端末動作テスト 手順書
+# Raspberry Pi端末動作テスト 手順書
 
 最終更新: 2026-09-29
 
 ## 1. 目的・スコープ
 
-Raspberry Piにモニタとマウスをつなぎ、Piを端末としてアプリ(`apps/dijkstra-delivery`)を遊べるかを確認する。Piをサーバ側に使う構成(要件整理 8章)は扱わない。
+Raspberry Piにモニタとマウスをつなぎ、Piを端末としてアプリ(`apps/dijkstra-delivery`)を遊べるかを確認する。Piをサーバ側に使う構成(要件整理8章)は扱わない。
 
 基盤サーバ(`src/`)は未実装のため、アプリの静的ファイルを `python3 -m http.server` で配信して代用する。この構成には次の前提がある。
 
@@ -16,9 +16,9 @@ Raspberry Piにモニタとマウスをつなぎ、Piを端末としてアプリ
 
 | 項目 | 内容 |
 |---|---|
-| 本体 | Raspberry Pi 4 または 5。Pi 3以前とZeroではChromiumの動作が重い |
+| 本体 | Raspberry Pi 4または5。Pi 3以前とZeroではChromiumの動作が重い |
 | 電源 | Pi 5は27W(5V/5A)、Pi 4は15WのUSB-C電源。容量が足りないと動作が不安定になる |
-| 映像ケーブル | micro-HDMI → HDMI のケーブルまたは変換アダプタ。Pi 4/5の映像端子はmicro-HDMI |
+| 映像ケーブル | micro-HDMI → HDMIのケーブルまたは変換アダプタ。Pi 4/5の映像端子はmicro-HDMI |
 | microSD | 16GB以上 |
 | 入力機器 | USBマウス。初回設定用にUSBキーボード |
 | モニタ | HDMI入力のもの |
@@ -46,7 +46,7 @@ Raspberry Piにモニタとマウスをつなぎ、Piを端末としてアプリ
    ```
 3. macOSのファイアウォールのダイアログが出たら、Pythonの受信を許可する。
 4. PiのChromiumで `http://<MacのIP>:3000/` を開く。
-   - 要件整理 7章に合わせ、`.local` ではなくIP指定で開く。
+   - 要件整理7章に合わせ、`.local` ではなくIP指定で開く。
 
 ### Pi単体で配信する場合
 
