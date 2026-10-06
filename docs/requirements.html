@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>システム基盤 要件整理</title>
+<title>requirements</title>
 <style>
 
 code{white-space: pre-wrap;}
@@ -2207,7 +2207,9 @@ vertical-align: -.125em;
     <h2 id="toc-title">目次</h2>
    
   <ul>
-  <li><a href="#目的スコープ" id="toc-目的スコープ" class="nav-link active" data-scroll-target="#目的スコープ">1. 目的・スコープ</a>
+  <li><a href="#システム基盤-要件整理引き継ぎ用" id="toc-システム基盤-要件整理引き継ぎ用" class="nav-link active" data-scroll-target="#システム基盤-要件整理引き継ぎ用">システム基盤 要件整理(引き継ぎ用)</a>
+  <ul class="collapse">
+  <li><a href="#目的スコープ" id="toc-目的スコープ" class="nav-link" data-scroll-target="#目的スコープ">1. 目的・スコープ</a>
   <ul class="collapse">
   <li><a href="#基盤とアプリの境界" id="toc-基盤とアプリの境界" class="nav-link" data-scroll-target="#基盤とアプリの境界">基盤とアプリの境界</a></li>
   </ul></li>
@@ -2226,6 +2228,7 @@ vertical-align: -.125em;
   <li><a href="#クライアントsdkcoresdk.js" id="toc-クライアントsdkcoresdk.js" class="nav-link" data-scroll-target="#クライアントsdkcoresdk.js">4.5 クライアントSDK(<code>/core/sdk.js</code>)</a></li>
   <li><a href="#アンケート" id="toc-アンケート" class="nav-link" data-scroll-target="#アンケート">4.6 アンケート</a></li>
   <li><a href="#管理サーバ" id="toc-管理サーバ" class="nav-link" data-scroll-target="#管理サーバ">4.7 管理サーバ</a></li>
+  <li><a href="#参加者の識別" id="toc-参加者の識別" class="nav-link" data-scroll-target="#参加者の識別">4.8 参加者の識別</a></li>
   </ul></li>
   <li><a href="#アプリ組み込み規約" id="toc-アプリ組み込み規約" class="nav-link" data-scroll-target="#アプリ組み込み規約">5. アプリ組み込み規約</a></li>
   <li><a href="#設計ルール" id="toc-設計ルール" class="nav-link" data-scroll-target="#設計ルール">6. 設計ルール</a></li>
@@ -2244,36 +2247,66 @@ vertical-align: -.125em;
   <li><a href="#再検討のトリガー" id="toc-再検討のトリガー" class="nav-link" data-scroll-target="#再検討のトリガー">9. 再検討のトリガー</a></li>
   <li><a href="#未確定事項" id="toc-未確定事項" class="nav-link" data-scroll-target="#未確定事項">10. 未確定事項</a></li>
   <li><a href="#次のアクション" id="toc-次のアクション" class="nav-link" data-scroll-target="#次のアクション">11. 次のアクション</a></li>
+  </ul></li>
   </ul>
 </nav>
 </div>
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default">
-<div class="quarto-title">
-<h1 class="title">システム基盤 要件整理(引き継ぎ用)</h1>
-</div>
 
 
 
-<div class="quarto-title-meta">
-
-    
-  
-    
-  </div>
-  
-
-
-</header>
-
-
-<p>最終更新: 2026-09-28</p>
-<section id="目的スコープ" class="level1">
-<h1>1. 目的・スコープ</h1>
-<p>同一LAN内の複数端末のブラウザから、Mac(M4)上の複数のアプリを使えるようにする基盤を定める。アプリの内容は別途検討しており、この文書では扱わない。</p>
-<section id="基盤とアプリの境界" class="level2">
-<h2 class="anchored" data-anchor-id="基盤とアプリの境界">基盤とアプリの境界</h2>
+<section id="システム基盤-要件整理引き継ぎ用" class="level1">
+<h1>システム基盤 要件整理(引き継ぎ用)</h1>
+<p>最終更新: 2026-10-05</p>
+<section id="目的スコープ" class="level2">
+<h2 class="anchored" data-anchor-id="目的スコープ">1. 目的・スコープ</h2>
+<p>この文書は、同一LAN内の複数端末のブラウザからMac(M4)上の複数のアプリを使うための基盤を定める。アプリの内容は別途検討しているため、ここでは扱わない。</p>
+<p>用語は次のとおり使い分ける。</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>用語</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>端末</td>
+<td>研究室が用意し、LANにつなぐクライアント機器。受付端末と展示用端末がある</td>
+</tr>
+<tr class="even">
+<td>受付端末</td>
+<td>参加者が最初に基本情報を入力する端末</td>
+</tr>
+<tr class="odd">
+<td>展示用端末</td>
+<td>参加者がアプリ(ゲーム)を遊ぶ端末。PCとタブレット</td>
+</tr>
+<tr class="even">
+<td>Mac</td>
+<td>サーバ機</td>
+</tr>
+<tr class="odd">
+<td>アプリ</td>
+<td>基盤に載せる個々のWebアプリ</td>
+</tr>
+<tr class="even">
+<td>参加者</td>
+<td>来場し、受付端末で登録した人</td>
+</tr>
+<tr class="odd">
+<td>公開サイト</td>
+<td>研究室兼広報用のWebサイト。この基盤とは別に、インターネット上で公開する</td>
+</tr>
+</tbody>
+</table>
+<section id="基盤とアプリの境界" class="level3">
+<h3 class="anchored" data-anchor-id="基盤とアプリの境界">基盤とアプリの境界</h3>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 50%">
@@ -2291,29 +2324,34 @@ vertical-align: -.125em;
 <td>画面、操作、アプリ内のロジック</td>
 </tr>
 <tr class="even">
-<td>端末ID、サーバ側保存、監視・ログ</td>
-<td>保存するデータの中身</td>
+<td>端末ID、参加者の識別(受付・コード発行・ログイン)</td>
+<td></td>
 </tr>
 <tr class="odd">
-<td>アンケートの表示・送信・集計の仕組み</td>
-<td>設問の内容、アンケートを出すタイミング</td>
+<td>サーバ側保存、監視・ログ</td>
+<td>保存するデータの中身</td>
 </tr>
 <tr class="even">
+<td>アンケートの表示・送信・集計の仕組み、基本情報と共通の体験評価の定義</td>
+<td>ゲーム固有の設問の内容</td>
+</tr>
+<tr class="odd">
 <td>計算APIを載せる仕組みと実装ルール</td>
 <td>計算の中身、どの処理をMacに置くかの判断</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>クライアントSDK(<code>/core/sdk.js</code>)</td>
 <td>SDKを使ったアプリ固有の処理</td>
 </tr>
 </tbody>
 </table>
-<p><strong>当面の対象外:</strong> 宅外アクセス、ユーザ認証、端末をまたいだデータの共有、リアルタイム通信(WebSocket)、PWA化、RL推論。</p>
-<p>用語: 「端末」は利用するクライアント機器(PC・スマホ・タブレット)、「Mac」はサーバ機、「アプリ」は基盤に載せる個々のWebアプリを指す。</p>
+<p>参加者は受付で発行したコードで識別する(4.8)。識別は記録と参加者を結び付けるためのもので、本人確認(認証)は行わない。</p>
+<p>参加者のスマホはLANに参加しない。来場者は大学のWi-Fiに接続できないためである。スマホ向けのアプリは公開サイトで配信し、この基盤では扱わない。スマホでの記録は参加者と結び付けない。基盤がスマホに提供するのは、公開サイトに置く参加証ページ(4.8)だけとする。</p>
+<p>宅外アクセス、本人確認による認証、リアルタイム通信(WebSocket)、PWA化、RL推論は当面の対象外とする。</p>
 </section>
 </section>
-<section id="前提" class="level1">
-<h1>2. 前提</h1>
+<section id="前提" class="level2">
+<h2 class="anchored" data-anchor-id="前提">2. 前提</h2>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 50%">
@@ -2335,12 +2373,20 @@ vertical-align: -.125em;
 <td>同一LANのみ。宅外からはアクセスしない</td>
 </tr>
 <tr class="odd">
+<td>端末</td>
+<td>受付端末と、展示用端末(PC・タブレット)が複数台。いずれも研究室が用意する</td>
+</tr>
+<tr class="even">
+<td>参加者のスマホ</td>
+<td>LANには接続しない。モバイル回線で公開サイトの参加証ページを開くだけとする</td>
+</tr>
+<tr class="odd">
 <td>アクセス制御</td>
-<td>一般向けの画面・APIは、LAN内の機器なら誰でも接続できる。管理画面はMac本体からのみ開ける</td>
+<td>一般向けの画面・APIには、LAN内の機器なら誰でも接続できる。管理画面はMac本体からのみ開ける</td>
 </tr>
 <tr class="even">
 <td>アプリ</td>
-<td>複数。ランチャー画面から選んで起動する</td>
+<td>複数。参加者は展示用端末でログインしたあと、ランチャー画面から選んで起動する</td>
 </tr>
 <tr class="odd">
 <td>言語</td>
@@ -2348,31 +2394,37 @@ vertical-align: -.125em;
 </tr>
 <tr class="even">
 <td>データ</td>
-<td>端末内保存と、Macでの端末ID単位の保存を併用する。端末をまたいでは共有しない</td>
+<td>端末内保存と、Macでの参加者単位の保存を併用する</td>
 </tr>
 <tr class="odd">
 <td>処理の分担</td>
-<td>軽い処理は端末、重い処理だけMacの計算APIに置く。どこで分けるかはアプリごとに判断する</td>
+<td>軽い処理は端末で、重い処理だけMacの計算APIで行う。どこで分けるかはアプリごとに判断する</td>
 </tr>
 </tbody>
 </table>
 </section>
-<section id="全体構成" class="level1">
-<h1>3. 全体構成</h1>
-<p>Mac上で、一般向けサーバと管理サーバの2つのプロセスを動かす。</p>
-<pre><code>[端末ブラウザ]                         [一般向けサーバ 0.0.0.0:3000]
-  ランチャー / 各アプリの画面   ──HTTP──&gt;   /               ランチャー
-  sdk.js(端末ID・API呼び出し)             /apps/&lt;app&gt;/    各アプリの静的ファイル
-  端末内保存(localStorage等)              /api/&lt;app&gt;/*    各アプリの計算API(状態なし)
-                                          /api/core/*     基盤API(保存・アンケート回答・端末・ヘルスチェック)
-                                              │ 書き込み
-                                          data/  storage.db / metrics.db / logs
-                                              │ 読み取り専用
-[Mac本体のブラウザ]           ──HTTP──&gt;   [管理サーバ 127.0.0.1:3001]
-                                          監視画面・アンケート集計・CSV出力</code></pre>
-<section id="url設計" class="level2">
-<h2 class="anchored" data-anchor-id="url設計">URL設計</h2>
-<p><strong>一般向けサーバ(<code>http://&lt;MacのIP&gt;:3000</code>)</strong></p>
+<section id="全体構成" class="level2">
+<h2 class="anchored" data-anchor-id="全体構成">3. 全体構成</h2>
+<p>Mac上では、一般向けサーバと管理サーバの2つのプロセスを動かす。</p>
+<pre><code>[受付端末・展示用端末のブラウザ]       [一般向けサーバ 0.0.0.0:3000]
+  受付画面 / ランチャー / 各アプリ ──HTTP──&gt;   /               ランチャー(ログイン前は待機画面)
+  sdk.js(端末ID・ログイン・API呼び出し)       /reception/     受付画面
+  端末内保存(localStorage等)                  /apps/&lt;app&gt;/    各アプリの静的ファイル
+                                              /api/&lt;app&gt;/*    各アプリの計算API(状態なし)
+                                              /api/core/*     基盤API(受付・ログイン・保存・アンケート回答・端末・ヘルスチェック)
+                                                  │ 書き込み
+                                              data/  storage.db / metrics.db / logs
+                                                  │ 読み取り専用
+[Mac本体のブラウザ]           ──HTTP──&gt;       [管理サーバ 127.0.0.1:3001]
+                                              監視画面・参加者一覧・アンケート集計・CSV出力
+
+[参加者のスマホ(モバイル回線)] ──HTTPS──&gt;   [公開サイト]
+                                              参加証ページ(静的HTML)、スマホ向けアプリ
+                                              ※ Macとは通信しない</code></pre>
+<section id="url設計" class="level3">
+<h3 class="anchored" data-anchor-id="url設計">URL設計</h3>
+<section id="一般向けサーバhttpmacのip3000" class="level4">
+<h4 class="anchored" data-anchor-id="一般向けサーバhttpmacのip3000">一般向けサーバ(<code>http://&lt;MacのIP&gt;:3000</code>)</h4>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 50%">
@@ -2387,40 +2439,54 @@ vertical-align: -.125em;
 <tbody>
 <tr class="odd">
 <td><code>/</code></td>
-<td>ランチャー。<code>apps/</code> 配下のアプリを一覧表示する</td>
+<td>ランチャー。ログイン前は待機画面(コード入力)を表示し、ログイン後は <code>apps/</code> 配下のアプリを一覧表示する</td>
 </tr>
 <tr class="even">
+<td><code>/reception/</code></td>
+<td>受付画面(4.8)</td>
+</tr>
+<tr class="odd">
 <td><code>/apps/&lt;app&gt;/</code></td>
 <td>アプリの静的ファイル</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>/api/&lt;app&gt;/*</code></td>
 <td>アプリの計算API</td>
 </tr>
+<tr class="odd">
+<td><code>/api/core/reception</code></td>
+<td>基本情報の定義の取得(GET)、基本情報の登録とコードの発行(POST)</td>
+</tr>
 <tr class="even">
+<td><code>/api/core/login</code></td>
+<td>コードによるログイン(POST)、ログアウト(DELETE)</td>
+</tr>
+<tr class="odd">
 <td><code>/api/core/storage/&lt;app&gt;/&lt;key&gt;</code></td>
 <td>保存API(GET / PUT / DELETE)</td>
 </tr>
-<tr class="odd">
-<td><code>/api/core/surveys/&lt;app&gt;</code></td>
-<td>アンケート定義の取得(GET)、回答の送信(POST)</td>
-</tr>
 <tr class="even">
+<td><code>/api/core/surveys/&lt;app&gt;</code></td>
+<td>アンケート定義の取得(GET。共通の体験評価を含む)、回答の送信(POST)</td>
+</tr>
+<tr class="odd">
 <td><code>/api/core/devices</code></td>
 <td>端末情報の登録・更新</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>/api/core/health</code></td>
 <td>ヘルスチェック</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>/core/*</code></td>
 <td>基盤の静的ファイル(<code>sdk.js</code> など)</td>
 </tr>
 </tbody>
 </table>
-<p>すべて同一オリジン(同じホスト・ポート)から配信するため、CORSは不要。</p>
-<p><strong>管理サーバ(<code>http://localhost:3001</code>)</strong></p>
+<p>すべてのパスを同一オリジン(同じホスト・ポート)から配信するので、CORSの設定は要らない。</p>
+</section>
+<section id="管理サーバhttplocalhost3001" class="level4">
+<h4 class="anchored" data-anchor-id="管理サーバhttplocalhost3001">管理サーバ(<code>http://localhost:3001</code>)</h4>
 <table class="caption-top table">
 <thead>
 <tr class="header">
@@ -2434,6 +2500,10 @@ vertical-align: -.125em;
 <td>監視画面(4.4)</td>
 </tr>
 <tr class="even">
+<td><code>/participants</code></td>
+<td>参加者一覧(4.8)</td>
+</tr>
+<tr class="odd">
 <td><code>/surveys</code></td>
 <td>アンケート集計とCSVダウンロード(4.6)</td>
 </tr>
@@ -2441,189 +2511,336 @@ vertical-align: -.125em;
 </table>
 <p>管理サーバの詳細は4.7に記載する。</p>
 </section>
-<section id="ディレクトリ構成" class="level2">
-<h2 class="anchored" data-anchor-id="ディレクトリ構成">ディレクトリ構成</h2>
+</section>
+<section id="ディレクトリ構成" class="level3">
+<h3 class="anchored" data-anchor-id="ディレクトリ構成">ディレクトリ構成</h3>
 <pre><code>akabane2026/
-  core/              基盤のPythonコード(起動、アプリ読み込み、保存、監視)
+  core/              基盤のPythonコード(起動、アプリ読み込み、受付・ログイン、保存、監視)
     main.py          一般向けサーバ
     admin.py         管理サーバ
-    static/          ランチャー、sdk.js
-    admin_static/    監視画面、アンケート集計画面
+    static/          ランチャー、受付画面、sdk.js
+    admin_static/    監視画面、参加者一覧、アンケート集計画面
+    surveys/
+      profile.json   基本情報の定義(受付で聞く)
+      common.json    共通の体験評価の定義(各アプリの終了時に聞く)
   apps/
     &lt;app&gt;/
       app.json       表示名・説明など(ランチャー用)
-      survey.json    任意。アンケートを実施する場合のみ
+      survey.json    任意。ゲーム固有の設問を聞く場合のみ
       static/        index.html ほか
       server.py      任意。計算APIを持つ場合のみ
-  data/              storage.db(保存データ・アンケート回答)、metrics.db、ログ
+  site/
+    pass/            参加証ページ。公開サイトに配置する(4.8)
+  data/              storage.db(参加者・保存データ・アンケート回答)、metrics.db、ログ
                      (バックアップ対象は storage.db)</code></pre>
+<p>基盤のパッケージ名には <code>platform</code> を使わない。Python標準ライブラリの <code>platform</code> モジュールと名前が衝突するためである。</p>
+</section>
+</section>
+<section id="基盤の機能" class="level2">
+<h2 class="anchored" data-anchor-id="基盤の機能">4. 基盤の機能</h2>
+<section id="端末id" class="level3">
+<h3 class="anchored" data-anchor-id="端末id">4.1 端末ID</h3>
 <ul>
-<li>基盤のパッケージ名に <code>platform</code> は使わない。Python標準ライブラリの <code>platform</code> モジュールと衝突するため。</li>
+<li>端末が初めてアクセスしたとき、<code>sdk.js</code> が <code>crypto.getRandomValues()</code> で128bitの乱数を生成してlocalStorageに保存する。LAN内のhttpでは <code>crypto.randomUUID()</code> が使えないため、この方法をとる。</li>
+<li>同じく初回アクセス時に、<code>sdk.js</code> はUser-Agentと任意の表示名を <code>/api/core/devices</code> へ送る。管理者は端末の設置時に表示名(例: 「展示PC-1」)を付け、監視画面でこの情報を見て端末を見分ける。</li>
+<li><code>sdk.js</code> はすべてのAPI呼び出しに、端末IDを <code>X-Device-Id</code> ヘッダで付ける。</li>
+<li>端末IDは端末を見分けるためのもので、参加者の識別には使わない(4.8)。LAN内の誰でも他の端末のIDを名乗れる。</li>
 </ul>
 </section>
-</section>
-<section id="基盤の機能" class="level1">
-<h1>4. 基盤の機能</h1>
-<section id="端末id" class="level2">
-<h2 class="anchored" data-anchor-id="端末id">4.1 端末ID</h2>
+<section id="計算api" class="level3">
+<h3 class="anchored" data-anchor-id="計算api">4.2 計算API</h3>
 <ul>
-<li>初回アクセス時に <code>sdk.js</code> が <code>crypto.getRandomValues()</code> で128bitの乱数を生成し、localStorageに保存する。LAN内のhttpでは <code>crypto.randomUUID()</code> が使えないため、この方法にする。</li>
-<li>すべてのAPI呼び出しに <code>X-Device-Id</code> ヘッダで付ける。</li>
-<li>端末IDは識別用であり、認証ではない。LAN内の誰でも他の端末のIDを名乗れる。</li>
-<li>初回アクセス時に <code>/api/core/devices</code> へUser-Agentと表示名(任意)を送り、監視画面で端末を見分けられるようにする。</li>
-</ul>
-</section>
-<section id="計算api" class="level2">
-<h2 class="anchored" data-anchor-id="計算api">4.2 計算API</h2>
-<ul>
-<li>アプリの <code>server.py</code> が公開する <code>APIRouter</code> を、基盤が <code>/api/&lt;app&gt;</code> 配下に登録する。</li>
-<li>状態を持たない。状態が必要なら、端末が保持してリクエストに含めて送る。</li>
+<li>基盤は、アプリの <code>server.py</code> が公開する <code>APIRouter</code> を <code>/api/&lt;app&gt;</code> 配下に登録する。</li>
+<li>計算APIは状態を持たない。状態が必要な場合は、端末が保持してリクエストに含めて送る。</li>
 <li>入出力はJSONとし、Pydanticモデルでスキーマを定義する。</li>
 <li>重い処理は <code>def</code> で書く(7章)。</li>
 </ul>
 </section>
-<section id="保存api" class="level2">
-<h2 class="anchored" data-anchor-id="保存api">4.3 保存API</h2>
+<section id="保存api" class="level3">
+<h3 class="anchored" data-anchor-id="保存api">4.3 保存API</h3>
 <ul>
-<li>基盤の中で状態を持つのは、保存APIとアンケート回答(4.6)だけとする。</li>
-<li>SQLite(<code>data/storage.db</code>)に、(アプリ名, 端末ID, キー) を主キーとしてJSON値を保存する。</li>
-<li>値のサイズに上限を設ける(仮に1件1MB)。</li>
-<li>SQLiteはWALモードで使い、接続はリクエストごとに開く(スレッド間で共有しない)。</li>
-<li>バックアップは、SQLiteのオンラインバックアップ(<code>sqlite3 storage.db &quot;.backup ...&quot;</code>)を <code>launchd</code> で定期実行する。書き込み中のファイルを単純にコピーすると壊れることがある。</li>
+<li>基盤の中で状態を持つのは、参加者とログインの情報(4.8)、保存API、アンケート回答(4.6)だけとする。</li>
+<li>保存APIは、(アプリ名, 参加者ID, キー) を主キーとしてJSON値をSQLite(<code>data/storage.db</code>)に保存する。同じ参加者なら、別の展示用端末からでも同じデータを読める。</li>
+<li>保存APIはログイン中だけ使える。基盤は <code>X-Login-Id</code> ヘッダ(4.8)から参加者IDを求める。ログインしていない呼び出しはエラーにする。</li>
+<li>値のサイズには上限を設ける(仮に1件1MB)。</li>
+<li>SQLiteはWALモードで使う。接続はリクエストごとに開き、スレッド間で共有しない。</li>
+<li>書き込み中のファイルを単純にコピーすると、コピー先が破損することがある。そのためバックアップには、SQLiteのオンラインバックアップ(<code>sqlite3 storage.db &quot;.backup ...&quot;</code>)を <code>launchd</code> で定期実行する。</li>
 </ul>
 </section>
-<section id="監視ログ" class="level2">
-<h2 class="anchored" data-anchor-id="監視ログ">4.4 監視・ログ</h2>
+<section id="監視ログ" class="level3">
+<h3 class="anchored" data-anchor-id="監視ログ">4.4 監視・ログ</h3>
 <ul>
-<li>ミドルウェアで全リクエストを記録する(時刻、端末ID、アプリ名、パス、ステータス、処理時間)。
+<li>基盤はミドルウェアで全リクエストの時刻、端末ID、アプリ名、パス、ステータス、処理時間を記録する。
 <ul>
-<li>記録はSQLite(<code>data/metrics.db</code>)に保存し、保持期間を過ぎたものは削除する。複数ワーカーでも集計できるよう、メモリ上には持たない。</li>
-<li>アプリケーションログはJSON形式で、ローテーション付きでファイルに出す。</li>
+<li>記録先はSQLite(<code>data/metrics.db</code>)とし、保持期間を過ぎた記録は削除する。複数ワーカーでも集計できるように、記録をメモリ上には持たない。</li>
+<li>アプリケーションログはJSON形式でファイルに出力し、ローテーションする。</li>
 </ul></li>
-<li>管理サーバの監視画面で次の情報を確認できる。閲覧専用とし、データの削除などの操作は置かない。
+<li>管理サーバの監視画面では、次の情報を確認できる。画面は閲覧専用とし、データの削除などの操作は置かない。
 <ul>
-<li>接続中の端末(直近5分以内にリクエストかハートビートがあった端末)</li>
+<li>接続中の端末(直近5分以内にリクエストかハートビートがあった端末)と、各展示用端末のログイン状態</li>
 <li>アプリ・APIごとの呼び出し数と応答時間</li>
 <li>エラーの一覧</li>
 </ul></li>
 <li><code>sdk.js</code> は、画面が表示されている間、1分に1回ハートビートを送る。</li>
-<li><code>/api/core/health</code> は、監視や <code>launchd</code> 運用の死活確認に使う。</li>
+<li><code>/api/core/health</code> は、監視や <code>launchd</code> 運用での死活確認に使う。</li>
 </ul>
 </section>
-<section id="クライアントsdkcoresdk.js" class="level2">
-<h2 class="anchored" data-anchor-id="クライアントsdkcoresdk.js">4.5 クライアントSDK(<code>/core/sdk.js</code>)</h2>
-<p>アプリごとに作り直さなくて済むよう、次の機能を提供する。</p>
+<section id="クライアントsdkcoresdk.js" class="level3">
+<h3 class="anchored" data-anchor-id="クライアントsdkcoresdk.js">4.5 クライアントSDK(<code>/core/sdk.js</code>)</h3>
+<p>アプリごとに同じ処理を作り直さずに済むよう、SDKは次の機能を提供する。</p>
 <ul>
 <li>端末IDの生成・取得</li>
-<li>API呼び出し(<code>X-Device-Id</code> の付与、タイムアウト、失敗時のエラーの統一)</li>
+<li>ログインとログアウト(待機画面、コード入力、確認画面、無操作時の自動ログアウト。4.8)</li>
+<li>API呼び出し(<code>X-Device-Id</code> と <code>X-Login-Id</code> の付与、タイムアウト、失敗時のエラー形式の統一)</li>
 <li>保存APIの読み書き</li>
 <li>ハートビート</li>
 <li>セッションの開始・終了と、終了時のアンケート表示(4.6)</li>
+<li>受付画面とアンケート画面で共通に使う、設問の表示部品</li>
 </ul>
 </section>
-<section id="アンケート" class="level2">
-<h2 class="anchored" data-anchor-id="アンケート">4.6 アンケート</h2>
-<p>アプリの利用を終えた端末に任意回答のアンケートを出し、回答をMacに集める。</p>
-<p><strong>実施の流れ</strong></p>
+<section id="アンケート" class="level3">
+<h3 class="anchored" data-anchor-id="アンケート">4.6 アンケート</h3>
+<p>参加者に聞く設問は、次の3種類に分ける。</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>種類</th>
+<th>定義ファイル</th>
+<th>聞く回数</th>
+<th>聞く場所</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>基本情報</td>
+<td><code>core/surveys/profile.json</code></td>
+<td>1人1回</td>
+<td>受付端末(4.8)</td>
+</tr>
+<tr class="even">
+<td>共通の体験評価</td>
+<td><code>core/surveys/common.json</code></td>
+<td>1プレイごと</td>
+<td>各アプリの終了時。全アプリで同じ設問</td>
+</tr>
+<tr class="odd">
+<td>ゲーム固有の設問</td>
+<td><code>apps/&lt;app&gt;/survey.json</code></td>
+<td>1プレイごと</td>
+<td>各アプリの終了時。共通の体験評価のあとに出す</td>
+</tr>
+</tbody>
+</table>
+<p>基本情報には、年代やゲーム経験など、遊ぶゲームによらない参加者の属性を入れる。楽しさや難しさのように、遊んだ直後でないと答えられない設問は共通の体験評価に入れる。設問をそろえておくと、アプリどうしを比べられる。</p>
+<p>基本情報と共通の体験評価の設問は、研究の目的に合わせて後から決める。当面は仮の設問(ニックネームと数問)で仕組みを作り、設問が決まったら定義ファイルを差し替える。</p>
+<section id="実施の流れ" class="level4">
+<h4 class="anchored" data-anchor-id="実施の流れ">実施の流れ</h4>
 <ol type="1">
-<li>アプリの起動時に、<code>sdk.js</code> がセッションIDを発行する(1回の利用を1セッションとする)。</li>
-<li>アプリは終了時に <code>sdk.js</code> の終了処理(例: <code>core.finish()</code>)を呼ぶ。ブラウザのタブを閉じる操作は確実に検知できないため、終了はアプリが明示的に知らせる。</li>
-<li><code>survey.json</code> があるアプリでは、<code>sdk.js</code> がアンケート画面を重ねて表示する。</li>
-<li>回答すると送信してランチャーに戻る。「スキップ」を選ぶと、送信せずにランチャーに戻る。</li>
+<li>アプリの起動時に、<code>sdk.js</code> がセッションIDを発行する。1回の利用を1セッションとする。</li>
+<li>アプリは終了時に <code>sdk.js</code> の終了処理(例: <code>core.finish()</code>)を呼ぶ。ブラウザのタブが閉じられたことは確実には検知できないため、アプリが終了を明示的に知らせる。</li>
+<li><code>sdk.js</code> は、共通の体験評価とゲーム固有の設問を続けて表示する。<code>survey.json</code> がないアプリでは、共通の体験評価だけを表示する。</li>
+<li>参加者が回答すると、<code>sdk.js</code> は回答を送信してランチャーに戻る。「スキップ」を選んだ場合は、送信せずにランチャーに戻る。</li>
 </ol>
-<p><strong>アンケート定義(<code>apps/&lt;app&gt;/survey.json</code>)</strong></p>
+</section>
+<section id="アンケート定義" class="level4">
+<h4 class="anchored" data-anchor-id="アンケート定義">アンケート定義</h4>
 <ul>
+<li><code>profile.json</code>、<code>common.json</code>、<code>survey.json</code> は同じ形式とする。表示も <code>sdk.js</code> の同じ部品が担うので、アプリはゲーム固有の設問を書くだけでよい。</li>
 <li>設問の形式は、単一選択、複数選択、段階評価(例: 1〜5)、自由記述の4種類とする。</li>
-<li>設問ごとに必須・任意を指定できる。アンケート全体はスキップできる。</li>
-<li>定義には <code>version</code> を持たせる。設問を変えたら上げ、回答に記録して、どの版への回答かを区別する。</li>
-<li>表示は <code>sdk.js</code> の共通画面で行う。アプリは設問を書くだけでよい。</li>
+<li>設問ごとに必須・任意を指定できる。終了時のアンケートは、参加者が全体をスキップできる。</li>
+<li>定義には <code>version</code> を持たせる。設問を変えたら <code>version</code> を上げる。基盤は回答に <code>version</code> を記録し、どの版への回答かを区別する。共通の体験評価とゲーム固有の設問の <code>version</code> は別々に記録する。</li>
 </ul>
-<p><strong>回答の保存</strong></p>
+</section>
+<section id="回答の保存" class="level4">
+<h4 class="anchored" data-anchor-id="回答の保存">回答の保存</h4>
 <ul>
-<li><code>storage.db</code> の専用テーブルに保存する。保存データと同じくバックアップの対象にする。</li>
-<li>1件の回答に、アプリ名、定義の <code>version</code>、セッションID、端末ID、回答日時、セッションの長さ、各設問の回答を記録する。</li>
-<li>送信に失敗した回答は端末内に保存し、次にアクセスしたときに再送する。二重登録はセッションIDで防ぐ。</li>
+<li>回答は <code>storage.db</code> の専用テーブルに保存し、保存データと同じくバックアップの対象にする。</li>
+<li>1件の回答には、アプリ名、共通の体験評価とゲーム固有の設問それぞれの <code>version</code>、セッションID、参加者ID、端末ID、回答日時、セッションの長さ、各設問の回答を記録する。</li>
+<li>基本情報は参加者のデータとして保存する(4.8)。</li>
+<li>送信に失敗した回答は端末内に保存し、<code>sdk.js</code> が次回アクセス時に再送する。二重登録はセッションIDで防ぐ。</li>
 <li>自由記述には文字数の上限を設ける(仮に1問1000文字)。</li>
 </ul>
-<p><strong>集計</strong></p>
+</section>
+<section id="集計" class="level4">
+<h4 class="anchored" data-anchor-id="集計">集計</h4>
 <ul>
-<li>管理サーバの集計画面で、アプリ・版ごとの回答数、選択式設問の集計、自由記述の一覧を見られる。</li>
-<li>アプリ・版ごとにCSVでダウンロードできる。詳しい分析はCSVを使って基盤の外で行う。</li>
-<li>一般向けサーバには、回答を読み出すAPIを置かない(送信のみ)。</li>
+<li>管理サーバの集計画面では、アプリ・版ごとの回答数、選択式設問の集計、自由記述の一覧を見られる。</li>
+<li>回答はアプリ・版ごとにCSVでダウンロードできる。CSVには参加者IDで基本情報の列を結合して出力する。ただし、確認用のニックネームはCSVに含めない。詳しい分析は、CSVを使って基盤の外で行う。</li>
+<li>一般向けサーバには回答の送信APIだけを置き、回答を読み出すAPIは置かない。</li>
 </ul>
 </section>
-<section id="管理サーバ" class="level2">
-<h2 class="anchored" data-anchor-id="管理サーバ">4.7 管理サーバ</h2>
-<p>監視画面とアンケート集計は、一般向けサーバとは別のプロセス(管理サーバ)で提供し、Mac本体からしか接続できないようにする。</p>
+</section>
+<section id="管理サーバ" class="level3">
+<h3 class="anchored" data-anchor-id="管理サーバ">4.7 管理サーバ</h3>
+<p>監視画面、参加者一覧、アンケート集計は、一般向けサーバとは別のプロセス(管理サーバ)で提供する。管理サーバにはMac本体からしか接続できないようにする。</p>
 <ul>
-<li><p><code>127.0.0.1:3001</code> で待ち受ける。LAN上の他の機器からは接続する経路がないため、パスワードなどの認証は置かない。</p>
+<li><p>管理サーバは <code>127.0.0.1:3001</code> で待ち受ける。LAN上の他の機器からは接続する経路がないため、パスワードなどの認証は置かない。</p>
 <ul>
-<li><strong><code>0.0.0.0</code> に変えてはならない。</strong> 変えると、LAN内の誰でも管理画面を開ける状態になる。</li>
+<li><strong>待ち受けアドレスを <code>0.0.0.0</code> に変えてはならない。</strong> 変えると、LAN内の誰でも管理画面を開ける状態になる。</li>
 </ul></li>
-<li><p>Mac本体のブラウザで <code>http://localhost:3001</code> を開いて使う。</p></li>
+<li><p>管理者はMac本体のブラウザで <code>http://localhost:3001</code> を開いて使う。</p></li>
 <li><p>別のPCから見る場合は、Macの「リモートログイン」(SSH)を有効にしたうえで、SSHのポート転送を使う。</p>
 <pre><code>ssh -L 3001:localhost:3001 &lt;ユーザ名&gt;@&lt;MacのIP&gt;</code></pre>
 <p>接続後、そのPCのブラウザで <code>http://localhost:3001</code> を開く。</p></li>
-<li><p><code>storage.db</code> と <code>metrics.db</code> は、読み取り専用モード(<code>file:...?mode=ro</code>)で開く。書き込みは一般向けサーバだけが行う。</p></li>
-<li><p>一般向けサーバとは別の <code>launchd</code> ジョブとして常駐させる。管理サーバが止まっても、一般向けサーバには影響しない。</p></li>
+<li><p>管理サーバは <code>storage.db</code> と <code>metrics.db</code> を読み取り専用モード(<code>file:...?mode=ro</code>)で開く。書き込みは一般向けサーバだけが行う。受付画面を管理サーバに置かないのはこのためである。</p></li>
+<li><p>管理サーバは一般向けサーバとは別の <code>launchd</code> ジョブとして常駐させる。管理サーバが止まっても、一般向けサーバは動き続ける。</p></li>
+</ul>
+</section>
+<section id="参加者の識別" class="level3">
+<h3 class="anchored" data-anchor-id="参加者の識別">4.8 参加者の識別</h3>
+<p>参加者が受付端末で基本情報を入力すると、基盤はコードを発行する。参加者はそのコードで展示用端末にログインする。識別の目的は、展示用端末での記録とアンケート回答を、受付で入力した基本情報と結び付けることにある。</p>
+<p>なりすましの防止は目的にしない。教室内での利用であり、なりすましの影響は研究データの一部が汚れる程度にとどまるためである。対策が必要なのは、コードの打ち間違いや、前の参加者のログインが残ることによる取り違えのほうである。</p>
+<p>紙(カードや印刷物)は使わない。コードは、参加者が自分のスマホの参加証ページで持ち歩く。</p>
+<section id="受付" class="level4">
+<h4 class="anchored" data-anchor-id="受付">受付</h4>
+<ol type="1">
+<li>参加者は受付端末の <code>/reception/</code> で、研究利用への同意を確認し、基本情報(<code>profile.json</code>)を入力する。</li>
+<li>一般向けサーバは参加者IDとコードを発行し、基本情報とともに <code>storage.db</code> に保存する。</li>
+<li>受付画面は、コードを大きな文字で表示する。あわせて、参加証ページのURL(<code>https://&lt;公開サイト&gt;/pass/#&lt;コード&gt;</code>)をQRで表示する。</li>
+<li>参加者はスマホの標準カメラでQRを読み、参加証ページを開く。スマホを使わない参加者は、コードを覚える。</li>
+</ol>
+</section>
+<section id="コード" class="level4">
+<h4 class="anchored" data-anchor-id="コード">コード</h4>
+<ul>
+<li>5文字程度の英数字とする。紛らわしい文字(<code>0/O</code>、<code>1/I/l</code> など)は使わない。</li>
+<li>乱数で発行し、連番にはしない。有効な参加者のあいだで重複しないようにする。</li>
+<li>有効期限は当日限りとする(仮)。期限を過ぎたコードではログインできない。</li>
+<li>コードは参加者IDとは別の値とする。CSVや分析には参加者IDを使い、コードは出力しない。</li>
+</ul>
+</section>
+<section id="参加証ページ" class="level4">
+<h4 class="anchored" data-anchor-id="参加証ページ">参加証ページ</h4>
+<ul>
+<li>公開サイトに置く1枚の静的HTMLとする。バックエンドは持たない。ソースは <code>site/pass/</code> で管理する。</li>
+<li>コードはURLの <code>#</code> 以降に入れる。<code>#</code> 以降はサーバに送られないので、ホスティング先のアクセスログにも残らない。</li>
+<li>ページは、コードを大きな文字とQRで表示する。QRはページ内のJSで生成する。</li>
+<li>ページはコードを端末内に保存し、次に開いたときも表示する。</li>
+<li>ページにはコード以外の情報(基本情報など)を載せない。</li>
+<li>研究室サイトの公開が間に合わない場合は、GitHub Pagesなど別のホスティングに置く。</li>
+</ul>
+</section>
+<section id="展示用端末でのログイン" class="level4">
+<h4 class="anchored" data-anchor-id="展示用端末でのログイン">展示用端末でのログイン</h4>
+<ol type="1">
+<li>ログインしていない展示用端末は、ランチャー(<code>/</code>)に待機画面を表示する。</li>
+<li>参加者は参加証ページに表示されたコードを入力する。</li>
+<li><code>sdk.js</code> はコードを <code>/api/core/login</code> へ送る。一般向けサーバは参加者と端末を結び付けてログインIDを発行し、確認用のニックネームとともに返す。</li>
+<li>待機画面は「〇〇さんですか?」と確認する。参加者が「いいえ」を選んだら、<code>sdk.js</code> はログアウトして待機画面に戻る。</li>
+<li>ログイン中、<code>sdk.js</code> はAPI呼び出しにログインIDを <code>X-Login-Id</code> ヘッダで付ける。ログインIDは端末内(sessionStorage)に保存する。</li>
+</ol>
+<ul>
+<li>1人の参加者がログインできる展示用端末は1台とする。別の展示用端末でログインすると、前の端末のログインを解除する。</li>
+<li>コードを照合するAPIには、端末ごとの試行回数の制限を設ける。</li>
+</ul>
+</section>
+<section id="ログアウト" class="level4">
+<h4 class="anchored" data-anchor-id="ログアウト">ログアウト</h4>
+<p>次のいずれかでログアウトし、待機画面に戻る。</p>
+<ul>
+<li>終了時のアンケートを送信またはスキップしたとき</li>
+<li>参加者がランチャーの「終わる」ボタンを押したとき</li>
+<li>一定時間(仮に3分)操作がなかったとき</li>
+</ul>
+</section>
+<section id="読み取り方法の拡張" class="level4">
+<h4 class="anchored" data-anchor-id="読み取り方法の拡張">読み取り方法の拡張</h4>
+<p>当面はコードの手入力だけで運用する。入力が混雑の原因になったら、次のどちらかを追加する。どちらの場合も手入力は予備の手段として残す。</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>方法</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2次元コードスキャナ</td>
+<td>参加証ページのQRをスキャナで読む。スキャナはキーボードとして入力するので、待機画面の変更はほぼ要らない。PCにはUSB、タブレットにはBluetoothの機種を使う。スマホ画面を読める機種を選ぶ</td>
+</tr>
+<tr class="even">
+<td>展示用端末のカメラ</td>
+<td>展示用端末をHTTPSで接続し、ブラウザからカメラでQRを読む(8章)</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="参加者のデータ" class="level4">
+<h4 class="anchored" data-anchor-id="参加者のデータ">参加者のデータ</h4>
+<ul>
+<li>参加者テーブルには、参加者ID、コード、コードの有効期限、受付日時、基本情報とその <code>version</code> を保存する。</li>
+<li>ログインテーブルには、ログインID、参加者ID、端末ID、ログイン日時、最終操作日時を保存する。</li>
+<li>参加者一覧は管理サーバでだけ見られる(6章ルール5)。一般向けサーバのログインAPIが返すのは、入力されたコードに対応する参加者のニックネームだけとする。</li>
 </ul>
 </section>
 </section>
-<section id="アプリ組み込み規約" class="level1">
-<h1>5. アプリ組み込み規約</h1>
+</section>
+<section id="アプリ組み込み規約" class="level2">
+<h2 class="anchored" data-anchor-id="アプリ組み込み規約">5. アプリ組み込み規約</h2>
 <ol type="1">
 <li>アプリ名は <code>[a-z0-9-]+</code> とする。<code>core</code> は予約語とする。</li>
-<li><code>apps/&lt;app&gt;/</code> にディレクトリを置けば、再起動時にランチャーと配信に反映される。</li>
+<li><code>apps/&lt;app&gt;/</code> にディレクトリを置くと、基盤の再起動時にランチャーと配信に反映される。</li>
 <li><code>server.py</code> は任意。置く場合は <code>router = APIRouter()</code> を公開する。</li>
-<li>localStorage・IndexedDBは全アプリで共有される(同一オリジンのため)。キーとDB名は <code>&lt;app&gt;:</code> で始める。</li>
-<li>計算の呼び出し口は <code>compute()</code> のような1関数に集約する。最初は端末内で実行し、重ければ中身をAPI呼び出しに差し替える。差し替えで呼び出し側が変わらないよう、最初から <code>async</code>(Promiseを返す)にしておく。</li>
-<li>APIは必要なタイミングだけ呼ぶ(毎フレーム呼ばない)。</li>
-<li>API失敗時(Mac停止・Wi-Fi切断)の画面上の挙動を、アプリごとに決めておく。</li>
-<li>アンケートを実施するアプリは、<code>survey.json</code> を置き、利用の終了時に <code>sdk.js</code> の終了処理を呼ぶ。</li>
+<li>localStorageとIndexedDBは同一オリジンの全アプリで共有される。キーとDB名は <code>&lt;app&gt;:</code> で始める。展示用端末は複数の参加者が使い回すので、参加者ごとのデータは端末内ではなく保存APIに置く。</li>
+<li>計算の呼び出し口は <code>compute()</code> のような1つの関数に集約する。最初は端末内で実行し、重ければ中身をAPI呼び出しに差し替える。差し替えても呼び出し側を変えずに済むよう、最初から <code>async</code>(Promiseを返す)にしておく。</li>
+<li>APIは必要なタイミングだけ呼ぶ。毎フレーム呼んではならない。</li>
+<li>API呼び出しが失敗したとき(Mac停止・Wi-Fi切断)の画面上の挙動を、アプリごとに決めておく。</li>
+<li>すべてのアプリは、利用の終了時に <code>sdk.js</code> の終了処理を呼ぶ。終了処理がアンケートの表示とログアウトを行う。ゲーム固有の設問を聞くアプリは <code>survey.json</code> を置く。</li>
+<li>公開サイトでも配信する可能性があるアプリは、<code>sdk.js</code> がなくても動くように作る。<code>sdk.js</code> の呼び出しはアプリ内の1ファイルにまとめ、<code>sdk.js</code> がなければ何もしないようにする(例: <code>apps/dijkstra-delivery</code> の <code>core-adapter.js</code>)。</li>
 </ol>
 </section>
-<section id="設計ルール" class="level1">
-<h1>6. 設計ルール</h1>
+<section id="設計ルール" class="level2">
+<h2 class="anchored" data-anchor-id="設計ルール">6. 設計ルール</h2>
 <ol type="1">
-<li>ブラウザからは常に同一オリジンを呼ぶ。将来別マシンに処理を分ける場合も、振り分けはMac側で行う。ブラウザから別マシンを直接呼ぶとCORS設定が必要になる。</li>
-<li>状態を持つのは保存APIとアンケート回答(SQLite)だけにする。計算APIとメモリ上の変数には状態を持たせない。これにより、ワーカー数の変更や別マシンへの振り分けが可能になる。</li>
-<li>アプリの <code>server.py</code> の読み込みに失敗しても、基盤全体は起動を続ける。失敗したアプリだけを無効にし、ログに残す。</li>
-<li>全アプリが1つのプロセスを共有する。1つのアプリの重い処理が他のアプリの応答を遅らせるため、監視画面で応答時間をアプリ単位で確認できるようにする。</li>
-<li>端末一覧、監視データ、アンケート回答を読み出す機能は、管理サーバにだけ置く。一般向けサーバには置かない。</li>
+<li>ブラウザからは常に同一オリジンを呼ぶ。ブラウザから別マシンを直接呼ぶとCORSの設定が必要になるため、将来処理を別マシンに分ける場合も振り分けはMac側で行う。</li>
+<li>状態を持つのは、参加者とログインの情報、保存API、アンケート回答(SQLite)だけにする。計算APIとメモリ上の変数には状態を持たせない。このルールを守れば、ワーカー数を変えたり処理を別マシンへ振り分けたりできる。</li>
+<li>アプリの <code>server.py</code> の読み込みに失敗しても、基盤全体は起動を続ける。基盤は失敗したアプリだけを無効にし、ログに残す。</li>
+<li>全アプリが1つのプロセスを共有するので、あるアプリの重い処理が他のアプリの応答を遅らせる。監視画面では、応答時間をアプリ単位で確認できるようにする。</li>
+<li>端末一覧、参加者一覧、監視データ、アンケート回答を読み出す機能は、管理サーバにだけ置く。一般向けサーバには置かない。</li>
 </ol>
 </section>
-<section id="実装運用上の注意" class="level1">
-<h1>7. 実装・運用上の注意</h1>
-<section id="fastapi" class="level2">
-<h2 class="anchored" data-anchor-id="fastapi">FastAPI</h2>
+<section id="実装運用上の注意" class="level2">
+<h2 class="anchored" data-anchor-id="実装運用上の注意">7. 実装・運用上の注意</h2>
+<section id="fastapi" class="level3">
+<h3 class="anchored" data-anchor-id="fastapi">FastAPI</h3>
 <ul>
-<li><p>重い処理のエンドポイントは <code>async def</code> ではなく <code>def</code> で書く。<code>def</code> はスレッドプールで実行されるが、<code>async def</code> 内の同期的な重処理はイベントループを止め、全端末が固まる。</p></li>
-<li><p>一般向けサーバのルートの登録順は、API(<code>/api/*</code>)、<code>/core</code>、<code>/apps/&lt;app&gt;</code>、最後に <code>/</code> とする。<code>/</code> に <code>StaticFiles</code> を先にマウントすると、以降のパスがすべて静的配信に吸われる。</p>
+<li><p>重い処理のエンドポイントは <code>async def</code> ではなく <code>def</code> で書く。FastAPIは <code>def</code> のエンドポイントをスレッドプールで実行する。一方、<code>async def</code> の中で同期的な重い処理を行うとイベントループが止まり、全端末への応答が止まる。</p></li>
+<li><p>一般向けサーバのルートは、API(<code>/api/*</code>)、<code>/core</code>、<code>/reception</code>、<code>/apps/&lt;app&gt;</code>、<code>/</code> の順に登録する。<code>/</code> に <code>StaticFiles</code> を先にマウントすると、以降のパスへのリクエストもすべて静的ファイル配信が受け取ってしまう。</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>app.mount(<span class="ss">f&quot;/apps/</span><span class="sc">{</span>name<span class="sc">}</span><span class="ss">&quot;</span>, StaticFiles(directory<span class="op">=</span><span class="ss">f&quot;apps/</span><span class="sc">{</span>name<span class="sc">}</span><span class="ss">/static&quot;</span>, html<span class="op">=</span><span class="va">True</span>), name<span class="op">=</span>name)</span></code></pre></div><button title="コピー" class="code-copy-button"><i class="bi"></i></button></div></li>
-<li><p>起動例:</p>
+<li><p>各サーバは次のコマンドで起動する。</p>
 <ul>
 <li>一般向けサーバ: <code>uvicorn core.main:app --host 0.0.0.0 --port 3000</code></li>
 <li>管理サーバ: <code>uvicorn core.admin:app --host 127.0.0.1 --port 3001</code></li>
 </ul></li>
-<li><p>純Pythonの重い計算はGILにより並列化されないため、プロセス並列(<code>ProcessPoolExecutor</code> または uvicorn の複数ワーカー)を検討する。</p></li>
-<li><p>アプリ更新後に、端末が古いJS/CSSをキャッシュし続けることがある。静的ファイルに <code>Cache-Control: no-cache</code> を付けるか、ファイル名にハッシュを含める。</p></li>
+<li><p>純Pythonの重い計算はGILのため並列に実行されない。その場合はプロセス並列(<code>ProcessPoolExecutor</code> またはuvicornの複数ワーカー)を検討する。</p></li>
+<li><p>アプリを更新しても、端末が古いJS/CSSをキャッシュから使い続けることがある。静的ファイルに <code>Cache-Control: no-cache</code> を付けるか、ファイル名にハッシュを含める。</p></li>
 </ul>
 </section>
-<section id="macネットワーク" class="level2">
-<h2 class="anchored" data-anchor-id="macネットワーク">Mac・ネットワーク</h2>
+<section id="macネットワーク" class="level3">
+<h3 class="anchored" data-anchor-id="macネットワーク">Mac・ネットワーク</h3>
 <ul>
 <li>ルータのDHCP予約(または固定IP)でMacのIPを固定する。</li>
-<li>アクセス先URLは1つに固定する。端末内の保存データと端末IDはオリジン単位で分かれるため、<code>http://&lt;Mac名&gt;.local:3000</code> とIP指定を混在させると、別の端末として扱われ、データが消えたように見える。
+<li>アクセス先のURLは1つに固定する。端末内の保存データと端末IDはオリジン単位で分かれる。<code>http://&lt;Mac名&gt;.local:3000</code> とIP指定を混在させると、同じ端末が別の端末として扱われ、データが消えたように見える。
 <ul>
-<li>Androidでは <code>.local</code> を解決できない場合があるため、IP指定を推奨する。</li>
+<li>Androidは <code>.local</code> を解決できない場合があるため、IP指定を推奨する。</li>
 </ul></li>
 <li>macOSのファイアウォールで、使用ポート(仮想環境内のPython)の受信を許可する。</li>
-<li>スリープを防止する(省エネルギー設定または <code>caffeinate</code>)。<code>launchd</code> で自動起動し、可能なら有線LANで接続する。</li>
-<li>Pythonは <code>venv</code> か <code>uv</code> で仮想環境を作り、依存を固定する。<code>launchd</code> には仮想環境内のPythonをフルパスで指定する。</li>
+<li>省エネルギー設定または <code>caffeinate</code> でスリープを防止する。サーバは <code>launchd</code> で自動起動し、可能ならMacを有線LANで接続する。</li>
+<li>Pythonは <code>venv</code> か <code>uv</code> で仮想環境を作り、依存パッケージのバージョンを固定する。<code>launchd</code> には仮想環境内のPythonをフルパスで指定する。</li>
 </ul>
 </section>
-<section id="端末側の制約" class="level2">
-<h2 class="anchored" data-anchor-id="端末側の制約">端末側の制約</h2>
+<section id="端末側の制約" class="level3">
+<h3 class="anchored" data-anchor-id="端末側の制約">端末側の制約</h3>
 <ul>
 <li>LAN内のhttpはセキュアコンテキストではないため、次のAPIが使えない。
 <ul>
@@ -2631,42 +2848,45 @@ vertical-align: -.125em;
 <li><code>crypto.randomUUID()</code>、<code>crypto.subtle</code></li>
 <li>Clipboard API、カメラ・マイク</li>
 </ul></li>
-<li>上記を使うにはHTTPSが必要。mkcertなどの自己署名証明書は端末ごとにインストールが要るため、後回しにする。</li>
-<li>iPhone/iPadのSafariは、サイトをしばらく使わないと端末内の保存データを削除することがある。端末IDも消えるため、サーバ側の保存データにもアクセスできなくなる(10章)。</li>
+<li>上記のAPIを使うにはHTTPSが必要になる(8章)。</li>
+<li>iPhone/iPadのSafariは、しばらく使われていないサイトの端末内保存データを削除することがある。展示用のタブレットで端末IDが消えると、監視画面では別の端末として扱われる。参加者のデータは参加者IDに結び付けてMacに保存しているので、失われない。</li>
 </ul>
 </section>
 </section>
-<section id="将来拡張" class="level1">
-<h1>8. 将来拡張</h1>
-<section id="rl推論" class="level2">
-<h2 class="anchored" data-anchor-id="rl推論">RL推論</h2>
+<section id="将来拡張" class="level2">
+<h2 class="anchored" data-anchor-id="将来拡張">8. 将来拡張</h2>
+<section id="rl推論" class="level3">
+<h3 class="anchored" data-anchor-id="rl推論">RL推論</h3>
 <ul>
-<li>計算APIの実装の1つとして扱う。PyTorch(MPS)をFastAPIに載せ、モデルは起動時に1回だけロードする。</li>
-<li>ワーカーは1つにする。ワーカーごとにモデルがロードされ、メモリを消費するため。</li>
-<li>小さなモデル(MLP程度)はCPUのほうが速いことがある。MPSとCPUを計測して決める。</li>
-<li><code>def</code> エンドポイントは複数スレッドから同時に呼ばれる。MPSのマルチスレッド不安定が出たら、<code>threading.Lock</code> か専用スレッド+キューで推論を直列化する。</li>
+<li>RL推論は計算APIの実装の1つとして扱う。PyTorch(MPS)をFastAPIに載せ、モデルは起動時に1回だけロードする。</li>
+<li>ワーカーは1つにする。ワーカーごとにモデルがロードされ、その分メモリを消費するためである。</li>
+<li>MLP程度の小さなモデルは、CPUで動かしたほうが速いことがある。MPSとCPUの両方で計測して決める。</li>
+<li><code>def</code> エンドポイントは複数スレッドから同時に呼ばれる。MPSがマルチスレッドで不安定になった場合は、<code>threading.Lock</code> か専用スレッドとキューを使って推論を直列化する。</li>
 <li>端末数が増えたら、短時間に届いた入力をまとめて推論するバッチ化を検討する。</li>
-<li>環境ロジックをMac側(Python)に置くと、計算APIが状態を持つことになり、6章ルール2の例外となる。</li>
-<li>ONNX Runtimeへの変換は、必要になった時点で演算子の互換性とMPS対応を確認する。</li>
+<li>環境ロジックをMac側(Python)に置くと計算APIが状態を持つことになり、6章ルール2の例外となる。</li>
+<li>ONNX Runtimeへの変換は、必要になった時点で演算子の互換性とMPS対応を確認してから行う。</li>
 </ul>
 </section>
-<section id="raspberry-pi" class="level2">
-<h2 class="anchored" data-anchor-id="raspberry-pi">Raspberry Pi</h2>
+<section id="raspberry-pi" class="level3">
+<h3 class="anchored" data-anchor-id="raspberry-pi">Raspberry Pi</h3>
 <ul>
-<li><strong>当面は追加しない。</strong> RL推論の高速化には効果が薄く、LAN往復のコストで逆に遅くなることがある。</li>
-<li>役割を持たせるなら、ログ保存、<code>storage.db</code> のバックアップ先、予備機(縮退運転)、リバースプロキシが現実的。</li>
-<li>処理の分担が必要になった場合は、Macを窓口にして、同じ計算APIを動かすPiへ振り分ける。計算APIがステートレスなので成立する。</li>
+<li><strong>当面は追加しない。</strong> PiはRL推論の高速化にほとんど役立たず、LANの往復時間のぶん逆に遅くなることがある。</li>
+<li>役割を持たせるなら、ログ保存、<code>storage.db</code> のバックアップ先、予備機(縮退運転)、リバースプロキシが現実的である。</li>
+<li>処理の分担が必要になった場合は、Macを窓口にして、同じ計算APIを動かすPiへリクエストを振り分ける。計算APIがステートレスなので、この構成をとれる。</li>
 </ul>
 </section>
-<section id="https" class="level2">
-<h2 class="anchored" data-anchor-id="https">HTTPS</h2>
+<section id="https" class="level3">
+<h3 class="anchored" data-anchor-id="https">HTTPS</h3>
 <ul>
-<li>PWAやセキュアコンテキスト必須のAPIが必要になった時点で検討する。証明書の配布方法(端末ごとのインストール)が主な課題になる。</li>
+<li>PWAやセキュアコンテキスト必須のAPIが必要になった時点で検討する。</li>
+<li>端末はすべて研究室が用意し、参加者の端末はLANに参加しない。そのため、証明書をインストールする先は受付端末と展示用端末の数台で済む。mkcertでMacのIPに対する証明書を作り、各端末にルート証明書を入れる。</li>
+<li>展示用端末のカメラで参加証のQRを読む場合(4.8)は、この方法でHTTPS化する。</li>
+<li>HTTPSに移ると端末のオリジンが変わり、端末IDと端末内の保存データは引き継がれない。</li>
 </ul>
 </section>
 </section>
-<section id="再検討のトリガー" class="level1">
-<h1>9. 再検討のトリガー</h1>
+<section id="再検討のトリガー" class="level2">
+<h2 class="anchored" data-anchor-id="再検討のトリガー">9. 再検討のトリガー</h2>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 50%">
@@ -2684,8 +2904,16 @@ vertical-align: -.125em;
 <td>WebSocketを追加</td>
 </tr>
 <tr class="even">
-<td>端末をまたいで同じデータを使いたい</td>
-<td>ユーザ単位の識別(認証)を追加</td>
+<td>なりすましを防ぐ必要が出た</td>
+<td>本人確認(認証)を追加</td>
+</tr>
+<tr class="odd">
+<td>コードの手入力が混雑の原因になる</td>
+<td>2次元コードスキャナか、HTTPS化してカメラで読み取る(4.8)</td>
+</tr>
+<tr class="even">
+<td>スマホでの記録を研究データに使いたい</td>
+<td>公開サイトにデータを保存するバックエンドを置き、仮名IDで受付の参加者と結び付ける。データの置き場所について研究室・大学の規程を確認する</td>
 </tr>
 <tr class="odd">
 <td>認証・管理操作・複雑なデータモデルが必要</td>
@@ -2693,7 +2921,7 @@ vertical-align: -.125em;
 </tr>
 <tr class="even">
 <td>PWAやセキュアコンテキスト必須APIが必要</td>
-<td>HTTPS化(証明書配布を含む)</td>
+<td>HTTPS化(8章)</td>
 </tr>
 <tr class="odd">
 <td>管理画面をMac以外の端末(スマホなど)から直接見たい</td>
@@ -2714,29 +2942,38 @@ vertical-align: -.125em;
 </tbody>
 </table>
 </section>
-<section id="未確定事項" class="level1">
-<h1>10. 未確定事項</h1>
+<section id="未確定事項" class="level2">
+<h2 class="anchored" data-anchor-id="未確定事項">10. 未確定事項</h2>
 <ul>
-<li>アプリ側から基盤に求められる要件: 計算の重さ、同時接続する端末数の上限、端末の種類</li>
-<li>アンケート回答を端末IDと紐付けるか、匿名にするか(当面は紐付ける。同じ端末の利用状況と照らし合わせられるため)</li>
-<li>同じ端末に毎回アンケートを出すか、回答済みの版は出さないか</li>
-<li>保存データの容量上限と保持期間、<code>metrics.db</code> の保持期間</li>
-<li>Safariのデータ削除などで端末IDが失われた場合の扱い。サーバ上のデータが誰のものか分からなくなる。案として、端末IDを画面に表示し、手入力で復元できるようにする方法がある</li>
-<li>RL推論を使うか。使う場合のモデルの種類・サイズと、環境ロジックの置き場所</li>
+<li>アプリ側から基盤に求められる要件。計算の重さ、展示用端末の台数、1回の参加者数がまだ分かっていない。</li>
+<li>基本情報と共通の体験評価の設問内容。研究の目的に合わせて決める。それまでは仮の設問で進める。</li>
+<li>研究利用への同意の取り方。参加者に未成年が含まれる場合は、大学の倫理審査で保護者同意の要否を確認する。</li>
+<li>退場時のアンケート(全体の感想、事後の理解度)を設けるか。設けるなら、受付で聞く事前知識と同じ尺度にして前後を比べられるようにする。</li>
+<li>共通の体験評価を全アプリで必ず出すか、アプリごとに出すかどうかを選べるようにするか。</li>
+<li>同じ参加者が同じアプリを再び遊んだとき、終了時のアンケートを毎回出すか、初回だけにするか。</li>
+<li>受付APIのアクセス制御。一般向けサーバに置くので、LAN内の誰でも呼べる。教室内なので許容するか、受付端末だけが知る合言葉を付けるかを決める。</li>
+<li>スマホを使わず、コードも覚えられない参加者への対応。案として、待機画面に直近の受付者をニックネームとアイコンで並べ、選ばせる方法がある。ただしこの方法は、一般向けサーバから参加者の情報を読み出すことになり、6章ルール5の例外となる。</li>
+<li>コードの有効期限と、参加者が後日再び来場したときの扱い。</li>
+<li>無操作で自動ログアウトするまでの時間。</li>
+<li>公開サイトのホスティング方法。参加証ページの置き場所もこれに従う。</li>
+<li>保存データの容量上限と保持期間、<code>metrics.db</code> の保持期間。</li>
+<li>RL推論を使うか。使う場合は、モデルの種類・サイズと環境ロジックの置き場所も決める。</li>
 </ul>
 </section>
-<section id="次のアクション" class="level1">
-<h1>11. 次のアクション</h1>
+<section id="次のアクション" class="level2">
+<h2 class="anchored" data-anchor-id="次のアクション">11. 次のアクション</h2>
 <ol type="1">
-<li>基盤の骨組みを作る: FastAPI、<code>apps/</code> の自動読み込み、ランチャー、<code>/api/core/health</code>。</li>
-<li>サンプルアプリを2つ作る(計算APIなしのもの、ありのもの)。規約どおりに複数アプリが載ることを確認する。</li>
-<li><code>sdk.js</code> を作る: 端末ID、タイムアウト付きのAPI呼び出し、ハートビート。</li>
-<li>保存APIと、<code>storage.db</code> の定期バックアップを作る。</li>
-<li>監視を作る: リクエスト記録のミドルウェア、<code>metrics.db</code>、ログローテーション、管理サーバと監視画面。LAN上の別端末から <code>:3001</code> に接続できないことを確認する。</li>
-<li>アンケートを作る: <code>survey.json</code> の形式、<code>sdk.js</code> の終了処理とアンケート画面、回答API、再送、管理サーバの集計画面とCSV出力。</li>
-<li><code>caffeinate</code> と <code>launchd</code> で常時稼働にし、Macの再起動後に自動で復帰することを確認する。</li>
-<li>PC・iPhone・Androidから動作を確認し、想定最大端末数でMacの負荷とWi-Fiの帯域・遅延を検証する。</li>
+<li>基盤の骨組みを作る。FastAPI、<code>apps/</code> の自動読み込み、ランチャー、<code>/api/core/health</code> が対象。</li>
+<li>計算APIを持たないサンプルアプリと、持つサンプルアプリを1つずつ作り、規約どおりに複数のアプリが載ることを確認する。</li>
+<li><code>sdk.js</code> を作る。端末ID、タイムアウト付きのAPI呼び出し、ハートビートを実装する。</li>
+<li>参加者の識別を作る。仮の <code>profile.json</code>、受付画面とコード発行、参加者・ログインのテーブル、待機画面とログイン・ログアウト、参加証ページを実装する。</li>
+<li>保存APIと、<code>storage.db</code> の定期バックアップを作る。保存APIは参加者単位にする。</li>
+<li>監視を作る。リクエスト記録のミドルウェア、<code>metrics.db</code>、ログローテーション、管理サーバと監視画面・参加者一覧を実装し、LAN上の別端末から <code>:3001</code> に接続できないことを確認する。</li>
+<li>アンケートを作る。<code>survey.json</code> の形式、仮の <code>common.json</code>、<code>sdk.js</code> の終了処理とアンケート画面、回答API、再送、管理サーバの集計画面と基本情報を結合したCSV出力を実装する。</li>
+<li><code>caffeinate</code> と <code>launchd</code> で常時稼働させ、Macの再起動後に自動で復帰することを確認する。</li>
+<li>受付端末・展示用のPC・タブレットから動作を確認する。モバイル回線のスマホで参加証ページを開けることも確認する。想定最大の端末数でMacの負荷とWi-Fiの帯域・遅延を検証する。</li>
 </ol>
+</section>
 </section>
 
 </main>
