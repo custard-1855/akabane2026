@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>研究室トップ表現案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: 全幅ステージ(ヒーローの試作)→ 案の切替 → 3案の印象。ステージは光る線と点だけで見せる */
+:root {
+  --bg: #0a1020;
+  --panel: #101a2e;
+  --ink: #e9eef7;
+  --muted: #8d9ab0;
+  --line: #222e47;
+  --edge: #34425f;
+  --accent: #6cc4ff;
+  --accent2: #f5b14c;
+  --c1: #5aa9ff;
+  --c2: #f59e4b;
+  --c3: #4fd1a5;
+  --c4: #f46b8a;
+  --c5: #b28dff;
+  --scrim: rgba(10, 16, 32, 0.74);
+  --font-display: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --font-body: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f3f5f9;
+    --panel: #ffffff;
+    --ink: #121a2b;
+    --muted: #5a667c;
+    --line: #d5dbe5;
+    --edge: #bcc6d6;
+    --accent: #1d6fd6;
+    --accent2: #c7770c;
+    --c1: #2f6fd6;
+    --c2: #d9771f;
+    --c3: #1f9e74;
+    --c4: #d6456a;
+    --c5: #7d55d9;
+    --scrim: rgba(243, 245, 249, 0.82);
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #f3f5f9;
+  --panel: #ffffff;
+  --ink: #121a2b;
+  --muted: #5a667c;
+  --line: #d5dbe5;
+  --edge: #bcc6d6;
+  --accent: #1d6fd6;
+  --accent2: #c7770c;
+  --c1: #2f6fd6;
+  --c2: #d9771f;
+  --c3: #1f9e74;
+  --c4: #d6456a;
+  --c5: #7d55d9;
+  --scrim: rgba(243, 245, 249, 0.82);
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.stage {
+  position: relative;
+  height: clamp(440px, 76vh, 800px);
+  overflow: hidden;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  touch-action: pan-y;
+}
+.stage canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+}
+.scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, var(--scrim) 0%, transparent 55%);
+  transition: opacity .4s;
+}
+.overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  padding: clamp(24px, 6vw, 72px) clamp(16px, 6vw, 80px);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+  transition: opacity .4s;
+}
+.brand {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tagline {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(26px, 4.6vw, 56px);
+  line-height: 1.3;
+  letter-spacing: .02em;
+  display: grid;
+}
+.tagline span { white-space: nowrap; }
+.themes {
+  margin: 0;
+  font-size: clamp(14px, 1.5vw, 16px);
+  color: var(--muted);
+  letter-spacing: .06em;
+}
+.stage.bare .overlay, .stage.bare .scrim { opacity: 0; }
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding: 14px clamp(16px, 6vw, 80px);
+  border-bottom: 1px solid var(--line);
+}
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab, .btn {
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.tab .key { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.tab[aria-selected="true"] .key { color: var(--bg); opacity: .7; }
+.tab:hover, .btn:hover { border-color: var(--muted); }
+.tab:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.side { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.hint { margin: 0; font-size: 13px; color: var(--muted); }
+.btn-row { display: flex; gap: 6px; }
+
+main {
+  padding: clamp(28px, 5vw, 56px) clamp(16px, 6vw, 80px) 72px;
+  max-width: 1200px;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 28px;
+}
+.card { min-width: 0; display: grid; gap: 6px; align-content: start; }
+.card .key { font-family: var(--font-mono); font-size: 12px; color: var(--muted); letter-spacing: .08em; }
+.card h2 { margin: 0; font-family: var(--font-display); font-size: 20px; font-weight: 700; }
+.card p { margin: 0; color: var(--muted); }
+.card.is-current h2 { color: var(--accent); }
+
+@media (max-width: 640px) {
+  .scrim { background: linear-gradient(180deg, var(--scrim) 0%, transparent 60%); }
+  .overlay { justify-content: flex-start; }
+}
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <canvas id="cv" aria-label="研究テーマを表す動くグラフィック"></canvas>
+  <div class="scrim"></div>
+  <div class="overlay">
+    <div class="brand">◯◯ Laboratory · ◯◯研究室</div>
+    <h1 class="tagline"><span>つながりを読み解き、</span><span>学ぶしくみをつくる。</span></h1>
+    <p class="themes">グラフ理論 · 機械学習 · ネットワーク</p>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="tabs" role="tablist" aria-label="トップ表現の案">
+    <button class="tab" role="tab" id="tab-a" data-id="a" aria-selected="false"><span class="key">A</span>光の枝</button>
+    <button class="tab" role="tab" id="tab-b" data-id="b" aria-selected="false"><span class="key">B</span>流れる境界</button>
+    <button class="tab" role="tab" id="tab-c" data-id="c" aria-selected="false"><span class="key">C</span>伝わる星座</button>
+  </div>
+  <div class="side">
+    <p class="hint" id="hint"></p>
+    <div class="btn-row">
+      <button class="btn" id="btn-play" type="button">一時停止</button>
+      <button class="btn" id="btn-bare" type="button" aria-pressed="false">文字を隠す</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="cards">
+    <section class="card" data-col="a">
+      <span class="key">A · グラフ理論</span>
+      <h2>光の枝</h2>
+      <p>街の灯がともるように、点から点へ光の枝が伸びていく。静かで知的な印象。</p>
+    </section>
+    <section class="card" data-col="b">
+      <span class="key">B · 機械学習</span>
+      <h2>流れる境界</h2>
+      <p>二色の境目が液体のようにうねり続ける。やわらかく有機的な印象。</p>
+    </section>
+    <section class="card" data-col="c">
+      <span class="key">C · ネットワーク</span>
+      <h2>伝わる星座</h2>
+      <p>立体のネットワークを色の信号が駆けめぐる。華やかで奥行きのある印象。</p>
+    </section>
+  </div>
+</main>
+
+<script>
+(() => {
+'use strict';
+
+const $ = (s) => document.querySelector(s);
+const stage = $('#stage');
+const cv = $('#cv');
+const ctx = cv.getContext('2d');
+const hintEl = $('#hint');
+const playBtn = $('#btn-play');
+const bareBtn = $('#btn-bare');
+
+let W = 0, H = 0, DPR = 1;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rand = (a, b) => a + Math.random() * (b - a);
+const smooth = (t) => t * t * (3 - 2 * t);
+const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
+
+/* ---------- colors(CSS トークンから読む) ---------- */
+let C = {};
+function hexRgb(h) {
+  h = h.replace('#', '').trim();
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  const n = parseInt(h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function readColors() {
+  const cs = getComputedStyle(document.documentElement);
+  const g = (n) => hexRgb(cs.getPropertyValue(n));
+  C = {
+    bg: g('--bg'), ink: g('--ink'), muted: g('--muted'), edge: g('--edge'),
+    accent: g('--accent'), accent2: g('--accent2'),
+    L: ['--c1', '--c2', '--c3', '--c4', '--c5'].map(g),
+  };
+  C.dark = (C.bg[0] + C.bg[1] + C.bg[2]) / 3 < 128;
+  glowCache.clear();
+}
+const rgba = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
+const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+
+/* 光の粒: 放射グラデーションを一度だけ描いて使い回す */
+const glowCache = new Map();
+function glowSprite(c) {
+  const key = c.map((v) => v | 0).join(',');
+  let s = glowCache.get(key);
+  if (s) return s;
+  if (glowCache.size > 64) glowCache.clear();
+  s = document.createElement('canvas');
+  s.width = s.height = 64;
+  const g = s.getContext('2d');
+  const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, rgba(c, 1));
+  gr.addColorStop(0.18, rgba(c, 0.55));
+  gr.addColorStop(0.5, rgba(c, 0.12));
+  gr.addColorStop(1, rgba(c, 0));
+  g.fillStyle = gr;
+  g.fillRect(0, 0, 64, 64);
+  glowCache.set(key, s);
+  return s;
+}
+function glow(c, x, y, r, a) {
+  if (a <= 0.01) return;
+  ctx.globalAlpha = Math.min(1, a);
+  ctx.drawImage(glowSprite(c), x - r, y - r, r * 2, r * 2);
+  ctx.globalAlpha = 1;
+}
+/* 背景のグラデーションは位置と大きさが変わったときだけ描き直す */
+let bgCache = null, bgKey = '';
+function background(cx, cy) {
+  const key = [W, H, cx | 0, cy | 0, C.bg.join(), C.accent.join()].join('|');
+  if (key !== bgKey) {
+    bgKey = key;
+    bgCache = document.createElement('canvas');
+    bgCache.width = W; bgCache.height = H;
+    const b = bgCache.getContext('2d');
+    const g = b.createRadialGradient(cx, cy, 0, cx, cy, Math.hypot(W, H) * 0.7);
+    g.addColorStop(0, rgba(mix(C.bg, C.accent, C.dark ? 0.07 : 0.05)));
+    g.addColorStop(1, rgba(C.bg));
+    b.fillStyle = g;
+    b.fillRect(0, 0, W, H);
+  }
+  ctx.drawImage(bgCache, 0, 0, W, H);
+}
+const additive = () => { ctx.globalCompositeOperation = C.dark ? 'lighter' : 'source-over'; };
+const normal = () => { ctx.globalCompositeOperation = 'source-over'; };
+
+/* =========================================================
+   A. 光の枝 — 点のあいだを光が枝分かれしながら広がる
+   ========================================================= */
+const Branches = {
+  hint: 'クリックした場所から光が広がります',
+  init() { this.build(); this.waves = []; this.timer = 0; this.hue = 0; this.spawn(); },
+  resize() { this.init(); },
+  build() {
+    const area = W * H;
+    const N = Math.round(clamp(area / 6000, 50, 240));
+    const r = Math.sqrt(area / N) * 0.72;
+    const pts = [];
+    let tries = 0;
+    while (pts.length < N && tries < N * 60) {
+      tries++;
+      const x = rand(-10, W + 10), y = rand(-10, H + 10);
+      let ok = true;
+      for (const p of pts) { if ((p.x - x) ** 2 + (p.y - y) ** 2 < r * r) { ok = false; break; } }
+      if (ok) pts.push({ x, y });
+    }
+    const n = pts.length;
+    const adj = Array.from({ length: n }, () => []);
+    const edges = [];
+    const R2 = (r * 2.8) ** 2;
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const dx = pts[j].x - pts[i].x, dy = pts[j].y - pts[i].y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 > R2) continue;
+        const mx = pts[i].x + dx / 2, my = pts[i].y + dy / 2, rr = d2 / 4;
+        let ok = true;
+        for (let k = 0; k < n; k++) {
+          if (k !== i && k !== j && (pts[k].x - mx) ** 2 + (pts[k].y - my) ** 2 < rr) { ok = false; break; }
+        }
+        if (!ok) continue;
+        const w = Math.sqrt(d2) * rand(0.8, 1.6);
+        edges.push([i, j]);
+        adj[i].push([j, w]);
+        adj[j].push([i, w]);
+      }
+    }
+    Object.assign(this, { pts, adj, edges, n });
+  },
+  spawn(src) {
+    const { n, adj } = this;
+    if (src === undefined) src = (Math.random() * n) | 0;
+    const dist = new Float64Array(n).fill(Infinity);
+    const par = new Int32Array(n).fill(-1);
+    const done = new Uint8Array(n);
+    dist[src] = 0;
+    let maxD = 0;
+    for (let it = 0; it < n; it++) {
+      let u = -1, best = Infinity;
+      for (let i = 0; i < n; i++) if (!done[i] && dist[i] < best) { best = dist[i]; u = i; }
+      if (u < 0) break;
+      done[u] = 1;
+      maxD = dist[u];
+      for (const [v, w] of adj[u]) if (dist[u] + w < dist[v]) { dist[v] = dist[u] + w; par[v] = u; }
+    }
+    const palette = [C.accent, C.accent2, C.L[2], C.L[4], C.L[3]];
+    const col = palette[this.hue++ % palette.length];
+    this.waves.push({ src, dist, par, maxD, T: 0, speed: Math.hypot(W, H) / 4.2, col });
+    if (this.waves.length > 5) this.waves.shift();
+  },
+  update(dt) {
+    this.timer += dt;
+    if (this.timer > 2.4) { this.timer = 0; this.spawn(); }
+    for (const w of this.waves) w.T += w.speed * dt;
+    this.waves = this.waves.filter((w) => w.T < w.maxD + w.speed * 3);
+  },
+  settle() { this.update(1.2); this.spawn(); for (let i = 0; i < 40; i++) this.update(0.05); },
+  pointer(type, x, y) {
+    if (type !== 'down') return;
+    let best = 0, bd = Infinity;
+    this.pts.forEach((p, i) => { const d = (p.x - x) ** 2 + (p.y - y) ** 2; if (d < bd) { bd = d; best = i; } });
+    this.spawn(best);
+    this.timer = 0;
+  },
+  draw() {
+    const { pts, edges } = this;
+    background(W * 0.62, H * 0.45);
+    ctx.beginPath();
+    for (const [a, b] of edges) { ctx.moveTo(pts[a].x, pts[a].y); ctx.lineTo(pts[b].x, pts[b].y); }
+    ctx.strokeStyle = rgba(C.edge, 0.32);
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+    for (const p of pts) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 1.3, 0, Math.PI * 2);
+      ctx.fillStyle = rgba(C.muted, 0.45);
+      ctx.fill();
+    }
+
+    additive();
+    ctx.lineCap = 'round';
+    for (const w of this.waves) {
+      const { dist, par, T, col } = w;
+      const decay = w.speed * 0.9;
+      ctx.lineWidth = 1.6;
+      for (let v = 0; v < pts.length; v++) {
+        const p = par[v];
+        if (p < 0 || dist[p] > T) continue;
+        const f = clamp((T - dist[p]) / (dist[v] - dist[p] || 1), 0, 1);
+        const b = f < 1 ? 1 : Math.exp(-(T - dist[v]) / decay);
+        if (b < 0.02) continue;
+        const hx = pts[p].x + (pts[v].x - pts[p].x) * f, hy = pts[p].y + (pts[v].y - pts[p].y) * f;
+        ctx.strokeStyle = rgba(col, 0.7 * b);
+        ctx.beginPath();
+        ctx.moveTo(pts[p].x, pts[p].y);
+        ctx.lineTo(hx, hy);
+        ctx.stroke();
+        if (f < 1) glow(col, hx, hy, 9, 0.9);
+      }
+      for (let v = 0; v < pts.length; v++) {
+        if (dist[v] > T) continue;
+        const b = Math.exp(-(T - dist[v]) / decay);
+        glow(col, pts[v].x, pts[v].y, 5 + 14 * b, b);
+      }
+      if (T < w.speed * 1.2) glow(col, pts[w.src].x, pts[w.src].y, 40, 1 - T / (w.speed * 1.2));
+    }
+    normal();
+  },
+};
+
+/* =========================================================
+   B. 流れる境界 — 動き続けるデータに小さなニューラルネットが追いつこうとする
+   ========================================================= */
+const Liquid = {
+  hint: 'クリックで点を置くと、境界がそれを避けるように流れます',
+  H1: 16, H2: 16, m: 70,
+  shapes: ['spiral', 'moons', 'rings', 'waves'],
+  init() {
+    this.alloc();
+    this.initWeights();
+    this.mapping();
+    this.si = 0;
+    this.A = this.shape(this.shapes[0]);
+    this.B = this.A;
+    Object.assign(this, { morph: 1, t: 0, clock: 0, user: [] });
+    this.positions();
+    for (let i = 0; i < 400; i++) this.step();
+  },
+  resize() { this.mapping(); },
+  mapping() {
+    const ax = W / H;
+    this.ax = ax;
+    const wide = ax > 1.3;
+    this.cx = wide ? ax * 0.38 : 0;
+    this.cy = wide ? 0 : -0.25;
+    this.sc = Math.min(1, ax) * (wide ? 0.8 : 0.6);
+    this.cell = clamp(W / 120, 7, 13);
+  },
+  toScreen(u, v) {
+    const x = this.cx + u * this.sc, y = this.cy + v * this.sc;
+    return [((x + this.ax) / (2 * this.ax)) * W, ((1 - y) / 2) * H];
+  },
+  toModel(px, py) {
+    const x = (px / W) * 2 * this.ax - this.ax, y = 1 - (py / H) * 2;
+    return [(x - this.cx) / this.sc, (y - this.cy) / this.sc];
+  },
+  shape(key) {
+    const m = this.m, out = [];
+    for (let c = 0; c < 2; c++) {
+      for (let i = 0; i < m; i++) {
+        const s = i / (m - 1);
+        let u, v;
+        if (key === 'spiral') {
+          const r = 0.12 + 0.86 * s, th = s * 2.6 * Math.PI + c * Math.PI;
+          u = r * Math.cos(th); v = r * Math.sin(th);
+        } else if (key === 'moons') {
+          const t = Math.PI * s;
+          u = c ? (0.5 - Math.cos(t)) * 0.85 : (Math.cos(t) - 0.5) * 0.85;
+          v = c ? (0.25 - Math.sin(t)) * 0.85 : (Math.sin(t) - 0.25) * 0.85;
+        } else if (key === 'rings') {
+          const a = s * Math.PI * 2 + c * 0.3, r = c ? 0.88 : 0.36;
+          u = r * Math.cos(a); v = r * Math.sin(a);
+        } else {
+          u = -0.95 + 1.9 * s;
+          v = 0.32 * Math.sin(u * 3.2) + (c ? -0.3 : 0.3);
+        }
+        out.push({ u: u + gauss() * 0.04, v: v + gauss() * 0.04, c });
+      }
+    }
+    return out;
+  },
+  positions() {
+    const e = smooth(clamp(this.morph, 0, 1));
+    const rot = this.clock * 0.07;
+    const cr = Math.cos(rot), sr = Math.sin(rot);
+    this.data = this.A.map((a, i) => {
+      const b = this.B[i];
+      let u = a.u + (b.u - a.u) * e, v = a.v + (b.v - a.v) * e;
+      u += 0.025 * Math.sin(this.clock * 1.1 + i * 0.7);
+      v += 0.025 * Math.cos(this.clock * 0.9 + i * 1.3);
+      return { u: u * cr - v * sr, v: u * sr + v * cr, c: a.c };
+    });
+    this.raw = this.A.map((a, i) => {
+      const b = this.B[i];
+      return { u: a.u + (b.u - a.u) * e, v: a.v + (b.v - a.v) * e, c: a.c };
+    });
+    for (const p of this.user) this.data.push(p);
+  },
+  alloc() {
+    const { H1, H2 } = this;
+    const o = { W1: 0 };
+    o.b1 = o.W1 + 2 * H1; o.W2 = o.b1 + H1; o.b2 = o.W2 + H1 * H2; o.W3 = o.b2 + H2; o.b3 = o.W3 + H2;
+    this.o = o;
+    this.np = o.b3 + 1;
+    this.P = new Float64Array(this.np);
+    this.G = new Float64Array(this.np);
+    this.M = new Float64Array(this.np);
+    this.V = new Float64Array(this.np);
+    this.h1 = new Float64Array(H1);
+    this.h2 = new Float64Array(H2);
+    this.dz2 = new Float64Array(H2);
+  },
+  initWeights() {
+    const { P, o, H1, H2 } = this;
+    const fill = (from, count, lim) => { for (let i = 0; i < count; i++) P[from + i] = rand(-lim, lim); };
+    P.fill(0);
+    fill(o.W1, 2 * H1, Math.sqrt(6 / (2 + H1)) * 1.6);
+    fill(o.W2, H1 * H2, Math.sqrt(6 / (H1 + H2)));
+    fill(o.W3, H2, Math.sqrt(6 / (H2 + 1)));
+    this.M.fill(0); this.V.fill(0); this.t = 0;
+  },
+  fwd(x, y) {
+    const { P, o, H1, H2, h1, h2 } = this;
+    for (let i = 0; i < H1; i++) h1[i] = Math.tanh(P[o.W1 + 2 * i] * x + P[o.W1 + 2 * i + 1] * y + P[o.b1 + i]);
+    let s3 = P[o.b3];
+    for (let j = 0; j < H2; j++) {
+      let s = P[o.b2 + j];
+      const base = o.W2 + j * H1;
+      for (let i = 0; i < H1; i++) s += P[base + i] * h1[i];
+      h2[j] = Math.tanh(s);
+      s3 += P[o.W3 + j] * h2[j];
+    }
+    return 1 / (1 + Math.exp(-s3));
+  },
+  step() {
+    const { P, G, M, V, o, H1, H2, h1, h2, dz2, data } = this;
+    G.fill(0);
+    const n = data.length;
+    for (const d of data) {
+      const p = this.fwd(d.u, d.v);
+      const dz3 = (p - d.c) / n;
+      G[o.b3] += dz3;
+      for (let j = 0; j < H2; j++) {
+        G[o.W3 + j] += dz3 * h2[j];
+        dz2[j] = dz3 * P[o.W3 + j] * (1 - h2[j] * h2[j]);
+        G[o.b2 + j] += dz2[j];
+        const base = o.W2 + j * H1;
+        for (let i = 0; i < H1; i++) G[base + i] += dz2[j] * h1[i];
+      }
+      for (let i = 0; i < H1; i++) {
+        let s = 0;
+        for (let j = 0; j < H2; j++) s += P[o.W2 + j * H1 + i] * dz2[j];
+        const dz1 = s * (1 - h1[i] * h1[i]);
+        G[o.W1 + 2 * i] += dz1 * d.u;
+        G[o.W1 + 2 * i + 1] += dz1 * d.v;
+        G[o.b1 + i] += dz1;
+      }
+    }
+    this.t++;
+    const lr = 0.012, b1 = 0.9, b2 = 0.999;
+    const c1 = 1 - Math.pow(b1, this.t), c2 = 1 - Math.pow(b2, this.t);
+    for (let k = 0; k < this.np; k++) {
+      M[k] = b1 * M[k] + (1 - b1) * G[k];
+      V[k] = b2 * V[k] + (1 - b2) * G[k] * G[k];
+      P[k] -= (lr * (M[k] / c1)) / (Math.sqrt(V[k] / c2) + 1e-8);
+    }
+  },
+  update(dt) {
+    this.clock += dt;
+    this.t2 = (this.t2 || 0) + dt;
+    this.morph += dt / 3.5;
+    if (this.t2 > 15) {
+      this.t2 = 0;
+      this.si++;
+      this.A = this.raw;
+      this.B = this.shape(this.shapes[this.si % this.shapes.length]);
+      this.morph = 0;
+    }
+    this.user = this.user.filter((p) => this.clock - p.born < 12);
+    this.positions();
+    const k = Math.max(1, Math.round(dt * 150));
+    for (let i = 0; i < k; i++) this.step();
+  },
+  settle() { for (let i = 0; i < 600; i++) this.step(); },
+  pointer(type, x, y) {
+    if (type !== 'down') return;
+    const [u, v] = this.toModel(x, y);
+    const p = this.fwd(u, v);
+    this.user.push({ u, v, c: p > 0.5 ? 0 : 1, born: this.clock });
+    if (this.user.length > 20) this.user.shift();
+  },
+  contour(g, cols, rows, s, th) {
+    const SEG = { 1: [[3, 2]], 2: [[2, 1]], 3: [[3, 1]], 4: [[0, 1]], 5: [[0, 1], [3, 2]], 6: [[0, 2]], 7: [[0, 3]],
+      8: [[0, 3]], 9: [[0, 2]], 10: [[0, 3], [2, 1]], 11: [[0, 1]], 12: [[3, 1]], 13: [[1, 2]], 14: [[3, 2]] };
+    ctx.beginPath();
+    for (let gy = 0; gy < rows - 1; gy++) {
+      for (let gx = 0; gx < cols - 1; gx++) {
+        const a = g[gy * cols + gx], b = g[gy * cols + gx + 1];
+        const c = g[(gy + 1) * cols + gx + 1], d = g[(gy + 1) * cols + gx];
+        const segs = SEG[((a > th) << 3) | ((b > th) << 2) | ((c > th) << 1) | (d > th)];
+        if (!segs) continue;
+        const x0 = gx * s - s / 2, y0 = gy * s - s / 2;
+        const pt = (e) => {
+          if (e === 0) return [x0 + ((th - a) / (b - a)) * s, y0];
+          if (e === 1) return [x0 + s, y0 + ((th - b) / (c - b)) * s];
+          if (e === 2) return [x0 + ((th - d) / (c - d)) * s, y0 + s];
+          return [x0, y0 + ((th - a) / (d - a)) * s];
+        };
+        for (const [e1, e2] of segs) {
+          const p1 = pt(e1), p2 = pt(e2);
+          ctx.moveTo(p1[0], p1[1]);
+          ctx.lineTo(p2[0], p2[1]);
+        }
+      }
+    }
+  },
+  draw() {
+    const s = this.cell;
+    const cols = Math.ceil(W / s) + 2, rows = Math.ceil(H / s) + 2;
+    if (!this.fc || this.fc.width !== cols || this.fc.height !== rows) {
+      this.fc = document.createElement('canvas');
+      this.fc.width = cols; this.fc.height = rows;
+      this.fctx = this.fc.getContext('2d');
+      this.grid = new Float32Array(cols * rows);
+    }
+    const img = this.fctx.createImageData(cols, rows);
+    const g = this.grid;
+    const A = C.L[2], B = C.L[4];
+    for (let gy = 0; gy < rows; gy++) {
+      for (let gx = 0; gx < cols; gx++) {
+        const [u, v] = this.toModel(gx * s - s / 2, gy * s - s / 2);
+        const q = clamp(this.fwd(u, v), 1e-6, 1 - 1e-6);
+        const p = 1 / (1 + Math.pow((1 - q) / q, 0.22));
+        const k = gy * cols + gx;
+        g[k] = p;
+        const col = mix(A, B, smooth(p));
+        const a = 0.06 + 0.24 * Math.abs(p - 0.5) * 2;
+        img.data[k * 4] = C.bg[0] + (col[0] - C.bg[0]) * a;
+        img.data[k * 4 + 1] = C.bg[1] + (col[1] - C.bg[1]) * a;
+        img.data[k * 4 + 2] = C.bg[2] + (col[2] - C.bg[2]) * a;
+        img.data[k * 4 + 3] = 255;
+      }
+    }
+    this.fctx.putImageData(img, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(this.fc, -s, -s, cols * s, rows * s);
+
+    // 等高線を地形図のように重ね、0.5 の線だけ光らせる
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 1;
+    for (const th of [0.12, 0.22, 0.32, 0.42, 0.58, 0.68, 0.78, 0.88]) {
+      this.contour(g, cols, rows, s, th);
+      ctx.strokeStyle = rgba(th < 0.5 ? A : B, (C.dark ? 0.14 : 0.2) + 0.25 * (1 - Math.abs(th - 0.5) * 2));
+      ctx.stroke();
+    }
+    this.contour(g, cols, rows, s, 0.5);
+    additive();
+    ctx.strokeStyle = rgba(C.ink, C.dark ? 0.18 : 0.12);
+    ctx.lineWidth = 7;
+    ctx.stroke();
+    ctx.strokeStyle = rgba(C.ink, 0.9);
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    for (const d of this.data) {
+      const [x, y] = this.toScreen(d.u, d.v);
+      const col = d.c ? B : A;
+      glow(col, x, y, d.born !== undefined ? 22 : 12, 0.8);
+      ctx.beginPath();
+      ctx.arc(x, y, d.born !== undefined ? 3.4 : 2, 0, Math.PI * 2);
+      ctx.fillStyle = rgba(C.dark ? mix(col, C.ink, 0.5) : col);
+      ctx.fill();
+    }
+    normal();
+  },
+};
+
+/* =========================================================
+   C. 伝わる星座 — 回転する立体ネットワークを色の信号が伝わる
+   ========================================================= */
+const Constellation = {
+  hint: 'クリックした点から色が伝わります。カーソルで視点が傾きます',
+  init() {
+    this.build();
+    Object.assign(this, { pulses: [], timer: 0, rot: 0, tilt: 0.25, yaw: 0, tiltT: 0.25, yawT: 0, cid: 0, hue: 0 });
+    for (let i = 0; i < 3; i++) this.emit((Math.random() * this.n) | 0);
+  },
+  resize() {},
+  palette() { return [C.accent, C.accent2, C.L[2], C.L[3], C.L[4]]; },
+  build() {
+    const n = Math.round(clamp((W * H) / 7000, 60, 140));
+    const K = 6;
+    const centers = Array.from({ length: K }, (_, k) => {
+      const y = 1 - (2 * (k + 0.5)) / K, r = Math.sqrt(1 - y * y), th = k * 2.4 + rand(-0.3, 0.3);
+      return [r * Math.cos(th) * 0.6, y * 0.6, r * Math.sin(th) * 0.6];
+    });
+    const nodes = [];
+    for (let i = 0; i < n; i++) {
+      const c = centers[i % K];
+      // 色は「パレットの番号」と「熱さ(0〜1)」で持つ。光の画像を5色分だけで済ませるため
+      nodes.push({ p: [c[0] + gauss() * 0.4, c[1] + gauss() * 0.4, c[2] + gauss() * 0.4], ci: 0, heat: 0, flash: 0, last: -1 });
+    }
+    const has = new Set(), edges = [], nbrs = Array.from({ length: n }, () => []);
+    const add = (a, b) => {
+      const key = a < b ? a * n + b : b * n + a;
+      if (a === b || has.has(key)) return;
+      has.add(key); edges.push([a, b]); nbrs[a].push(b); nbrs[b].push(a);
+    };
+    const d3 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+    for (let i = 0; i < n; i++) {
+      const near = nodes.map((q, j) => [d3(nodes[i].p, q.p), j]).sort((x, y) => x[0] - y[0]);
+      for (let t = 1; t <= 3; t++) add(i, near[t][1]);
+    }
+    // 離れた塊どうしは、いちばん近い組み合わせの辺でつなぐ(全体を1つのネットワークにする)
+    const root = [...Array(n).keys()];
+    const find = (x) => (root[x] === x ? x : (root[x] = find(root[x])));
+    edges.forEach(([a, b]) => { root[find(a)] = find(b); });
+    const pairs = [];
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) pairs.push([d3(nodes[i].p, nodes[j].p), i, j]);
+    pairs.sort((x, y) => x[0] - y[0]);
+    for (const [, i, j] of pairs) {
+      if (find(i) === find(j)) continue;
+      root[find(i)] = find(j);
+      add(i, j);
+    }
+    const len = edges.map(([a, b]) => d3(nodes[a].p, nodes[b].p));
+    const elen = new Map();
+    edges.forEach(([a, b], e) => { elen.set(a * n + b, len[e]); elen.set(b * n + a, len[e]); });
+    Object.assign(this, { n, nodes, edges, nbrs, elen });
+  },
+  pulse(a, b, ci, ttl, id) {
+    return { a, b, t: 0, dur: 0.3 + this.elen.get(a * this.n + b) * 0.9, ci, ttl, id };
+  },
+  emit(i) {
+    const ci = this.hue++ % 5;
+    const id = ++this.cid;
+    const node = this.nodes[i];
+    Object.assign(node, { ci, heat: 1, flash: 1.4, last: id });
+    for (const j of this.nbrs[i]) this.pulses.push(this.pulse(i, j, ci, 8, id));
+  },
+  update(dt) {
+    this.rot += dt * 0.07;
+    this.tilt += (this.tiltT - this.tilt) * Math.min(1, dt * 2);
+    this.yaw += (this.yawT - this.yaw) * Math.min(1, dt * 2);
+    this.timer += dt;
+    if (this.timer > 1.4) { this.timer = 0; this.emit((Math.random() * this.n) | 0); }
+    const next = [];
+    for (const q of this.pulses) {
+      q.t += dt;
+      if (q.t < q.dur) { next.push(q); continue; }
+      const node = this.nodes[q.b];
+      if (node.last === q.id) continue;
+      Object.assign(node, { ci: q.ci, heat: 1, flash: 1, last: q.id });
+      if (q.ttl <= 0) continue;
+      for (const k of this.nbrs[q.b]) {
+        if (k === q.a || Math.random() > 0.7 || next.length > 220) continue;
+        next.push(this.pulse(q.b, k, q.ci, q.ttl - 1, q.id));
+      }
+    }
+    this.pulses = next;
+    const cool = Math.exp(-dt * 0.15), fl = Math.exp(-dt * 2.4);
+    for (const nd of this.nodes) { nd.heat *= cool; nd.flash *= fl; }
+  },
+  settle() { for (let i = 0; i < 90; i++) this.update(1 / 30); },
+  pointer(type, x, y) {
+    if (type === 'move') { this.tiltT = 0.25 + (y / H - 0.5) * 0.7; this.yawT = (x / W - 0.5) * 0.9; }
+    if (type === 'leave') { this.tiltT = 0.25; this.yawT = 0; }
+    if (type === 'down') {
+      let best = 0, bd = Infinity;
+      this.proj.forEach((q, i) => { const d = (q.x - x) ** 2 + (q.y - y) ** 2; if (d < bd) { bd = d; best = i; } });
+      this.emit(best);
+    }
+  },
+  project() {
+    const wide = W > H * 1.3;
+    const cx = wide ? W * 0.62 : W / 2, cy = wide ? H / 2 : H * 0.6;
+    const S = wide ? Math.min(H * 0.66, W * 0.38) : Math.min(W, H) * 0.6;
+    const ry = this.rot + this.yaw, cy1 = Math.cos(ry), sy1 = Math.sin(ry);
+    const cx1 = Math.cos(this.tilt), sx1 = Math.sin(this.tilt);
+    if (!this.proj || this.proj.length !== this.n) this.proj = this.nodes.map(() => ({ x: 0, y: 0, k: 1, d: 0 }));
+    this.nodes.forEach((nd, i) => {
+      const [x0, y0, z0] = nd.p;
+      const x = x0 * cy1 + z0 * sy1, z1 = -x0 * sy1 + z0 * cy1;
+      const y = y0 * cx1 - z1 * sx1, z = y0 * sx1 + z1 * cx1;
+      const k = 2.8 / (2.8 - z), q = this.proj[i];
+      q.x = cx + x * S * k; q.y = cy + y * S * k; q.k = k; q.d = clamp((z + 1.3) / 2.6, 0, 1);
+    });
+    return { cx, cy };
+  },
+  draw() {
+    const { cx, cy } = this.project();
+    const P = this.proj, pal = this.palette();
+    background(cx, cy);
+    ctx.lineWidth = 1;
+    for (const band of [0, 1, 2]) {
+      ctx.beginPath();
+      for (const [a, b] of this.edges) {
+        const d = (P[a].d + P[b].d) / 2;
+        if (Math.min(2, Math.floor(d * 3)) !== band) continue;
+        ctx.moveTo(P[a].x, P[a].y); ctx.lineTo(P[b].x, P[b].y);
+      }
+      ctx.strokeStyle = rgba(C.edge, 0.25 + band * 0.22);
+      ctx.stroke();
+    }
+    additive();
+    // 信号の尾は色ごとにまとめて1回で描く
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 1.8;
+    for (let ci = 0; ci < 5; ci++) {
+      ctx.beginPath();
+      for (const q of this.pulses) {
+        if (q.ci !== ci) continue;
+        const t = Math.min(1, q.t / q.dur), t0 = Math.max(0, t - 0.35);
+        const a = P[q.a], b = P[q.b];
+        ctx.moveTo(a.x + (b.x - a.x) * t0, a.y + (b.y - a.y) * t0);
+        ctx.lineTo(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
+      }
+      ctx.strokeStyle = rgba(pal[ci], 0.55);
+      ctx.stroke();
+    }
+    for (const q of this.pulses) {
+      const t = Math.min(1, q.t / q.dur), a = P[q.a], b = P[q.b];
+      glow(pal[q.ci], a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, 10 * a.k, 0.4 + 0.5 * a.d);
+    }
+    for (let i = 0; i < this.n; i++) {
+      const nd = this.nodes[i], q = P[i];
+      if (nd.flash > 0.05) glow(pal[nd.ci], q.x, q.y, (10 + 26 * nd.flash) * q.k, 0.75 * nd.flash * (0.3 + 0.7 * q.d));
+    }
+    normal();
+    for (let i = 0; i < this.n; i++) {
+      const nd = this.nodes[i], q = P[i];
+      const col = mix(C.muted, C.dark ? mix(pal[nd.ci], C.ink, 0.2) : pal[nd.ci], nd.heat);
+      ctx.beginPath();
+      ctx.arc(q.x, q.y, (1.6 + 1.8 * q.d) * q.k, 0, Math.PI * 2);
+      ctx.fillStyle = rgba(col, 0.3 + 0.7 * q.d);
+      ctx.fill();
+    }
+  },
+};
+
+/* ---------- 共通の枠組み ---------- */
+const modules = { a: Branches, b: Liquid, c: Constellation };
+let cur = null, curId = 'c';
+let running = true, visible = true, last = 0;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function sizeCanvas() {
+  const r = stage.getBoundingClientRect();
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = Math.max(1, Math.round(r.width));
+  H = Math.max(1, Math.round(r.height));
+  cv.width = W * DPR; cv.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+
+function select(id) {
+  curId = id;
+  cur = modules[id];
+  cur.init();
+  if (!running) cur.settle();
+  cur.draw();
+  hintEl.textContent = cur.hint;
+  document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.id === id)));
+  document.querySelectorAll('.card').forEach((c) => c.classList.toggle('is-current', c.dataset.col === id));
+  try { localStorage.setItem('top-concept', id); } catch (e) { /* 保存できなくても動く */ }
+}
+
+function setRunning(on) {
+  running = on;
+  playBtn.textContent = on ? '一時停止' : '再生';
+  last = performance.now();
+}
+
+function loop(ts) {
+  requestAnimationFrame(loop);
+  const dt = clamp((ts - last) / 1000 || 0.016, 0, 0.05);
+  last = ts;
+  if (!running || !visible || !cur) return;
+  cur.update(dt);
+  cur.draw();
+}
+
+function local(e) {
+  const r = cv.getBoundingClientRect();
+  return [e.clientX - r.left, e.clientY - r.top];
+}
+cv.addEventListener('pointermove', (e) => { cur.pointer('move', ...local(e)); if (!running) cur.draw(); });
+cv.addEventListener('pointerleave', (e) => { cur.pointer('leave', ...local(e)); if (!running) cur.draw(); });
+cv.addEventListener('pointerdown', (e) => {
+  cur.pointer('down', ...local(e));
+  if (!running) { cur.settle(); cur.draw(); }
+});
+
+document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => select(t.dataset.id)));
+document.querySelector('.tabs').addEventListener('keydown', (e) => {
+  const ids = ['a', 'b', 'c'];
+  const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+  if (!d) return;
+  const next = ids[(ids.indexOf(curId) + d + 3) % 3];
+  select(next);
+  document.getElementById('tab-' + next).focus();
+});
+playBtn.addEventListener('click', () => setRunning(!running));
+bareBtn.addEventListener('click', () => {
+  const on = stage.classList.toggle('bare');
+  bareBtn.setAttribute('aria-pressed', String(on));
+  bareBtn.textContent = on ? '文字を表示' : '文字を隠す';
+});
+
+new ResizeObserver(() => {
+  const pw = W, ph = H;
+  sizeCanvas();
+  if (cur && (pw !== W || ph !== H)) { cur.resize(); cur.draw(); }
+}).observe(stage);
+new IntersectionObserver((es) => { visible = es[0].isIntersecting; }).observe(stage);
+document.addEventListener('visibilitychange', () => { visible = !document.hidden; last = performance.now(); });
+
+function onTheme() { readColors(); if (cur) cur.draw(); }
+matchMedia('(prefers-color-scheme: light)').addEventListener('change', onTheme);
+new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+readColors();
+sizeCanvas();
+let initial = 'c';
+try { const s = localStorage.getItem('top-concept'); if (s && modules[s]) initial = s; } catch (e) { /* なし */ }
+setRunning(!reduceMotion);
+select(initial);
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+# Playwright の実行結果(ベースライン画像 tests/e2e/*-snapshots/ はコミットする)
+test-results/
+playwright-report/

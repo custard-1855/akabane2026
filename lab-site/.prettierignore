@@ -1,0 +1,6 @@
+# 凍結した試作と、生成物
+prototypes/
+dist/
+test-results/
+playwright-report/
+package-lock.json

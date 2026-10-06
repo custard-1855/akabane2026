@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>研究室トップ トポロジ案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: 全幅ステージ(ヒーローの試作)→ 案の切替。実在の形をしたグラフの上を光が伝わる */
+:root {
+  --bg: #0a1020;
+  --ink: #e9eef7;
+  --muted: #8d9ab0;
+  --line: #222e47;
+  --edge: #34425f;
+  --accent: #6cc4ff;
+  --accent2: #f5b14c;
+  --c1: #5aa9ff;
+  --c2: #f59e4b;
+  --c3: #4fd1a5;
+  --c4: #f46b8a;
+  --c5: #b28dff;
+  --scrim: rgba(10, 16, 32, 0.74);
+  --font-display: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f3f5f9; --ink: #121a2b; --muted: #5a667c; --line: #d5dbe5; --edge: #bcc6d6;
+    --accent: #1d6fd6; --accent2: #c7770c; --c1: #2f6fd6; --c2: #d9771f; --c3: #1f9e74; --c4: #d6456a; --c5: #7d55d9;
+    --scrim: rgba(243, 245, 249, 0.82);
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #f3f5f9; --ink: #121a2b; --muted: #5a667c; --line: #d5dbe5; --edge: #bcc6d6;
+  --accent: #1d6fd6; --accent2: #c7770c; --c1: #2f6fd6; --c2: #d9771f; --c3: #1f9e74; --c4: #d6456a; --c5: #7d55d9;
+  --scrim: rgba(243, 245, 249, 0.82);
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 15px;
+  line-height: 1.7;
+}
+.stage {
+  position: relative;
+  height: clamp(440px, 76vh, 800px);
+  overflow: hidden;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  touch-action: pan-y;
+}
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; }
+.scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, var(--scrim) 0%, transparent 55%);
+  transition: opacity .4s;
+}
+.overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  padding: clamp(24px, 6vw, 72px) clamp(16px, 6vw, 80px);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+  transition: opacity .4s;
+}
+.brand { font-family: var(--font-mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.tagline {
+  margin: 0;
+  font-weight: 700;
+  font-size: clamp(26px, 4.6vw, 56px);
+  line-height: 1.3;
+  letter-spacing: .02em;
+  display: grid;
+}
+.tagline span { white-space: nowrap; }
+.themes { margin: 0; font-size: clamp(14px, 1.5vw, 16px); color: var(--muted); letter-spacing: .06em; }
+.stage.bare .overlay, .stage.bare .scrim { opacity: 0; }
+.credit {
+  position: absolute;
+  right: clamp(16px, 3vw, 28px);
+  bottom: 12px;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  pointer-events: none;
+  text-align: right;
+}
+.credit b { color: var(--ink); font-weight: 500; }
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding: 14px clamp(16px, 6vw, 80px);
+  border-bottom: 1px solid var(--line);
+}
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab, .btn {
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.tab .key { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.tab[aria-selected="true"] .key { color: var(--bg); opacity: .7; }
+.tab:hover, .btn:hover { border-color: var(--muted); }
+.tab:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.side { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.hint { margin: 0; font-size: 13px; color: var(--muted); }
+.btn-row { display: flex; gap: 6px; }
+main { padding: clamp(24px, 4vw, 40px) clamp(16px, 6vw, 80px) 64px; max-width: 1200px; }
+main p { margin: 0; color: var(--muted); max-width: 44rem; }
+@media (max-width: 640px) {
+  .scrim { background: linear-gradient(180deg, var(--scrim) 0%, transparent 60%); }
+  .overlay { justify-content: flex-start; }
+}
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <canvas id="cv" aria-label="研究テーマを表す動くグラフィック"></canvas>
+  <div class="scrim"></div>
+  <div class="overlay">
+    <div class="brand">◯◯ Laboratory · ◯◯研究室</div>
+    <h1 class="tagline"><span>つながりを読み解き、</span><span>学ぶしくみをつくる。</span></h1>
+    <p class="themes">グラフ理論 · 機械学習 · ネットワーク</p>
+  </div>
+  <p class="credit" id="credit"></p>
+</div>
+
+<div class="controls">
+  <div class="tabs" role="tablist" aria-label="トポロジの案">
+    <button class="tab" role="tab" id="tab-globe" data-id="globe" aria-selected="false"><span class="key">C-1</span>航空路線</button>
+    <button class="tab" role="tab" id="tab-shapes" data-id="shapes" aria-selected="false"><span class="key">C-5</span>有名なグラフ</button>
+    <button class="tab" role="tab" id="tab-net" data-id="net" aria-selected="false"><span class="key">NN</span>ニューラルネット</button>
+  </div>
+  <div class="side">
+    <p class="hint" id="hint"></p>
+    <div class="btn-row">
+      <button class="btn" id="btn-play" type="button">一時停止</button>
+      <button class="btn" id="btn-bare" type="button" aria-pressed="false">文字を隠す</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <p>C-1 は OpenFlights の航空路線(2014年時点)から、路線の多い300空港を選び、各空港につき航空会社の多い路線を5本まで残しています。NN は scikit-learn 同梱の手書き数字(8×8)で実際に学習した重みを使い、ページ内で行う計算を1手ずつ実行して見せています(0 のマスは掛け算を飛ばす、行優先で一列に並べる、など処理の順番もそのまま)。</p>
+</main>
+
+<script src="data/world.js"></script>
+<script src="data/digits-net.js"></script>
+<script>
+(() => {
+'use strict';
+
+const $ = (s) => document.querySelector(s);
+const stage = $('#stage');
+const cv = $('#cv');
+const ctx = cv.getContext('2d');
+const hintEl = $('#hint');
+const creditEl = $('#credit');
+const playBtn = $('#btn-play');
+const bareBtn = $('#btn-bare');
+
+let W = 0, H = 0, DPR = 1;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const smooth = (t) => t * t * (3 - 2 * t);
+
+/* ---------- colors ---------- */
+let C = {};
+function hexRgb(h) {
+  h = h.replace('#', '').trim();
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  const n = parseInt(h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function readColors() {
+  const cs = getComputedStyle(document.documentElement);
+  const g = (n) => hexRgb(cs.getPropertyValue(n));
+  C = {
+    bg: g('--bg'), ink: g('--ink'), muted: g('--muted'), edge: g('--edge'),
+    accent: g('--accent'), accent2: g('--accent2'),
+    L: ['--c1', '--c2', '--c3', '--c4', '--c5'].map(g),
+  };
+  C.dark = (C.bg[0] + C.bg[1] + C.bg[2]) / 3 < 128;
+  C.pal = [C.accent, C.accent2, C.L[2], C.L[3], C.L[4]];
+  glowCache.clear();
+  bgKey = '';
+}
+const rgba = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
+const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+
+/* 光の粒(5色ぶんだけ作って使い回す) */
+const glowCache = new Map();
+function glow(ci, x, y, r, a) {
+  if (a <= 0.01) return;
+  let s = glowCache.get(ci);
+  if (!s) {
+    const c = C.pal[ci];
+    s = document.createElement('canvas');
+    s.width = s.height = 64;
+    const g = s.getContext('2d');
+    const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, rgba(c, 1));
+    gr.addColorStop(0.18, rgba(c, 0.55));
+    gr.addColorStop(0.5, rgba(c, 0.12));
+    gr.addColorStop(1, rgba(c, 0));
+    g.fillStyle = gr;
+    g.fillRect(0, 0, 64, 64);
+    glowCache.set(ci, s);
+  }
+  ctx.globalAlpha = Math.min(1, a);
+  ctx.drawImage(s, x - r, y - r, r * 2, r * 2);
+  ctx.globalAlpha = 1;
+}
+/* 背景(グラデーションと、案ごとの地形)は変わったときだけ描き直す */
+let bgCache = null, bgKey = '';
+function background(cx, cy, decor, key = '') {
+  const k = [W, H, cx | 0, cy | 0, key].join('|');
+  if (k !== bgKey) {
+    bgKey = k;
+    bgCache = document.createElement('canvas');
+    bgCache.width = W; bgCache.height = H;
+    const b = bgCache.getContext('2d');
+    const g = b.createRadialGradient(cx, cy, 0, cx, cy, Math.hypot(W, H) * 0.7);
+    g.addColorStop(0, rgba(mix(C.bg, C.accent, C.dark ? 0.07 : 0.05)));
+    g.addColorStop(1, rgba(C.bg));
+    b.fillStyle = g;
+    b.fillRect(0, 0, W, H);
+    if (decor) decor(b);
+  }
+  ctx.drawImage(bgCache, 0, 0, W, H);
+}
+const additive = () => { ctx.globalCompositeOperation = C.dark ? 'lighter' : 'source-over'; };
+const normal = () => { ctx.globalCompositeOperation = 'source-over'; };
+
+/* =========================================================
+   立体の型: 回転する立体のネットワークを色の信号が伝わる
+   shapes() は [{ name, nodes:[[x,y,z]], edges:[[a,b]], arc?, coast? }] を返す
+   ========================================================= */
+function makeCascade(opts) {
+  return {
+    hint: opts.hint,
+    get credit() { return opts.credit(this.shape); },
+    init() {
+      this.list = opts.shapes();
+      this.si = 0;
+      Object.assign(this, { rot: 0, tilt: opts.tilt ?? 0.25, yaw: 0, tiltT: opts.tilt ?? 0.25, yawT: 0, cid: 0, hue: 0, shapeT: 0, fade: 1 });
+      this.load(this.list[0]);
+    },
+    resize() {},
+    load(shape) {
+      const n = shape.nodes.length;
+      const nbrs = Array.from({ length: n }, () => []);
+      const arcs = new Map();
+      shape.edges.forEach(([a, b]) => {
+        nbrs[a].push(b); nbrs[b].push(a);
+        const pa = shape.nodes[a], pb = shape.nodes[b];
+        let line = [pa, pb];
+        if (shape.arc) {
+          // 球面上の大円に沿って、少し浮かせた弧にする
+          const ang = Math.acos(clamp(pa[0] * pb[0] + pa[1] * pb[1] + pa[2] * pb[2], -1, 1));
+          const steps = Math.max(2, Math.ceil(ang / 0.07));
+          line = [];
+          for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const s0 = Math.sin((1 - t) * ang) / Math.sin(ang || 1e-6), s1 = Math.sin(t * ang) / Math.sin(ang || 1e-6);
+            const lift = 1 + 0.1 * ang * Math.sin(Math.PI * t);
+            line.push([(pa[0] * s0 + pb[0] * s1) * lift, (pa[1] * s0 + pb[1] * s1) * lift, (pa[2] * s0 + pb[2] * s1) * lift]);
+          }
+        }
+        const len = line.reduce((acc, p, i) => (i ? acc + Math.hypot(p[0] - line[i - 1][0], p[1] - line[i - 1][1], p[2] - line[i - 1][2]) : 0), 0);
+        arcs.set(a * n + b, { line, len, rev: false });
+        arcs.set(b * n + a, { line, len, rev: true });
+      });
+      this.shape = shape;
+      this.nodes = shape.nodes.map((p) => ({ p, ci: 0, heat: 0, flash: 0, last: -1 }));
+      Object.assign(this, { n, nbrs, arcs, pulses: [], timer: 0 });
+      this.proj = this.nodes.map(() => ({ x: 0, y: 0, k: 1, d: 0 }));
+      creditEl.innerHTML = this.credit;
+      for (let i = 0; i < 3; i++) this.emit((Math.random() * n) | 0);
+    },
+    pulse(a, b, ci, ttl, id) {
+      const arc = this.arcs.get(a * this.n + b);
+      return { a, b, arc, t: 0, dur: 0.3 + arc.len * (opts.pace ?? 0.9), ci, ttl, id };
+    },
+    emit(i) {
+      const ci = this.hue++ % 5, id = ++this.cid;
+      Object.assign(this.nodes[i], { ci, heat: 1, flash: 1.4, last: id });
+      for (const j of this.nbrs[i]) this.pulses.push(this.pulse(i, j, ci, opts.ttl ?? 8, id));
+    },
+    update(dt) {
+      this.rot += dt * (opts.spin ?? 0.07);
+      this.tilt += (this.tiltT - this.tilt) * Math.min(1, dt * 2);
+      this.yaw += (this.yawT - this.yaw) * Math.min(1, dt * 2);
+      this.timer += dt;
+      if (this.timer > (opts.interval ?? 1.4)) { this.timer = 0; this.emit((Math.random() * this.n) | 0); }
+      // 複数の形を順に見せる
+      if (this.list.length > 1) {
+        this.shapeT += dt;
+        if (this.shapeT > 16) this.fade = Math.max(0, this.fade - dt * 1.5);
+        if (this.shapeT > 16 && this.fade === 0) {
+          this.si = (this.si + 1) % this.list.length;
+          this.load(this.list[this.si]);
+          this.shapeT = 0;
+        }
+        if (this.shapeT < 16) this.fade = Math.min(1, this.fade + dt * 1.5);
+      }
+      const next = [];
+      for (const q of this.pulses) {
+        q.t += dt;
+        if (q.t < q.dur) { next.push(q); continue; }
+        const node = this.nodes[q.b];
+        if (node.last === q.id) continue;
+        Object.assign(node, { ci: q.ci, heat: 1, flash: 1, last: q.id });
+        if (q.ttl <= 0) continue;
+        for (const k of this.nbrs[q.b]) {
+          if (k === q.a || Math.random() > (opts.branch ?? 0.7) || next.length > (opts.maxPulses ?? 240)) continue;
+          next.push(this.pulse(q.b, k, q.ci, q.ttl - 1, q.id));
+        }
+      }
+      this.pulses = next;
+      const cool = Math.exp(-dt * 0.15), fl = Math.exp(-dt * 2.4);
+      for (const nd of this.nodes) { nd.heat *= cool; nd.flash *= fl; }
+    },
+    settle() { for (let i = 0; i < 90; i++) this.update(1 / 30); },
+    pointer(type, x, y) {
+      if (type === 'move') { this.tiltT = (opts.tilt ?? 0.25) + (y / H - 0.5) * 0.6; this.yawT = (x / W - 0.5) * 0.9; }
+      if (type === 'leave') { this.tiltT = opts.tilt ?? 0.25; this.yawT = 0; }
+      if (type === 'down') {
+        let best = 0, bd = Infinity;
+        this.proj.forEach((q, i) => { const d = (q.x - x) ** 2 + (q.y - y) ** 2 - q.d * 400; if (d < bd) { bd = d; best = i; } });
+        this.emit(best);
+      }
+    },
+    view() {
+      const wide = W > H * 1.3;
+      const cx = wide ? W * 0.63 : W / 2, cy = wide ? H / 2 : H * 0.6;
+      const S = (wide ? Math.min(H * 0.6, W * 0.34) : Math.min(W, H) * 0.56) * (opts.size ?? 1) * (0.85 + 0.15 * smooth(this.fade));
+      const ry = this.rot + this.yaw;
+      const m = [Math.cos(ry), Math.sin(ry), Math.cos(this.tilt), Math.sin(this.tilt)];
+      const P = (p, out) => {
+        const x = p[0] * m[0] + p[2] * m[1], z1 = -p[0] * m[1] + p[2] * m[0];
+        const y = -p[1] * m[2] - z1 * m[3], z = -p[1] * m[3] + z1 * m[2];
+        const k = 3 / (3 - z);
+        out.x = cx + x * S * k; out.y = cy + y * S * k; out.k = k; out.d = clamp((z + 1.2) / 2.4, 0, 1);
+        return out;
+      };
+      return { cx, cy, S, P };
+    },
+    draw() {
+      const { cx, cy, S, P } = this.view();
+      background(cx, cy, null, 'cascade');
+      const a0 = smooth(this.fade);
+      this.nodes.forEach((nd, i) => P(nd.p, this.proj[i]));
+      const Q = this.proj, tmp = { x: 0, y: 0, k: 1, d: 0 };
+
+      // 海岸線(手前だけ濃く)
+      if (this.shape.coast) {
+        const front = [], back = [];
+        for (const p of this.shape.coast) { P(p, tmp); (tmp.d > 0.5 ? front : back).push(tmp.x, tmp.y, tmp.d); }
+        ctx.fillStyle = rgba(C.muted, 0.12 * a0);
+        for (let i = 0; i < back.length; i += 3) ctx.fillRect(back[i], back[i + 1], 1, 1);
+        ctx.fillStyle = rgba(C.muted, 0.5 * a0);
+        for (let i = 0; i < front.length; i += 3) ctx.fillRect(front[i] - 0.7, front[i + 1] - 0.7, 1.4, 1.4);
+        ctx.beginPath();
+        ctx.arc(cx, cy, S * 1.0, 0, Math.PI * 2);
+        ctx.strokeStyle = rgba(C.edge, 0.35 * a0);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // 辺(奥行きで3段階)
+      const bands = [new Path2D(), new Path2D(), new Path2D()];
+      this.shape.edges.forEach(([a, b]) => {
+        const arc = this.arcs.get(a * this.n + b);
+        const d = (Q[a].d + Q[b].d) / 2;
+        const path = bands[Math.min(2, Math.floor(d * 3))];
+        arc.line.forEach((p, i) => { P(p, tmp); i ? path.lineTo(tmp.x, tmp.y) : path.moveTo(tmp.x, tmp.y); });
+      });
+      ctx.lineWidth = 1;
+      bands.forEach((pa, i) => { ctx.strokeStyle = rgba(C.edge, (0.22 + i * 0.22) * a0); ctx.stroke(pa); });
+
+      additive();
+      // 信号: 尾は色ごとにまとめて描く
+      const tails = Array.from({ length: 5 }, () => new Path2D());
+      const heads = [];
+      const at = (arc, t) => {
+        const L = arc.line, f = (arc.rev ? 1 - t : t) * (L.length - 1);
+        const i = Math.min(L.length - 2, Math.floor(f)), r = f - i;
+        const p = L[i], q = L[i + 1];
+        return P([p[0] + (q[0] - p[0]) * r, p[1] + (q[1] - p[1]) * r, p[2] + (q[2] - p[2]) * r], { x: 0, y: 0, k: 1, d: 0 });
+      };
+      for (const q of this.pulses) {
+        const t = Math.min(1, q.t / q.dur);
+        const h = at(q.arc, t), tl = at(q.arc, Math.max(0, t - (opts.tail ?? 0.3)));
+        tails[q.ci].moveTo(tl.x, tl.y);
+        tails[q.ci].lineTo(h.x, h.y);
+        heads.push(q.ci, h);
+      }
+      ctx.lineCap = 'round';
+      ctx.lineWidth = 1.8;
+      tails.forEach((pa, ci) => { ctx.strokeStyle = rgba(C.pal[ci], 0.55 * a0); ctx.stroke(pa); });
+      for (let i = 0; i < heads.length; i += 2) { const h = heads[i + 1]; glow(heads[i], h.x, h.y, (opts.head ?? 10) * h.k, (0.4 + 0.5 * h.d) * a0); }
+      for (let i = 0; i < this.n; i++) {
+        const nd = this.nodes[i], q = Q[i];
+        if (nd.flash > 0.05) glow(nd.ci, q.x, q.y, (10 + 26 * nd.flash) * q.k, 0.75 * nd.flash * (0.3 + 0.7 * q.d) * a0);
+      }
+      normal();
+      for (let i = 0; i < this.n; i++) {
+        const nd = this.nodes[i], q = Q[i];
+        const col = mix(C.muted, C.dark ? mix(C.pal[nd.ci], C.ink, 0.2) : C.pal[nd.ci], nd.heat);
+        ctx.beginPath();
+        ctx.arc(q.x, q.y, (1.5 + 1.8 * q.d) * q.k, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(col, (0.3 + 0.7 * q.d) * a0);
+        ctx.fill();
+      }
+    },
+  };
+}
+
+const ll = ([lon, lat]) => {
+  const a = (lon * Math.PI) / 180, b = (lat * Math.PI) / 180;
+  return [Math.cos(b) * Math.cos(a), Math.sin(b), -Math.cos(b) * Math.sin(a)];
+};
+
+/* ---------- C-1 航空路線 ---------- */
+const Globe = makeCascade({
+  hint: 'クリックした空港から光が伝わります。カーソルで地球が傾きます',
+  credit: () => `<b>世界の航空路線</b> · ${window.WORLD.airports.length}空港 · ${window.WORLD.edges.length.toLocaleString()}路線 · データ: OpenFlights (ODbL), Natural Earth`,
+  tilt: -0.4,
+  size: 0.72,
+  spin: 0.08,
+  pace: 1.3,
+  ttl: 5,
+  branch: 0.35,
+  maxPulses: 150,
+  interval: 1.8,
+  tail: 0.15,
+  head: 8,
+  shapes() {
+    return [{ name: 'flights', nodes: window.WORLD.airports.map(ll), edges: window.WORLD.edges, arc: true, coast: window.WORLD.coast.map(ll) }];
+  },
+});
+
+/* ---------- C-5 有名なグラフ ---------- */
+function normalize(pts) {
+  const r = Math.max(...pts.map((p) => Math.hypot(...p)));
+  return pts.map((p) => p.map((v) => v / r));
+}
+function byLength(pts, eps = 1e-3) {
+  let min = Infinity;
+  for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) min = Math.min(min, Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1], pts[i][2] - pts[j][2]));
+  const edges = [];
+  for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
+    if (Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1], pts[i][2] - pts[j][2]) < min * (1 + eps)) edges.push([i, j]);
+  }
+  return edges;
+}
+function fullerene() {
+  const f = (1 + Math.sqrt(5)) / 2, pts = [];
+  const base = [[0, 1, 3 * f], [1, 2 + f, 2 * f], [f, 2, 2 * f + 1]];
+  for (const b of base) {
+    for (const sx of [1, -1]) for (const sy of [1, -1]) for (const sz of [1, -1]) {
+      const v = [b[0] * sx, b[1] * sy, b[2] * sz];
+      for (const c of [[0, 1, 2], [1, 2, 0], [2, 0, 1]]) {
+        const p = [v[c[0]], v[c[1]], v[c[2]]];
+        if (!pts.some((q) => Math.hypot(q[0] - p[0], q[1] - p[1], q[2] - p[2]) < 1e-6)) pts.push(p);
+      }
+    }
+  }
+  return { name: 'C60 フラーレン', nodes: normalize(pts), edges: byLength(pts) };
+}
+function torus() {
+  const A = 32, B = 11, R = 0.72, r = 0.28, nodes = [], edges = [];
+  for (let i = 0; i < A; i++) for (let j = 0; j < B; j++) {
+    const a = (i / A) * Math.PI * 2, b = (j / B) * Math.PI * 2;
+    nodes.push([(R + r * Math.cos(b)) * Math.cos(a), r * Math.sin(b), (R + r * Math.cos(b)) * Math.sin(a)]);
+    edges.push([i * B + j, ((i + 1) % A) * B + j], [i * B + j, i * B + ((j + 1) % B)]);
+  }
+  return { name: 'トーラス', nodes, edges };
+}
+function hypercube() {
+  const f = (1 + Math.sqrt(5)) / 2;
+  const axes = [[0, 1, f], [0, 1, -f], [1, f, 0], [1, -f, 0], [f, 0, 1], [-f, 0, 1]].map((v) => v.map((x) => x / Math.hypot(...v)));
+  const nodes = [], edges = [];
+  for (let m = 0; m < 64; m++) {
+    const p = [0, 0, 0];
+    axes.forEach((ax, k) => { const s = m & (1 << k) ? 1 : -1; for (let d = 0; d < 3; d++) p[d] += s * ax[d]; });
+    nodes.push(p);
+    for (let k = 0; k < 6; k++) if (!(m & (1 << k))) edges.push([m, m | (1 << k)]);
+  }
+  return { name: '6次元超立方体', nodes: normalize(nodes), edges };
+}
+function geodesic() {
+  const f = (1 + Math.sqrt(5)) / 2;
+  let V = [[-1, f, 0], [1, f, 0], [-1, -f, 0], [1, -f, 0], [0, -1, f], [0, 1, f], [0, -1, -f], [0, 1, -f], [f, 0, -1], [f, 0, 1], [-f, 0, -1], [-f, 0, 1]].map((v) => v.map((x) => x / Math.hypot(...v)));
+  let F = [[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11], [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+    [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9], [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]];
+  for (let s = 0; s < 2; s++) {
+    const cache = new Map(), NF = [];
+    const mid = (a, b) => {
+      const key = a < b ? `${a},${b}` : `${b},${a}`;
+      if (cache.has(key)) return cache.get(key);
+      const p = V[a].map((x, i) => x + V[b][i]), l = Math.hypot(...p);
+      V.push(p.map((x) => x / l));
+      cache.set(key, V.length - 1);
+      return V.length - 1;
+    };
+    for (const [a, b, c] of F) { const ab = mid(a, b), bc = mid(b, c), ca = mid(c, a); NF.push([a, ab, ca], [b, bc, ab], [c, ca, bc], [ab, bc, ca]); }
+    F = NF;
+  }
+  const has = new Set(), edges = [];
+  for (const [a, b, c] of F) for (const [x, y] of [[a, b], [b, c], [c, a]]) {
+    const key = x < y ? `${x},${y}` : `${y},${x}`;
+    if (!has.has(key)) { has.add(key); edges.push([x, y]); }
+  }
+  return { name: 'ジオデシック球', nodes: V, edges };
+}
+const Shapes = makeCascade({
+  hint: 'クリックした点から光が伝わります。形は16秒ごとに変わります',
+  credit: (s) => `<b>${s ? s.name : ''}</b>`,
+  size: 0.72,
+  pace: 2.4,
+  interval: 2.4,
+  ttl: 5,
+  branch: 0.5,
+  maxPulses: 90,
+  tail: 0.18,
+  head: 7,
+  shapes() { return [fullerene(), torus(), hypercube(), geodesic()]; },
+});
+
+/* =========================================================
+   NN 手書き数字を読むニューラルネット
+   画面の動きは、このページが実際に行う計算を1手ずつ実行したもの。
+   演出のための加速・減速や残光は入れない。1手 = 1拍(一定の長さ)
+   ========================================================= */
+const Net = {
+  hint: 'クリックで次の数字を読ませます',
+  credit: '',
+  BEAT: 0.08,
+  init() {
+    const d = window.DIGITS_NET;
+    this.d = d;
+    this.credit = `<b>手書き数字を読むニューラルネット</b> · 64-16-16-10 · 計算の順番どおりに1手ずつ再生 · 正解率 ${Math.round(d.accuracy * 100)}% · データ: scikit-learn digits`;
+    this.si = -1;
+    this.layout();
+    this.load();
+  },
+  resize() { this.layout(); },
+  // 次の数字の計算手順(命令の列)を組み立てる
+  load() {
+    const d = this.d;
+    this.si = (this.si + 1) % d.samples.length;
+    const x = d.samples[this.si].map((v) => v / 16);
+    this.a = [x, null, null, null];       // 各層の出力(計算が済むまで null)
+    this.z = d.sizes.slice(1).map((n) => new Float64Array(n)); // 足し合わせの途中経過
+    this.done = [[], [], []];             // 各層で足し終えた入力の番号
+    this.prob = null;
+    this.rows = 0;                        // 一列に並べ終えた行数
+    this.ops = [];
+    for (let r = 0; r < 8; r++) this.ops.push({ op: 'reshape', r });
+    for (let k = 0; k < 3; k++) {
+      this.ops.push({ op: 'axpy', k });   // i は実行時に決まる(0 の入力は飛ばす)
+      this.ops.push({ op: 'bias', k });
+      this.ops.push({ op: k < 2 ? 'sigmoid' : 'softmax', k });
+    }
+    this.ops.push({ op: 'hold' }, { op: 'clear' });
+    this.pc = 0;          // 実行中の命令
+    this.i = -1;          // axpy で処理中の入力の番号
+    this.t = 0;
+    this.cur = null;      // いま光らせる対象
+    this.scale = this.dryRun();
+  },
+  // ゲージの目盛りを決めるため、同じ計算を先に一度だけ済ませておく
+  dryRun() {
+    const d = this.d;
+    let a = this.a[0];
+    return d.W.map((W, k) => {
+      const z = d.b[k].slice();
+      let mx = 1e-6;
+      const part = new Float64Array(z.length);
+      for (let i = 0; i < a.length; i++) if (a[i] !== 0) for (let j = 0; j < z.length; j++) { part[j] += a[i] * W[i][j]; mx = Math.max(mx, Math.abs(part[j])); }
+      for (let j = 0; j < z.length; j++) { z[j] += part[j]; mx = Math.max(mx, Math.abs(z[j])); }
+      a = k < 2 ? z.map((v) => 1 / (1 + Math.exp(-v))) : z;
+      return mx;
+    });
+  },
+  // 命令を1手進める
+  step() {
+    const d = this.d, o = this.ops[this.pc];
+    if (!o) return;
+    if (o.op === 'reshape') { this.rows = o.r + 1; this.cur = { reshape: o.r }; this.pc++; return; }
+    if (o.op === 'axpy') {
+      const a = this.a[o.k], W = d.W[o.k], z = this.z[o.k];
+      do { this.i++; } while (this.i < a.length && a[this.i] === 0);
+      if (this.i >= a.length) { this.i = -1; this.cur = null; this.pc++; this.step(); return; }
+      for (let j = 0; j < z.length; j++) z[j] += a[this.i] * W[this.i][j];
+      this.done[o.k].push(this.i);
+      this.cur = { k: o.k, i: this.i };
+      return;
+    }
+    if (o.op === 'bias') { const z = this.z[o.k]; d.b[o.k].forEach((b, j) => { z[j] += b; }); this.cur = { bias: o.k }; this.pc++; return; }
+    if (o.op === 'sigmoid') { this.a[o.k + 1] = Array.from(this.z[o.k], (v) => 1 / (1 + Math.exp(-v))); this.cur = { act: o.k + 1 }; this.pc++; return; }
+    if (o.op === 'softmax') {
+      const z = this.z[o.k], m = Math.max(...z), e = Array.from(z, (v) => Math.exp(v - m)), s = e.reduce((p, q) => p + q, 0);
+      this.prob = e.map((v) => v / s);
+      this.a[3] = this.prob;
+      this.answer = this.prob.indexOf(Math.max(...this.prob));
+      this.cur = { act: 3 };
+      this.pc++;
+      return;
+    }
+  },
+  update(dt) {
+    this.t += dt;
+    const o = this.ops[this.pc];
+    const dur = o.op === 'hold' ? 2.6 : o.op === 'clear' ? 0.5 : this.BEAT;
+    while (this.t >= dur) {
+      this.t -= dur;
+      if (o.op === 'hold') { this.pc++; this.cur = null; return; }
+      if (o.op === 'clear') { this.load(); return; }
+      this.step();
+      if (this.ops[this.pc] && ['hold', 'clear'].includes(this.ops[this.pc].op)) return;
+    }
+  },
+  settle() { while (this.ops[this.pc].op !== 'hold') this.step(); },
+  pointer(type) { if (type === 'down') this.load(); },
+  layout() {
+    const wide = W > H * 1.3;
+    const x0 = wide ? W * 0.46 : W * 0.05, x1 = wide ? W * 0.93 : W * 0.86;
+    const y0 = wide ? H * 0.08 : H * 0.34, y1 = wide ? H * 0.92 : H * 0.88;
+    const g = Math.min(((y1 - y0) * 0.55) / 8, ((x1 - x0) * 0.26) / 8);
+    const mid = (y0 + y1) / 2;
+    const rest = x1 - (x0 + 8 * g);
+    const xs = [0.18, 0.44, 0.68, 0.86].map((f) => x0 + 8 * g + rest * f);
+    this.grid = { x: x0, y: mid - 4 * g, g };
+    this.gauge = rest * 0.07;
+    this.L = this.d.sizes.map((m, k) => {
+      const sp = Math.min((y1 - y0) / m, k ? 40 : 14);
+      const r = Math.min(sp * (k ? 0.34 : 0.4), k ? 12 : 5);
+      return Array.from({ length: m }, (_, i) => ({ x: xs[k], y: mid + (i - (m - 1) / 2) * sp, r }));
+    });
+    this.base = this.d.W.map((Wk, k) => {
+      const mx = Math.max(...Wk.flat().map(Math.abs));
+      const paths = [0, 1].map(() => [0, 1, 2, 3].map(() => new Path2D()));
+      Wk.forEach((row, i) => row.forEach((w, j) => {
+        const lv = Math.min(3, Math.floor((Math.abs(w) / mx) * 4));
+        const a = this.L[k][i], b = this.L[k + 1][j];
+        paths[w > 0 ? 0 : 1][lv].moveTo(a.x + a.r, a.y);
+        paths[w > 0 ? 0 : 1][lv].lineTo(b.x - b.r, b.y);
+      }));
+      return paths;
+    });
+  },
+  draw() {
+    const { L, grid, d } = this;
+    const pos = C.accent, neg = C.L[3];
+    background(W * 0.7, H * 0.5, null, 'nn');
+
+    // 重み(常にうっすら)
+    this.base.forEach((bySign) => bySign.forEach((byLv, s) => byLv.forEach((p, lv) => {
+      ctx.strokeStyle = rgba(s ? neg : pos, 0.03 + 0.05 * lv);
+      ctx.lineWidth = 0.6 + 0.3 * lv;
+      ctx.stroke(p);
+    })));
+
+    // 足し終えた掛け算(明るさ × 重み)。いま処理中の入力の線だけ強く描く
+    ctx.lineCap = 'round';
+    for (let k = 0; k < 3; k++) {
+      const a = this.a[k];
+      if (!a) continue;
+      const mx = this.scale[k];
+      const paths = [new Path2D(), new Path2D()];
+      for (const i of this.done[k]) {
+        if (this.cur && this.cur.k === k && this.cur.i === i) continue;
+        const A = L[k][i];
+        d.W[k][i].forEach((w, j) => {
+          if (Math.abs(a[i] * w) < mx * 0.04) return;
+          const B = L[k + 1][j];
+          paths[w > 0 ? 0 : 1].moveTo(A.x + A.r, A.y);
+          paths[w > 0 ? 0 : 1].lineTo(B.x - B.r, B.y);
+        });
+      }
+      ctx.lineWidth = 0.8;
+      paths.forEach((pa, s) => { ctx.strokeStyle = rgba(s ? neg : pos, 0.22); ctx.stroke(pa); });
+    }
+    if (this.cur && this.cur.i !== undefined) {
+      const { k, i } = this.cur, a = this.a[k][i], A = L[k][i], mx = this.scale[k];
+      additive();
+      d.W[k][i].forEach((w, j) => {
+        const B = L[k + 1][j], c = Math.abs(a * w) / mx;
+        ctx.strokeStyle = rgba(w > 0 ? pos : neg, 0.35 + 0.6 * Math.min(1, c * 3));
+        ctx.lineWidth = 0.8 + 3 * Math.min(1, c * 3);
+        ctx.beginPath();
+        ctx.moveTo(A.x + A.r, A.y);
+        ctx.lineTo(B.x - B.r, B.y);
+        ctx.stroke();
+      });
+      normal();
+      ctx.beginPath();
+      ctx.arc(A.x, A.y, A.r + 4, 0, Math.PI * 2);
+      ctx.strokeStyle = rgba(C.accent2);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    // 入力: 8x8 の画像を、行ごとに一列へ並べ直す(行優先の順)
+    this.a[0].forEach((v, i) => {
+      const r = Math.floor(i / 8);
+      let x, y, size, rr;
+      if (r < this.rows) { const n = L[0][i]; x = n.x; y = n.y; size = n.r * 2; rr = n.r; }
+      else { x = grid.x + (i % 8) * grid.g + grid.g / 2; y = grid.y + r * grid.g + grid.g / 2; size = grid.g * 0.92; rr = 2; }
+      ctx.beginPath();
+      ctx.roundRect(x - size / 2, y - size / 2, size, size, rr);
+      ctx.fillStyle = rgba(C.ink, 0.04 + 0.9 * v);
+      ctx.fill();
+      ctx.strokeStyle = rgba(this.cur && this.cur.reshape === r ? C.accent2 : C.edge, 0.9);
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+    });
+
+    // 隠れ層と出力層: 足し合わせの途中経過をゲージで、活性化後の出力を明るさで示す
+    for (let k = 1; k < 4; k++) {
+      const z = this.z[k - 1], a = this.a[k], mx = this.scale[k - 1];
+      L[k].forEach((n, j) => {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+        if (a) { ctx.fillStyle = rgba(C.ink, a[j] * 0.95); ctx.fill(); }
+        ctx.strokeStyle = rgba(this.cur && this.cur.act === k && this.t < this.BEAT ? C.accent2 : C.muted, 0.8);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        if (!a && this.done[k - 1].length) {
+          // ゲージ: 0 を中心に、正なら右へ青、負なら左へ赤
+          const len = (z[j] / mx) * this.gauge;
+          const gx = n.x, gy = n.y + n.r + 3;
+          ctx.fillStyle = rgba(C.edge, 0.6);
+          ctx.fillRect(gx - this.gauge, gy, this.gauge * 2, 1);
+          ctx.fillStyle = rgba(z[j] > 0 ? pos : neg, 0.95);
+          ctx.fillRect(len > 0 ? gx : gx + len, gy - 1.5, Math.abs(len), 4);
+        }
+      });
+    }
+
+    // 答え: ソフトマックスの確率を棒で
+    const out = L[3];
+    ctx.font = `500 ${Math.round(clamp(out[0].r * 1.4, 11, 16))}px "JetBrains Mono", ui-monospace, monospace`;
+    ctx.textBaseline = 'middle';
+    out.forEach((n, j) => {
+      const win = this.prob && j === this.answer;
+      ctx.fillStyle = win ? rgba(C.accent2) : rgba(C.muted, 0.8);
+      ctx.fillText(String(j), n.x + n.r + 8, n.y);
+      if (this.prob) {
+        const bw = (W - (n.x + n.r + 28) - 12) * this.prob[j];
+        ctx.fillStyle = rgba(win ? C.accent2 : C.muted, win ? 0.9 : 0.5);
+        ctx.fillRect(n.x + n.r + 26, n.y - 3, Math.max(1, bw), 6);
+      }
+    });
+    if (this.prob) {
+      const n = out[this.answer];
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r + 5, 0, Math.PI * 2);
+      ctx.strokeStyle = rgba(C.accent2);
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+    }
+  },
+};
+
+/* ---------- 共通の枠組み ---------- */
+const modules = { globe: Globe, shapes: Shapes, net: Net };
+const order = ['globe', 'shapes', 'net'];
+let cur = null, curId = 'globe';
+let running = true, visible = true, last = 0;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function sizeCanvas() {
+  const r = stage.getBoundingClientRect();
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = Math.max(1, Math.round(r.width));
+  H = Math.max(1, Math.round(r.height));
+  cv.width = W * DPR; cv.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+function select(id) {
+  curId = id;
+  cur = modules[id];
+  cur.init();
+  if (!running) cur.settle();
+  cur.draw();
+  hintEl.textContent = cur.hint;
+  creditEl.innerHTML = cur.credit;
+  document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.id === id)));
+  try { localStorage.setItem('top-topology', id); } catch (e) { /* 保存できなくても動く */ }
+}
+function setRunning(on) { running = on; playBtn.textContent = on ? '一時停止' : '再生'; last = performance.now(); }
+function loop(ts) {
+  requestAnimationFrame(loop);
+  const dt = clamp((ts - last) / 1000 || 0.016, 0, 0.05);
+  last = ts;
+  if (!running || !visible || !cur) return;
+  cur.update(dt);
+  cur.draw();
+}
+const local = (e) => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+cv.addEventListener('pointermove', (e) => { cur.pointer('move', ...local(e)); if (!running) cur.draw(); });
+cv.addEventListener('pointerleave', (e) => { cur.pointer('leave', ...local(e)); if (!running) cur.draw(); });
+cv.addEventListener('pointerdown', (e) => { cur.pointer('down', ...local(e)); if (!running) { cur.settle(); cur.draw(); } });
+document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => select(t.dataset.id)));
+document.querySelector('.tabs').addEventListener('keydown', (e) => {
+  const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+  if (!d) return;
+  const next = order[(order.indexOf(curId) + d + order.length) % order.length];
+  select(next);
+  document.getElementById('tab-' + next).focus();
+});
+playBtn.addEventListener('click', () => setRunning(!running));
+bareBtn.addEventListener('click', () => {
+  const on = stage.classList.toggle('bare');
+  bareBtn.setAttribute('aria-pressed', String(on));
+  bareBtn.textContent = on ? '文字を表示' : '文字を隠す';
+});
+new ResizeObserver(() => {
+  const pw = W, ph = H;
+  sizeCanvas();
+  if (cur && (pw !== W || ph !== H)) { cur.resize(); cur.draw(); }
+}).observe(stage);
+new IntersectionObserver((es) => { visible = es[0].isIntersecting; }).observe(stage);
+document.addEventListener('visibilitychange', () => { visible = !document.hidden; last = performance.now(); });
+function onTheme() { readColors(); if (cur) cur.draw(); }
+matchMedia('(prefers-color-scheme: light)').addEventListener('change', onTheme);
+new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+readColors();
+sizeCanvas();
+let initial = 'globe';
+try { const s = localStorage.getItem('top-topology'); if (s && modules[s]) initial = s; } catch (e) { /* なし */ }
+setRunning(!reduceMotion);
+select(initial);
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
