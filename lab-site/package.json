@@ -1,0 +1,18 @@
+{
+  "name": "akabane-lab-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:update": "playwright test --update-snapshots"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3"
+  }
+}
