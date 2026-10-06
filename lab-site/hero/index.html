@@ -292,7 +292,8 @@ const PAL = {
 function applyScheme() {
   const b = C.base;
   C.pal = [b.accent, b.accent2, mix(b.accent2, C.bg, 0.3), mix(b.accent2, C.bg, 0.5), mix(b.accent, C.bg, 0.4),
-    b.accent, b.accent2, b.c3, b.c4, b.c5, b.c6, b.c7, C.ink];
+    // 塗り分けの色は、常時の信号の青と混ざらないよう橙から始め、青は最後に回す
+    b.accent2, b.c3, b.c4, b.c5, b.c6, b.c7, b.accent, C.ink];
   glowCache.clear();
 }
 
@@ -498,7 +499,13 @@ let algo = ALGOS.bfs;
 
 const Scene = {
   init() {
-    this.list = [fullerene(), torus(), hypercube(), geodesic()];
+    // 形ごとに、その形の特徴がよく見える処理を割り当てる
+    this.list = [
+      { ...fullerene(), algo: 'edges' },     // 辺がちょうど3色で塗り分けられる
+      { ...torus(), algo: 'bfs' },           // 波が輪を回り込み、反対側でぶつかる
+      { ...hypercube(), algo: 'bipartite' }, // 4つの中で唯一、2色で塗れる
+      { ...geodesic(), algo: 'three' },      // 3色では塗れず、4色で塗り直す
+    ];
     Object.assign(this, {
       si: 0, rot: 0, tilt: BASE_TILT, vRot: 0, vTilt: 0, cid: 0, shapeT: 0, fade: 1,
       dragging: false, idle: 99, hover: -1, hoverA: 0, ptr: { x: 0, y: 0, inside: false, mouse: false },
@@ -804,12 +811,10 @@ function onTheme() { readColors(); Scene.draw(); }
 matchMedia('(prefers-color-scheme: light)').addEventListener('change', onTheme);
 new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
-// クリックするたびに、処理を順番に切り替える
-const ORDER = ['bfs', 'greedy', 'three', 'bipartite', 'edges'];
+// クリックしたときの処理は、表示中の形に割り当てたものを使う
 const algoEl = document.getElementById('algo-name');
-let turn = 0;
 const resultEl = { set textContent(v) { /* ヒーローでは結果の文は出さない */ } };
-function nextAlgo() { algo = ALGOS[ORDER[turn++ % ORDER.length]]; algoEl.textContent = algo.name; }
+function nextAlgo() { algo = ALGOS[Scene.shape.algo]; algoEl.textContent = algo.name; }
 
 readColors();
 sizeCanvas();
