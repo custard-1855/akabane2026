@@ -45,3 +45,10 @@ npm run test:e2e:update   # 見た目を意図して変えたとき、ベース�
   作り直しの前後でこれが通れば、描画は変わっていない
 - `tests/e2e/behavior.spec.ts`: 形の切り替え、クリック、テーマ、検証用ボタン、動きを減らす設定、レイアウト
   - 既知の不具合は `test.fail` で記録している(直したら外す)
+
+## 公開(GitHub Pages)
+
+`.github/workflows/lab-site.yml` が、push のたびに `npm run check` とブラウザのテストを実行する。
+`main` への push で通れば `dist/` を GitHub Pages に公開する。
+
+初回だけ、リポジトリの Settings → Pages → Build and deployment の Source を「GitHub Actions」にする。
