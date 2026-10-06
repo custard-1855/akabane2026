@@ -12,10 +12,9 @@ import {
 } from "./helpers";
 
 const hero = loadHero();
-const graphs = Object.fromEntries(SHAPES.map((name) => [name, graphOf(hero, hero[name]())])) as Record<
-  (typeof SHAPES)[number],
-  Graph
->;
+const graphs = Object.fromEntries(
+  SHAPES.map((name) => [name, graphOf(hero, hero[name]())]),
+) as Record<(typeof SHAPES)[number], Graph>;
 /** 塗り分けの色番号(PAL.cat の値) → 何番目の色か */
 const catIndex = (c: number) => c - hero.PAL.cat(0);
 /** 各形で試すクリック位置 */
@@ -61,8 +60,10 @@ describe("bfsTree", () => {
       expect(dist[src]).toBe(0);
       expect(order[0]).toBe(src);
       expect(new Set(order).size).toBe(g.n);
-      for (let i = 1; i < order.length; i++) expect(dist[order[i]]).toBeGreaterThanOrEqual(dist[order[i - 1]]);
-      for (const [a, b] of g.shape.edges) expect(Math.abs(dist[a] - dist[b])).toBeLessThanOrEqual(1);
+      for (let i = 1; i < order.length; i++)
+        expect(dist[order[i]]).toBeGreaterThanOrEqual(dist[order[i - 1]]);
+      for (const [a, b] of g.shape.edges)
+        expect(Math.abs(dist[a] - dist[b])).toBeLessThanOrEqual(1);
       for (const v of order.slice(1)) {
         expect(g.nbrs[v]).toContain(par[v]);
         expect(dist[par[v]]).toBe(dist[v] - 1);
@@ -80,7 +81,9 @@ describe("幅優先探索(ALGOS.bfs)", () => {
     const { ev } = hero.ALGOS.bfs.run(g, src);
     const nodes = ev.filter((e: any) => e.e === 0);
     const edges = ev.filter((e: any) => e.e === 1);
-    expect(nodes.map((e: any) => e.v).sort((a: number, b: number) => a - b)).toEqual([...Array(g.n).keys()]);
+    expect(nodes.map((e: any) => e.v).sort((a: number, b: number) => a - b)).toEqual([
+      ...Array(g.n).keys(),
+    ]);
     expect(edges).toHaveLength(g.n - 1);
     for (const e of edges) expect(par[e.b]).toBe(e.a);
     for (const e of nodes) expect(e.t).toBeCloseTo(dist[e.v] * hero.CFG.bfsStep, 9);
@@ -147,12 +150,15 @@ describe("k 色の塗り分け(kColoring)", () => {
 });
 
 describe("3色の塗り分け(ALGOS.three)", () => {
-  test.each(["fullerene", "torus"] as const)("%s: 3色で塗れたと報告し、結果も3色の正しい塗り分け", (name) => {
-    const g = graphs[name];
-    const { ev, result } = hero.ALGOS.three.run(g, 0);
-    expect(result).toBe("3色で塗れた");
-    expect(properColorCount(g, finalNodeColors(g.n, ev))).toBe(3);
-  });
+  test.each(["fullerene", "torus"] as const)(
+    "%s: 3色で塗れたと報告し、結果も3色の正しい塗り分け",
+    (name) => {
+      const g = graphs[name];
+      const { ev, result } = hero.ALGOS.three.run(g, 0);
+      expect(result).toBe("3色で塗れた");
+      expect(properColorCount(g, finalNodeColors(g.n, ev))).toBe(3);
+    },
+  );
 
   test("6次元超立方体: 2色で済んだと報告する", () => {
     const g = graphs.hypercube;
@@ -267,11 +273,7 @@ describe("辺の塗り分け(ALGOS.edges)", () => {
 
 describe("pace", () => {
   test("1手 = 1単位の時刻を、全体が total 秒に収まるよう伸縮し、終わりの時刻を返す", () => {
-    const ev = [
-      { t: 0, dur: 1 },
-      { t: 1 },
-      { t: 9, dur: 1 },
-    ];
+    const ev = [{ t: 0, dur: 1 }, { t: 1 }, { t: 9, dur: 1 }];
     const end = hero.pace(ev, 2, 0.5, 0, 1);
     expect(end).toBeCloseTo(2.5, 9);
     expect(ev.map((e) => e.t)).toEqual([2, 2.05, 2.45]);
