@@ -1,5 +1,7 @@
 # 研究室サイト トップ表現の検討メモ
 
+> 研究室サイトは 2026-10-15 に別のリポジトリ [kawahara-lab-site](https://github.com/custard-1855/kawahara-lab-site) へ移った。採用したヒーロー(C-5)はそちらの `src/hero/` が正本で、このリポジトリの `lab-site/` は削除した。この文書は検討の記録として残す。文中の `lab-site/` のファイルは、コミット `8c0c2e8` 以前の履歴で見られる(例: `git show 8c0c2e8:lab-site/prototypes/top-concepts/index.html`)。
+
 - 作成日: 2026-10-03(同日改訂: 第一印象を優先する方針に変更)
 - ステータス: トップの表現はC-5(有名なグラフ)に決定(2026-10-03)。要件は未定
 - プロトタイプ: `lab-site/prototypes/top-concepts/index.html`(ブラウザで直接開ける。外部依存はGoogle Fontsのみ)
