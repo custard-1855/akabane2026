@@ -1,0 +1,86 @@
+/* 研究室サイト(kawahara-lab-site 2231987 の src/styles/base.css)からコピーした */
+/* 全ページ共通の土台 */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  letter-spacing: var(--letter-spacing-body);
+  overflow-wrap: anywhere;
+}
+a {
+  color: var(--color-link);
+}
+a:hover {
+  color: var(--color-navy);
+}
+:focus-visible {
+  outline: 2px solid var(--color-link);
+  outline-offset: 2px;
+}
+h1,
+h2,
+h3 {
+  font-weight: var(--heading-weight);
+}
+img,
+svg {
+  max-width: 100%;
+}
+b,
+strong {
+  font-weight: 600;
+}
+
+.container {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
+}
+.mono {
+  font-family: var(--font-mono);
+}
+.sub {
+  color: var(--color-text-sub);
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+/* 矢印付きのテキストリンク。クリック範囲を44px以上にする */
+.text-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  font-size: 14px;
+}
+/* 罫線で区切る一覧 */
+.rule-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-line);
+}
+/* プレースホルダー(未確定の文言)。見た目は本文と同じ */
+.empty {
+  margin: 0;
+  padding: 16px 0;
+  font-size: 14px;
+  color: var(--color-text-sub);
+  border-top: 1px solid var(--color-line);
+}

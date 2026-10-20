@@ -41,8 +41,5 @@ coverage/
 # Logs
 *.log
 
-# 基盤の実行時データ(storage.db, metrics.db, ログ)
-/data/
-
 # QR読み取り検証用の自己署名証明書
 /experiments/qr_scan/certs/
