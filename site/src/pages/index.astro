@@ -90,6 +90,9 @@ import { SITE } from "../site.config";
   }
   .facts dd {
     margin: 0;
+    /* 「3201教室」の途中で折り返さないよう、空白の位置だけで折り返す。入りきらないときは途中でも折る */
+    word-break: keep-all;
+    overflow-wrap: anywhere;
   }
   p {
     margin: 0;
