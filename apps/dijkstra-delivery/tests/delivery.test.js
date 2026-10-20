@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { DeliveryRound } from "../static/logic.js";
 import { STAGES } from "../static/stages.js";
+import { oneway } from "./graphs.js";
 
 const stage = (id) => STAGES.find((s) => s.id === id);
 
@@ -21,7 +22,7 @@ test("辺でつながっていない交差点は invalid で、ルートは変�
 });
 
 test("一方通行を逆向きに進むタップは invalid", () => {
-  const round = new DeliveryRound(stage("oneway"));
+  const round = new DeliveryRound(oneway);
   round.tap("A");
   // B→A はあるが A→B はない
   assert.equal(round.tap("B").kind, "invalid");
@@ -81,23 +82,23 @@ for (const [id, route, cost, stars] of [
   ["downtown", "S-A-D-H-G", 13, 3],
   ["downtown", "S-B-E-H-G", 16, 2], // star2 ちょうど
   ["downtown", "S-A-D-F-G", 17, 1],
-  ["highway", "S-P-Q-G", 9, 3],
-  ["highway", "S-R-T-G", 12, 2],
-  ["highway", "S-P-Q-B-G", 13, 1],
+  ["residential", "S-A-D-E-I-L-G", 18, 3],
+  ["residential", "S-A-E-I-L-G", 20, 2], // star2 ちょうど
+  ["residential", "S-B-E-I-L-G", 22, 1], // 目先の罠で始めたときの最善
   ["oneway", "S-B-C-E-G", 14, 3], // 同点のもう1本でも★3
   ["oneway", "S-B-A-C-E-G", 17, 2],
   ["oneway", "S-A-D-G", 18, 1],
 ]) {
   test(`層Aの星: ${id} で ${route}(${cost})は★${stars}`, () => {
-    const round = new DeliveryRound(stage(id));
+    const round = new DeliveryRound([...STAGES, oneway].find((s) => s.id === id));
     tapAll(round, route.split("-").slice(1));
     assert.equal(round.cost(), cost);
     assert.equal(round.stars(), stars);
   });
 }
 
-test("ゴースト: プレイヤーのルートが最短なら、そのルートを示す(Stage 3 は同点あり)", () => {
-  const round = new DeliveryRound(stage("oneway"));
+test("ゴースト: プレイヤーのルートが最短なら、そのルートを示す(一方通行のグラフは同点あり)", () => {
+  const round = new DeliveryRound(oneway);
   tapAll(round, ["B", "C", "E", "G"]);
   assert.deepEqual(round.ghost(), { path: ["S", "B", "C", "E", "G"], tie: true });
 });
@@ -109,7 +110,7 @@ test("ゴースト: 最短が1本だけのステージでは tie は false", () 
 });
 
 test("ゴースト: 遠回りしたときは最短ルートを示す", () => {
-  const round = new DeliveryRound(stage("highway"));
-  tapAll(round, ["A", "B", "G"]);
-  assert.deepEqual(round.ghost(), { path: ["S", "P", "Q", "G"], tie: false });
+  const round = new DeliveryRound(stage("residential"));
+  tapAll(round, ["B", "E", "I", "L", "G"]);
+  assert.deepEqual(round.ghost(), { path: ["S", "A", "D", "E", "I", "L", "G"], tie: false });
 });

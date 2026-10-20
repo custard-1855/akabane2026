@@ -14,5 +14,12 @@ export const MIN_NODE_GAP = 150;
 /** ノード中心と、そのノードを端点としない辺との距離の下限 */
 export const MIN_EDGE_GAP = 60;
 
-/** 層Bのクリア後、「続けて全地点を確定」で1つ確定する間隔(ミリ秒) */
-export const AUTO_SETTLE_MS = 500;
+/** 大都市の街を生成する乱数の種。見た目のよい街になる種を選んで固定する */
+export const CITY_SEED = 1;
+/** 大都市の交差点の点の半径 */
+export const CITY_DOT_R = 7;
+/** 大都市で、確定した順に色を付ける演出の長さ(ミリ秒) */
+export const CITY_WAVE_MS = 3000;
+
+/** 管制室で、自動で1つ確定する間隔(ミリ秒)。確定ごとの字幕2行を読める長さにする */
+export const AUTO_SETTLE_MS = 1800;
