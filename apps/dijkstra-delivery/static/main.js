@@ -1,15 +1,26 @@
 // 起動と、入力 → ラウンド → 描画の接続、自動進行
 
-import { AUTO_SETTLE_MS } from "./config.js";
-import { ControlRound, DeliveryRound, INF, buildAdj, dijkstra } from "./logic.js";
+import { nearestNode } from "./city.js";
+import { AUTO_SETTLE_MS, CITY_WAVE_MS } from "./config.js";
+import { guideStep } from "./guide.js";
+import { ControlRound, DeliveryRound, INF, buildAdj, dijkstra, pathTo, solveFrom } from "./logic.js";
 import { STAGES } from "./stages.js";
 import { buildMap, clearFx, render, ripple } from "./view.js";
 
-/** 自動進行の順。各ステージで層A(配達)→ 層B(管制室) */
-const FLOW = STAGES.flatMap((_, stageIndex) => [
-  { stageIndex, mode: /** @type {const} */ ("A") },
-  { stageIndex, mode: /** @type {const} */ ("B") },
-]);
+/** @typedef {"A" | "B" | "C"} Mode A は配達、B は管制室(自動で解く様子を見る)、C は大都市(倉庫を選んで自動で解く) */
+
+/**
+ * 自動進行の順。各ステージで層A(配達)→ 層B(管制室)。大都市は C だけ
+ * @type {{ stageIndex: number, mode: Mode }[]}
+ */
+const FLOW = STAGES.flatMap((s, stageIndex) =>
+  s.dense
+    ? [{ stageIndex, mode: "C" }]
+    : [
+        { stageIndex, mode: "A" },
+        { stageIndex, mode: "B" },
+      ],
+);
 
 const $ = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const svg = /** @type {SVGSVGElement} */ (/** @type {unknown} */ ($("board")));
@@ -27,7 +38,8 @@ const ui = {
   undo: /** @type {HTMLButtonElement} */ ($("undo")),
   reset: $("reset"),
   map: /** @type {HTMLButtonElement} */ ($("map")),
-  finishAll: /** @type {HTMLButtonElement} */ ($("finish-all")),
+  run: /** @type {HTMLButtonElement} */ ($("run")),
+  skipGuide: $("skip-guide"),
   next: /** @type {HTMLButtonElement} */ ($("next")),
   msg: $("msg"),
   sub: $("sub"),
@@ -35,7 +47,7 @@ const ui = {
 
 const state = {
   stageIndex: 0,
-  /** @type {"A" | "B"} */
+  /** @type {Mode} */
   mode: "A",
   /** @type {{ dist: Map<string, number>, prev: Map<string, string> } | null} */
   opt: null,
@@ -44,24 +56,40 @@ const state = {
   /** @type {ControlRound | null} */
   control: null,
   showMap: false,
-  /** @type {string[]} */
-  alertPath: [],
-  /** @type {string[]} */
-  alertNodes: [],
   msg: "",
   sub: "",
-  /** 「続けて全地点を確定」のタイマー。ステージやモードを変えたら止める */
+  /** 案内を飛ばしたか。層を始めるたび(load)に戻す */
+  guideOff: false,
+  /** 管制室で自動で解くタイマー。ステージやモードを変えたら止める */
   autoTimer: 0,
+  /**
+   * 大都市で解いた結果。shown は、確定した順に色を付け終えた数。target は、タップしたお届け先
+   * @type {{
+   *   start: string, order: string[], dist: Map<string, number>, prev: Map<string, string>,
+   *   shown: number, target: string | null,
+   * } | null}
+   */
+  city: null,
+  /** 大都市の色付けの requestAnimationFrame。止めるときに使う */
+  waveFrame: 0,
 };
 
 const stage = () => STAGES[state.stageIndex];
 const fmt = (d) => (d === INF ? "∞" : String(d));
 const starText = (n) => "★".repeat(n) + "☆".repeat(3 - n);
+const cityDone = () => state.city !== null && state.city.shown === state.city.order.length;
 const flowIndex = () =>
   FLOW.findIndex((f) => f.stageIndex === state.stageIndex && f.mode === state.mode);
 const isLast = () => flowIndex() === FLOW.length - 1;
 
+/** 今の案内。飛ばしたときと、案内しない盤面(配達以外)では null */
+function guide() {
+  if (state.guideOff || state.mode !== "A") return null;
+  return guideStep(stage(), state.delivery);
+}
+
 function cleared() {
+  if (state.mode === "C") return cityDone();
   return state.mode === "A" ? state.delivery.finished : state.control.finished;
 }
 
@@ -73,14 +101,18 @@ function say(msg, sub = "") {
 function stopAuto() {
   clearInterval(state.autoTimer);
   state.autoTimer = 0;
+  cancelAnimationFrame(state.waveFrame);
+  state.waveFrame = 0;
 }
 
 /** ステージとモードを読み込み、ラウンドを作り直す */
 function load(stageIndex, mode) {
   stopAuto();
   state.stageIndex = stageIndex;
-  state.mode = mode;
+  state.guideOff = false;
   const s = stage();
+  // 大都市には配達と管制室がなく、ほかのステージには C がない
+  state.mode = s.dense ? "C" : mode === "C" ? "A" : mode;
   state.opt = dijkstra(buildAdj(s), s.start ?? "S");
   buildMap(svg, s);
   reset();
@@ -93,9 +125,10 @@ function reset() {
   state.delivery = new DeliveryRound(s);
   state.control = new ControlRound(s);
   state.showMap = false;
-  state.alertPath = [];
-  state.alertNodes = [];
-  if (state.mode === "A") {
+  state.city = null;
+  if (state.mode === "C") {
+    say("倉庫を置きたい交差点をタップしよう", "そこから街じゅうの交差点への、いちばん早い時間を求める");
+  } else if (state.mode === "A") {
     say(
       "倉庫 S から、お届け先 G まで、いちばん早いルートで届けよう",
       "隣の交差点をタップして進む。道の数字は所要時間(分)。同じ交差点は2度通れない",
@@ -103,7 +136,7 @@ function reset() {
   } else {
     say(
       "管制室: 交差点の上の札は「S から、今わかっている中でいちばん早い時間」",
-      "札がいちばん小さい候補(黄色の破線)をタップして確定しよう。まずは倉庫 S(札 0)から",
+      "「自動で解く」を押すと、札がいちばん小さい交差点から順に確定していく",
     );
   }
   update();
@@ -145,53 +178,6 @@ function tapDelivery(n) {
   }
 }
 
-/** @param {string} n */
-function tapControl(n) {
-  const round = state.control;
-  // クリア後は「続けて全地点を確定」でだけ進める(採点の対象外)
-  if (round.finished) return;
-  state.alertPath = [];
-  state.alertNodes = [];
-  const label = round.dist.get(n);
-  const r = round.settle(n);
-  switch (r.kind) {
-    case "already":
-      say("確定済みです", "まだ確定していない候補(黄色の破線)から選ぼう");
-      break;
-    case "unreached":
-      say("まだ届いていません", "札が ∞ の交差点は、まだ確定できません");
-      break;
-    case "not_min": {
-      const miss = `ミス ${round.mistakes}回。札がいちばん小さい候補から確定しよう`;
-      if (r.reason.kind === "overturn") {
-        const { via, viaDist, best, path } = r.reason;
-        state.alertPath = path;
-        state.alertNodes = [via];
-        say(`まだ確定していない ${via}(札 ${viaDist})を経由すると、${n} には ${best} で着けます`, miss);
-      } else {
-        state.alertNodes = r.reason.minNodes;
-        say(
-          `札が ${label} より小さい候補が残っています。今回はたまたま合っていますが、この時点では保証できません`,
-          miss,
-        );
-      }
-      break;
-    }
-    case "settled": {
-      ripple(svg, stage(), n);
-      if (round.finished) {
-        say(
-          `${n} を確定! S から ${n} まで最短 ${label}分。ミス ${round.mistakes}回 ${starText(round.stars())}`,
-          "「続けて全地点を確定」で、1回の実行で全地点への最短が求まる様子を見られます",
-        );
-      } else {
-        say(`${n} を確定(${label}分)`, summarize(r.relaxations));
-      }
-      break;
-    }
-  }
-}
-
 /** 1回の確定で書き換えた札をまとめて1行にする */
 function summarize(relaxations) {
   const updated = relaxations.filter((x) => x.updated);
@@ -199,26 +185,83 @@ function summarize(relaxations) {
   return `札の書き換え: ${updated.map((x) => `${x.node}: ${fmt(x.from)}→${x.cand}`).join(", ")}`;
 }
 
-/** 層Bのクリア後に、残りを最小の候補から順に確定する */
-function finishAll() {
+/** 管制室: 札が最小の候補を確定するのを、全地点を確定し終えるまで自動で繰り返す */
+function runControl() {
   const round = state.control;
-  state.alertPath = [];
-  state.alertNodes = [];
   state.autoTimer = setInterval(() => {
-    const cands = round.candidates();
-    if (cands.length === 0) {
+    const r = round.step();
+    if (r === null) {
       stopAuto();
-      say("全地点を確定しました", "1回の実行で、S からすべての交差点への最短時間が求まりました");
+      say(
+        `全地点を確定しました。お届け先 ${round.goal} までの最短は ${round.dist.get(round.goal)}分`,
+        "1回の実行で、S からすべての交差点への最短時間が求まりました。「到着時間マップ」で見られます",
+      );
       update();
       return;
     }
-    const n = cands.reduce((a, b) => (round.dist.get(b) < round.dist.get(a) ? b : a));
-    const r = round.settle(n);
+    const n = r.node;
     ripple(svg, stage(), n);
-    say(`${n} を確定(${round.dist.get(n)}分)`, r.kind === "settled" ? summarize(r.relaxations) : "");
+    const goal = n === round.goal ? "。お届け先までの最短が決まった。残りの交差点も続けて確定する" : "";
+    say(`札がいちばん小さい ${n}(${round.dist.get(n)}分)を確定${goal}`, summarize(r.relaxations));
     update();
   }, AUTO_SETTLE_MS);
   update();
+}
+
+/**
+ * 大都市: n から全地点を解き、確定した順に色を付けてから到着時間マップを出す。
+ * 一瞬で表示すると、近い順に広がる様子が見えないので、約3秒かけて流す
+ * @param {string} n
+ */
+function solveCity(n) {
+  stopAuto();
+  clearFx(svg);
+  const t0 = performance.now();
+  const { order, dist, prev } = solveFrom(stage(), n);
+  const ms = performance.now() - t0;
+  state.city = { start: n, order, dist, prev, shown: 0, target: null };
+  state.showMap = false;
+  ripple(svg, stage(), n);
+  say("倉庫から近い順に、交差点を確定しています", "");
+  const begin = performance.now();
+  const step = (/** @type {number} */ now) => {
+    const city = /** @type {NonNullable<typeof state.city>} */ (state.city);
+    city.shown = Math.min(order.length, Math.ceil((order.length * (now - begin)) / CITY_WAVE_MS));
+    if (city.shown < order.length) {
+      state.waveFrame = requestAnimationFrame(step);
+    } else {
+      state.waveFrame = 0;
+      state.showMap = true;
+      const took = ms < 1 ? "1ミリ秒もかかっていません" : `約${Math.round(ms)}ミリ秒です`;
+      const minutes = Math.round((order.length * AUTO_SETTLE_MS) / 60000);
+      say(
+        `全 ${order.length} 地点へのいちばん早い時間が求まりました。計算は${took}`,
+        `管制室と同じ速さで1つずつ確定したら約${minutes}分かかります。お届け先にしたい交差点をタップしよう`,
+      );
+    }
+    update();
+  };
+  state.waveFrame = requestAnimationFrame(step);
+  update();
+}
+
+/**
+ * 大都市: 解き終えた後にタップした交差点まで、最短ルートを出す。
+ * 全地点への最短はもう求まっているので、計算し直さずに prev をたどるだけでよい
+ * @param {string} n
+ */
+function showCityRoute(n) {
+  const city = /** @type {NonNullable<typeof state.city>} */ (state.city);
+  if (n === city.start) {
+    say("そこは倉庫です", "お届け先にしたい交差点をタップしよう。倉庫を動かすときは「倉庫を置き直す」");
+    city.target = null;
+    return;
+  }
+  city.target = n;
+  say(
+    `倉庫からここまで、いちばん早くて ${city.dist.get(n)}分`,
+    "全地点への最短はもう求まっているので、どこへのルートも計算し直さずに出せる。ほかの交差点もタップしてみよう",
+  );
 }
 
 /** 次の来場者に端末を渡せるよう、タイトル画面に戻す */
@@ -240,36 +283,59 @@ function startGame(stageIndex) {
 function update() {
   const s = stage();
   const isA = state.mode === "A";
+  const isCity = state.mode === "C";
   const done = cleared();
   const d = state.delivery;
   const c = state.control;
+  const g = guide();
 
-  render(svg, s, {
-    mode: state.mode,
-    route: d.route,
-    settled: c.done,
-    frontier: new Set(c.candidates()),
-    labels: isA ? null : c.dist,
-    ghost: isA && d.finished ? d.ghost().path : null,
-    alertPath: state.alertPath,
-    alertNodes: state.alertNodes,
-    map: done && state.showMap ? state.opt.dist : null,
-  });
+  const city = state.city;
+
+  render(svg, s, isCity
+    ? {
+        mode: "C",
+        route: !city ? [] : city.target ? pathTo(city.prev, city.start, city.target) : [city.start],
+        settled: new Set(city ? city.order.slice(0, city.shown) : []),
+        frontier: new Set(),
+        labels: null,
+        ghost: null,
+        glow: [],
+        map: done && state.showMap ? city.dist : null,
+      }
+    : {
+        mode: state.mode,
+        route: d.route,
+        settled: c.done,
+        frontier: new Set(c.candidates()),
+        labels: isA ? null : c.dist,
+        ghost: isA && d.finished ? d.ghost().path : null,
+        glow: g?.nodes ?? [],
+        map: done && state.showMap ? state.opt.dist : null,
+      });
 
   ui.stage.value = String(state.stageIndex);
+  // 大都市では、配達・管制室の切り替えと「1手戻る」を出さない
+  /** @type {HTMLElement} */ (ui.modeA.parentElement).hidden = isCity;
+  ui.undo.hidden = isCity;
+  ui.reset.textContent = isCity ? "倉庫を置き直す" : "リセット";
   ui.modeA.classList.toggle("active", isA);
-  ui.modeB.classList.toggle("active", !isA);
+  ui.modeB.classList.toggle("active", state.mode === "B");
   ui.undo.disabled = !isA || d.finished || d.route.length < 2;
   ui.map.disabled = !done;
   ui.map.setAttribute("aria-pressed", String(done && state.showMap));
-  ui.finishAll.hidden = isA || !c.finished;
-  ui.finishAll.disabled = state.autoTimer !== 0 || c.candidates().length === 0;
+  ui.run.hidden = state.mode !== "B";
+  ui.run.disabled = state.autoTimer !== 0 || c.finished;
   // 最後のステージの後は、「次へ」の代わりに「タイトルへ」を出す
   ui.next.textContent = isLast() ? "タイトルへ" : "次へ";
   ui.next.disabled = !done;
-  ui.msg.textContent = state.msg;
-  ui.sub.textContent =
-    done && isLast() ? `${state.sub}。全ステージクリア!` : state.sub;
+  ui.skipGuide.hidden = g === null;
+  // 案内中は字幕を主に出し、ふだんの1行目(「ここまで 3分」など)を2行目に回す
+  ui.msg.textContent = g ? g.caption : state.msg;
+  ui.sub.textContent = g
+    ? state.msg
+    : done && isLast()
+      ? `${state.sub}。全ステージクリア!`
+      : state.sub;
 }
 
 ui.stage.append(
@@ -288,7 +354,11 @@ ui.map.addEventListener("click", () => {
   state.showMap = !state.showMap;
   update();
 });
-ui.finishAll.addEventListener("click", finishAll);
+ui.run.addEventListener("click", runControl);
+ui.skipGuide.addEventListener("click", () => {
+  state.guideOff = true;
+  update();
+});
 ui.next.addEventListener("click", () => {
   const f = FLOW[flowIndex() + 1];
   if (f) load(f.stageIndex, f.mode);
@@ -312,11 +382,33 @@ ui.stageList.append(
 
 // タッチもタッチパッドも click で受ける
 svg.addEventListener("click", (e) => {
+  if (state.mode === "C") {
+    // 大都市は交差点が小さく間隔も狭いので、押した位置にいちばん近い交差点を選んだことにする
+    const ctm = /** @type {DOMMatrix} */ (svg.getScreenCTM());
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse());
+    const n = nearestNode(stage(), [p.x, p.y]);
+    // 1回目のタップで倉庫を置いて解き、解き終えた後のタップはお届け先にする。色付けの途中は受けない
+    if (state.city === null) solveCity(n);
+    else if (cityDone()) showCityRoute(n);
+    update();
+    return;
+  }
+  // 管制室は自動で進むので、タップを受けない
+  if (state.mode === "B") return;
   const hit = /** @type {Element} */ (e.target).closest("[data-node]");
-  if (!hit || state.autoTimer !== 0) return;
+  if (!hit) return;
   const n = /** @type {string} */ (hit.getAttribute("data-node"));
-  if (state.mode === "A") tapDelivery(n);
-  else tapControl(n);
+  // 案内中は、光っていない交差点のタップをラウンドに渡さずに捨てる
+  const g = guide();
+  if (g && g.nodes.length > 0 && !g.nodes.includes(n)) {
+    ui.msg.classList.remove("again");
+    void ui.msg.offsetWidth; // アニメーションを最初から流し直す
+    ui.msg.classList.add("again");
+    return;
+  }
+  // 光らせない説明だけの字幕は、次のタップで終える。行き止まりなどのメッセージを字幕で隠さないため
+  if (g && g.nodes.length === 0) state.guideOff = true;
+  tapDelivery(n);
   update();
 });
 

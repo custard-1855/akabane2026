@@ -24,7 +24,7 @@ export function buildAdj(stage, { reverse = false, undirected = false } = {}) {
 }
 
 /**
- * 確定集合を持つ O(V²) 版。数百頂点(Stage 7)まではこれで足りる。
+ * 確定集合を持つ O(V²) 版。数百頂点(Stage 3 大都市)まではこれで足りる。
  * 同じ距離の候補は隣接表(= nodes の記述順)で先のものを選び、結果を決定的にする
  * @param {Adj} adj
  * @param {string} s
@@ -189,8 +189,8 @@ export class DeliveryRound {
 }
 
 /**
- * 層B(管制室)のラウンド。プレイヤーが確定する交差点を選び、緩和はゲームが行う。
- * 確定集合を持つ教科書どおりのダイクストラ法なので、自動実行にもそのまま使える
+ * 層B(管制室)のラウンド。札が最小の候補を確定し、隣の札を書き換えるのを繰り返す。
+ * 管制室ではこれを自動で1手ずつ進めて見せ、大都市では一気に回す
  */
 export class ControlRound {
   /** @param {Stage} stage */
@@ -205,10 +205,6 @@ export class ControlRound {
     this.prev = new Map();
     /** @type {Set<string>} */
     this.done = new Set();
-    this.mistakes = 0;
-    this.finished = false;
-    /** 正解。not_min の理由を求めるのに使う */
-    this.opt = dijkstra(this.adj, this.start);
   }
 
   /** 未確定かつ札が有限のノード(nodes の記述順) */
@@ -216,18 +212,22 @@ export class ControlRound {
     return [...this.dist].filter(([n, d]) => !this.done.has(n) && d < INF).map(([n]) => n);
   }
 
-  /** @param {string} n */
-  settle(n) {
-    // already と unreached は押し間違いの可能性が高いので、ミスに数えない
-    if (this.done.has(n)) return { kind: "already" };
-    if (this.dist.get(n) === INF) return { kind: "unreached" };
-    // 値が後で実際に覆るかではなく、規則(札が最小か)で判定する。
-    // 結果で判定すると「最小を選べば必ず正しい」という保証を教えられない
-    const m = Math.min(...this.candidates().map((c) => this.dist.get(c)));
-    if (this.dist.get(n) > m) {
-      this.mistakes++;
-      return { kind: "not_min", reason: this.#whyNotMin(n, m) };
-    }
+  /** 次に確定する交差点。札が最小の候補で、同値なら nodes の記述順で先のもの(dijkstra() と同じ) */
+  next() {
+    const cands = this.candidates();
+    if (cands.length === 0) return null;
+    return cands.reduce((a, b) => (this.dist.get(b) < this.dist.get(a) ? b : a));
+  }
+
+  /** 行ける交差点をすべて確定し終えたか */
+  get finished() {
+    return this.next() === null;
+  }
+
+  /** 札が最小の候補を1つ確定し、隣の札を書き換える。確定し終えていたら null */
+  step() {
+    const n = this.next();
+    if (n === null) return null;
     this.done.add(n);
     const relaxations = [];
     for (const [v, w] of this.adj.get(n)) {
@@ -241,32 +241,20 @@ export class ControlRound {
       }
       relaxations.push({ node: v, via: n, from, cand, updated });
     }
-    if (n === this.goal) this.finished = true;
-    return { kind: "settled", relaxations };
+    return { node: n, relaxations };
   }
+}
 
-  stars() {
-    if (this.mistakes === 0) return 3;
-    if (this.mistakes <= 2) return 2;
-    return 1;
-  }
-
-  /**
-   * 札が最小でない n を選べない理由。札がたまたま正しい場合と、後で覆る場合に分ける
-   * @param {string} n
-   * @param {number} m 候補の札の最小値
-   */
-  #whyNotMin(n, m) {
-    const best = this.opt.dist.get(n);
-    if (this.dist.get(n) === best) {
-      const minNodes = this.candidates().filter((c) => this.dist.get(c) === m);
-      return { kind: "lucky", minNodes };
-    }
-    // 最短ルート上で最初の未確定ノード c は、1つ手前が確定済みなのですでに候補で、
-    // 札は本当の最短に等しい。よって dist[c] <= best < dist[n] となる
-    const route = pathTo(this.opt.prev, this.start, n);
-    const i = route.findIndex((v) => !this.done.has(v));
-    const via = route[i];
-    return { kind: "overturn", via, viaDist: this.dist.get(via), best, path: route.slice(i) };
-  }
+/**
+ * start から全地点を自動で解く(Stage 3 大都市)。管制室と同じ手順を一気に回す。
+ * order は確定した順で、波紋の演出にそのまま使う。prev は、お届け先までのルートを出すのに使う
+ * @param {Stage} stage
+ * @param {string} start
+ */
+export function solveFrom(stage, start) {
+  const round = new ControlRound({ ...stage, start });
+  /** @type {string[]} */
+  const order = [];
+  for (let r = round.step(); r !== null; r = round.step()) order.push(r.node);
+  return { order, dist: round.dist, prev: round.prev };
 }
