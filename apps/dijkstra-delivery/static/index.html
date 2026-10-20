@@ -57,6 +57,15 @@
       </header>
       <main class="board-wrap">
         <svg id="board" role="img" aria-label="地図"></svg>
+        <!-- 種明かし。クリア後に「次へ」を押したとき、次の層へ進む前に地図に重ねて出す -->
+        <section id="reveal" class="reveal" aria-labelledby="reveal-title" hidden>
+          <h2 id="reveal-title">種明かし</h2>
+          <dl id="reveal-list"></dl>
+          <div class="reveal-actions">
+            <button type="button" id="reveal-close">地図に戻る</button>
+            <button type="button" id="reveal-next" class="primary">次へ</button>
+          </div>
+        </section>
       </main>
       <footer class="messages" aria-live="polite">
         <p id="msg"></p>

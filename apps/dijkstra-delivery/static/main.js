@@ -4,6 +4,7 @@ import { nearestNode } from "./city.js";
 import { AUTO_SETTLE_MS, CITY_WAVE_MS } from "./config.js";
 import { guideStep } from "./guide.js";
 import { ControlRound, DeliveryRound, INF, buildAdj, dijkstra, pathTo, solveFrom } from "./logic.js";
+import { revealFor } from "./reveal.js";
 import { STAGES } from "./stages.js";
 import { buildMap, clearFx, render, ripple } from "./view.js";
 
@@ -41,6 +42,10 @@ const ui = {
   run: /** @type {HTMLButtonElement} */ ($("run")),
   skipGuide: $("skip-guide"),
   next: /** @type {HTMLButtonElement} */ ($("next")),
+  reveal: $("reveal"),
+  revealList: $("reveal-list"),
+  revealClose: $("reveal-close"),
+  revealNext: $("reveal-next"),
   msg: $("msg"),
   sub: $("sub"),
 };
@@ -60,6 +65,9 @@ const state = {
   sub: "",
   /** 案内を飛ばしたか。層を始めるたび(load)に戻す */
   guideOff: false,
+  /** 種明かしを出しているか、この層で一度出したか。層を始めるたび(reset)に戻す */
+  revealOpen: false,
+  revealSeen: false,
   /** 管制室で自動で解くタイマー。ステージやモードを変えたら止める */
   autoTimer: 0,
   /**
@@ -126,6 +134,8 @@ function reset() {
   state.control = new ControlRound(s);
   state.showMap = false;
   state.city = null;
+  state.revealOpen = false;
+  state.revealSeen = false;
   if (state.mode === "C") {
     say("倉庫を置きたい交差点をタップしよう", "そこから街じゅうの交差点への、いちばん早い時間を求める");
   } else if (state.mode === "A") {
@@ -264,6 +274,19 @@ function showCityRoute(n) {
   );
 }
 
+/** 自動進行の次の層へ。種明かしのある層では、まだ出していなければ先に出す(2.2「各層の後には種明かしを挟む」) */
+function goNext() {
+  if (!state.revealSeen && revealFor(stage(), state.mode)) {
+    state.revealOpen = true;
+    state.revealSeen = true;
+    update();
+    return;
+  }
+  const f = FLOW[flowIndex() + 1];
+  if (f) load(f.stageIndex, f.mode);
+  else showTitle();
+}
+
 /** 次の来場者に端末を渡せるよう、タイトル画面に戻す */
 function showTitle() {
   stopAuto();
@@ -329,6 +352,24 @@ function update() {
   ui.next.textContent = isLast() ? "タイトルへ" : "次へ";
   ui.next.disabled = !done;
   ui.skipGuide.hidden = g === null;
+  const reveal = state.revealOpen ? revealFor(s, state.mode) : null;
+  ui.reveal.hidden = reveal === null;
+  ui.revealList.replaceChildren(
+    ...(reveal ?? []).flatMap((x) => {
+      const dt = document.createElement("dt");
+      dt.textContent = x.game;
+      const dd = document.createElement("dd");
+      const term = document.createElement("span");
+      term.className = "term";
+      term.textContent = `→ ${x.term}`;
+      const note = document.createElement("span");
+      note.className = "note";
+      note.textContent = x.note;
+      dd.append(term, note);
+      return [dt, dd];
+    }),
+  );
+  ui.revealNext.textContent = ui.next.textContent;
   // 案内中は字幕を主に出し、ふだんの1行目(「ここまで 3分」など)を2行目に回す
   ui.msg.textContent = g ? g.caption : state.msg;
   ui.sub.textContent = g
@@ -359,10 +400,11 @@ ui.skipGuide.addEventListener("click", () => {
   state.guideOff = true;
   update();
 });
-ui.next.addEventListener("click", () => {
-  const f = FLOW[flowIndex() + 1];
-  if (f) load(f.stageIndex, f.mode);
-  else showTitle();
+ui.next.addEventListener("click", goNext);
+ui.revealNext.addEventListener("click", goNext);
+ui.revealClose.addEventListener("click", () => {
+  state.revealOpen = false;
+  update();
 });
 ui.toTitle.addEventListener("click", showTitle);
 ui.start.addEventListener("click", () => startGame(0));
