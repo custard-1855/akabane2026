@@ -222,6 +222,31 @@ export function relaxFx(svg, stage, line) {
   })) rect.setAttribute(k, String(v));
 }
 
+/**
+ * 輻輳デモ。配達車がいる道を台数に応じて色付けし、配達車を点で描く
+ * @param {SVGSVGElement} svg
+ * @param {Stage} stage
+ * @param {import("./congestion.js").Traffic} traffic
+ */
+export function trafficFx(svg, stage, traffic) {
+  const fx = layer(svg, "fx");
+  let g = /** @type {SVGGElement | null} */ (fx.querySelector("g.traffic"));
+  if (!g) g = /** @type {SVGGElement} */ (el("g", { class: "traffic" }, fx));
+  g.replaceChildren();
+  const pos = stage.nodes;
+  for (const [road, n] of traffic.load) {
+    if (n === 0) continue;
+    const [u, v] = road.split("-");
+    const [[x1, y1], [x2, y2]] = [pos[u], pos[v]];
+    el("line", { x1, y1, x2, y2, class: `jam jam-${Math.min(n, 3)}` }, g);
+  }
+  for (const car of traffic.cars) {
+    const [[x1, y1], [x2, y2]] = [pos[car.route[car.leg]], pos[car.route[car.leg + 1]]];
+    const t = Math.min(car.elapsed / car.duration, 1);
+    el("circle", { cx: x1 + (x2 - x1) * t, cy: y1 + (y2 - y1) * t, r: 9, class: "car" }, g);
+  }
+}
+
 /** @param {SVGSVGElement} svg */
 export function clearRelax(svg) {
   for (const g of svg.querySelectorAll("g.relax")) g.remove();

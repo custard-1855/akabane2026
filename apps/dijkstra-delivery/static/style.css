@@ -320,6 +320,30 @@ button.large {
 }
 
 /* 大都市のルートは、到着時間マップの濃い青の上でも見えるよう、細めにして不透明にする */
+/* 輻輳デモ: 配達車がいる道を台数で色分けする(1台 黄、2台 橙、3台以上 赤) */
+.traffic .jam {
+  stroke-width: 10;
+  stroke-linecap: round;
+}
+
+.traffic .jam-1 {
+  stroke: var(--frontier);
+}
+
+.traffic .jam-2 {
+  stroke: var(--on-route);
+}
+
+.traffic .jam-3 {
+  stroke: #e03131;
+}
+
+.traffic .car {
+  fill: var(--color-text);
+  stroke: var(--color-bg);
+  stroke-width: 3;
+}
+
 .dense .overlay .route {
   stroke-width: 9;
   opacity: 0.9;
