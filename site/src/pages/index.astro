@@ -1,5 +1,7 @@
 ---
 // トップ: 企画の紹介、スカラベの解説、日時と場所、展示紹介と研究室サイトへのリンク
+import { Image } from "astro:assets";
+import logo from "../assets/logo.png";
 import Hero from "../components/Hero.astro";
 import Section from "../components/Section.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
@@ -11,8 +13,8 @@ import { SITE } from "../site.config";
   <section class="container top">
     <Hero />
     <div class="intro">
-      <!-- ロゴの枠。素材が入るまで空にしておく -->
-      <div class="art logo" aria-hidden="true"></div>
+      <!-- ロゴの背景は白で塗られているので、白地に直接置く -->
+      <Image class="logo" src={logo} alt="" width={240} />
       <div>
         <h1>{SITE.name}</h1>
         <p class="lead">[プレースホルダー: 企画の紹介]</p>
@@ -21,19 +23,15 @@ import { SITE } from "../site.config";
   </section>
 
   <Section title="スカラベ" label="Scarab" id="scarab">
-    <div class="scarab">
-      <p>[プレースホルダー: スカラベの解説と、企画のモチーフにした理由]</p>
-      <!-- イラストの枠。素材が入るまで空にしておく -->
-      <div class="art illustration" aria-hidden="true"></div>
-    </div>
+    <p class="scarab">[プレースホルダー: スカラベの解説と、企画のモチーフにした理由]</p>
   </Section>
 
   <Section title="日時と場所" label="Date & Place" id="date">
     <dl class="facts">
       <dt>日時</dt>
-      <dd>[プレースホルダー: 赤羽台祭の日時]</dd>
+      <dd>{SITE.date}</dd>
       <dt>場所</dt>
-      <dd>[プレースホルダー: 展示の場所(建物・部屋)]</dd>
+      <dd>{SITE.place}</dd>
     </dl>
   </Section>
 
@@ -72,29 +70,14 @@ import { SITE } from "../site.config";
     color: var(--color-text-sub);
     max-width: var(--measure);
   }
-  /* ロゴとイラストの枠。素材の縦横比が決まったら合わせる */
-  .art {
-    flex: none;
-    border-radius: var(--radius-card);
-    background: var(--color-surface);
-  }
+  /* 2倍の密度で出力したものを半分の幅で表示する */
   .logo {
+    flex: none;
     width: 120px;
-    height: 120px;
+    height: auto;
   }
   .scarab {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 24px 40px;
-  }
-  .scarab p {
-    flex: 1 1 320px;
-    margin: 0;
     max-width: var(--measure);
-  }
-  .illustration {
-    width: 240px;
-    height: 240px;
   }
   .facts {
     display: grid;
