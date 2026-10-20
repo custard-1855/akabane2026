@@ -1,0 +1,32 @@
+---
+// 展示紹介: 展示物ごとに節を立てる。長くなったら展示物ごとにページを分ける
+import PageHead from "../../components/PageHead.astro";
+import Section from "../../components/Section.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="展示紹介" current="exhibits">
+  <PageHead label="Exhibits" title="展示紹介" lead="[プレースホルダー: 展示全体の紹介]" />
+
+  <Section title="配達員ダイクストラ" label="Game" id="dijkstra">
+    <h3>体験できること</h3>
+    <p>[プレースホルダー: 体験できること]</p>
+    <h3>グラフから通信ネットワークへ</h3>
+    <p>[プレースホルダー: グラフから通信ネットワークへのつながり]</p>
+  </Section>
+</BaseLayout>
+
+<style>
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    letter-spacing: 0.04em;
+  }
+  h3:not(:first-child) {
+    margin-top: 32px;
+  }
+  p {
+    margin: 8px 0 0;
+    max-width: var(--measure);
+  }
+</style>

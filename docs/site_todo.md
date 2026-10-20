@@ -5,33 +5,33 @@
 ## 骨組み
 
 ### 土台
-- [ ] `site/` に Astro 7 + TypeScript(`astro/tsconfigs/strict`)の骨組みを作る。`output: 'static'`、`trailingSlash: 'always'`(6.3)
-- [ ] `base` を `/akabane2026/` にする。研究室サイトと同じく、`site` と `base` はワークフローから環境変数で渡せるようにする
-- [ ] Prettier(`prettier-plugin-astro`)と astro check を入れ、`npm run check` にまとめる(6.3)
-- [ ] `site.config.ts` に企画名、祭の名前、研究室サイトの URL を書く(6.2)
+- [x] `site/` に Astro 7 + TypeScript(`astro/tsconfigs/strict`)の骨組みを作る。`output: 'static'`、`trailingSlash: 'always'`(6.3)
+- [x] `base` を `/akabane2026/` にする。研究室サイトと同じく、`site` と `base` はワークフローから環境変数で渡せるようにする
+- [x] Prettier(`prettier-plugin-astro`)と astro check を入れ、`npm run check` にまとめる(6.3)
+- [x] `site.config.ts` に企画名、祭の名前、研究室サイトの URL を書く(6.2)
 
 ### 研究室サイトからのコピー
-- [ ] `src/styles/tokens.css` と `base.css`: 変数名の体系はそのままにし、値は研究室サイトのものを仮に使う(6.3)
-- [ ] `src/lib/url.ts` の `href()`: 英語のパス(`localePath`)と記事用の関数は外す(6.3)
-- [ ] フォント: Fontsource の IBM Plex Sans JP / IBM Plex Mono
-- [ ] ヒーロー: `src/hero/` と `src/components/Hero.astro`。`dev-panel.ts` は `?dev` のときだけ出ることを確かめる。テストはコピーしない(6.3)
-- [ ] コピー元のコミットを、コピーしたファイルの先頭のコメントに書く(研究室サイトが正本のため)
+- [x] `src/styles/tokens.css` と `base.css`: 変数名の体系はそのままにし、値は研究室サイトのものを仮に使う(6.3)
+- [x] `src/lib/url.ts` の `href()`: 英語のパス(`localePath`)と記事用の関数は外す(6.3)
+- [x] フォント: Fontsource の IBM Plex Sans JP / IBM Plex Mono
+- [x] ヒーロー: `src/hero/` と `src/components/Hero.astro`。`dev-panel.ts` は `?dev` のときだけ出ることを確かめる。テストはコピーしない(6.3)
+- [x] コピー元のコミットを、コピーしたファイルの先頭のコメントに書く(研究室サイトが正本のため)
 
 ### ページ
-- [ ] 共通のレイアウト: 見出し「スカラベ・ネットワーク研究会」と「川原研究室|赤羽台祭2026」、`<title>`、フッター(6.2)
-- [ ] トップ: 企画の紹介、スカラベの解説、日時と場所、展示紹介と研究室サイトへのリンク。本文はプレースホルダー(6.1)
-- [ ] スカラベのロゴとイラストの枠。素材が入るまで空の枠だけ置く(6.3)
-- [ ] 展示紹介: 展示物ごとの節。まずは「配達員ダイクストラ」の1節。体験できること、グラフから通信ネットワークへのつながりはプレースホルダー(6.1)
-- [ ] OGP のメタタグ。画像は仮のもの
+- [x] 共通のレイアウト: 見出し「スカラベ・ネットワーク研究会」と「川原研究室|赤羽台祭2026」、`<title>`、フッター(6.2)
+- [x] トップ: 企画の紹介、スカラベの解説、日時と場所、展示紹介と研究室サイトへのリンク。本文はプレースホルダー(6.1)
+- [x] スカラベのロゴとイラストの枠。素材が入るまで空の枠だけ置く(6.3)
+- [x] 展示紹介: 展示物ごとの節。まずは「配達員ダイクストラ」の1節。体験できること、グラフから通信ネットワークへのつながりはプレースホルダー(6.1)
+- [x] OGP のメタタグ。画像は仮のもの
 
 ### 確認
-- [ ] `npm run check` とビルドが通る
-- [ ] `astro preview` で、`base` 付きのリンクがすべてたどれる
-- [ ] スマホの幅で崩れない
+- [x] `npm run check` とビルドが通る。`npm test` がビルドし、ビルド結果(リンク、`<title>`、見出し、OGP)を `node --test` で検査する
+- [x] `astro preview` で、`base` 付きのリンクがすべてたどれる
+- [x] スマホの幅で崩れない
 
 ## 公開
 
-- [ ] GitHub Actions のワークフロー: `site/**` が変わったときだけ、チェックとビルドをして Pages に公開する(6.3)
+- [x] GitHub Actions のワークフロー: `site/**` が変わったときだけ、チェックとビルドをして Pages に公開する(6.3)
 - [ ] akabane2026 の Pages を有効にし、公開元を GitHub Actions にする(リポジトリの設定を変えるので、作業の前に確認する)
 - [ ] `https://custard-1855.github.io/akabane2026/` で表示を確かめる
 

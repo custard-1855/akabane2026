@@ -1,0 +1,120 @@
+---
+// トップ: 企画の紹介、スカラベの解説、日時と場所、展示紹介と研究室サイトへのリンク
+import Hero from "../components/Hero.astro";
+import Section from "../components/Section.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { href } from "../lib/url";
+import { SITE } from "../site.config";
+---
+
+<BaseLayout>
+  <section class="container top">
+    <Hero />
+    <div class="intro">
+      <!-- ロゴの枠。素材が入るまで空にしておく -->
+      <div class="art logo" aria-hidden="true"></div>
+      <div>
+        <h1>{SITE.name}</h1>
+        <p class="lead">[プレースホルダー: 企画の紹介]</p>
+      </div>
+    </div>
+  </section>
+
+  <Section title="スカラベ" label="Scarab" id="scarab">
+    <div class="scarab">
+      <p>[プレースホルダー: スカラベの解説と、企画のモチーフにした理由]</p>
+      <!-- イラストの枠。素材が入るまで空にしておく -->
+      <div class="art illustration" aria-hidden="true"></div>
+    </div>
+  </Section>
+
+  <Section title="日時と場所" label="Date & Place" id="date">
+    <dl class="facts">
+      <dt>日時</dt>
+      <dd>[プレースホルダー: 赤羽台祭の日時]</dd>
+      <dt>場所</dt>
+      <dd>[プレースホルダー: 展示の場所(建物・部屋)]</dd>
+    </dl>
+  </Section>
+
+  <Section title="展示" label="Exhibits" id="exhibits">
+    <p>[プレースホルダー: 展示の概要]</p>
+    <p class="links">
+      <a class="text-link" href={href("/exhibits/")}>
+        展示紹介 →
+      </a>
+      <a class="text-link" href={SITE.labSiteUrl}>
+        川原研究室のサイト →
+      </a>
+    </p>
+  </Section>
+</BaseLayout>
+
+<style>
+  .top {
+    padding-top: 40px;
+  }
+  .intro {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 24px 40px;
+    padding-top: 48px;
+  }
+  h1 {
+    margin: 0;
+    font-size: var(--font-size-h1);
+    line-height: 1.5;
+    letter-spacing: 0.06em;
+  }
+  .lead {
+    margin: 12px 0 0;
+    color: var(--color-text-sub);
+    max-width: var(--measure);
+  }
+  /* ロゴとイラストの枠。素材の縦横比が決まったら合わせる */
+  .art {
+    flex: none;
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+  }
+  .logo {
+    width: 120px;
+    height: 120px;
+  }
+  .scarab {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px 40px;
+  }
+  .scarab p {
+    flex: 1 1 320px;
+    margin: 0;
+    max-width: var(--measure);
+  }
+  .illustration {
+    width: 240px;
+    height: 240px;
+  }
+  .facts {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 32px;
+    margin: 0;
+  }
+  .facts dt {
+    color: var(--color-text-sub);
+  }
+  .facts dd {
+    margin: 0;
+  }
+  p {
+    margin: 0;
+  }
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 28px;
+    margin-top: 16px;
+  }
+</style>
