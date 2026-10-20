@@ -10,6 +10,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "og": "node scripts/og-image.ts",
     "astro": "astro",
     "typecheck": "astro check",
     "format": "prettier --write .",
@@ -27,6 +28,7 @@
     "@types/node": "^24.19.2",
     "prettier": "^3.9.10",
     "prettier-plugin-astro": "^1.1.1",
+    "satori": "^0.35.0",
     "typescript": "^6.0.3"
   }
 }
