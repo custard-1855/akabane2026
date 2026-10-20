@@ -32,7 +32,7 @@
 ## 公開
 
 - [x] GitHub Actions のワークフロー: `site/**` が変わったときだけ、チェックとビルドをして Pages に公開する(6.3)
-- [ ] akabane2026 の Pages を有効にし、公開元を GitHub Actions にする(リポジトリの設定を変えるので、作業の前に確認する)
+- [x] akabane2026 の Pages を有効にし、公開元を GitHub Actions にする(リポジトリの設定を変えるので、作業の前に確認する)
 - [ ] `https://custard-1855.github.io/akabane2026/` で表示を確かめる
 
 ## 内容の補充
