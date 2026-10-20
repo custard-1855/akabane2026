@@ -1,0 +1,340 @@
+:root {
+  --bg: #f7f5f0;
+  --panel: #ffffff;
+  --ink: #1f2328;
+  --ink-muted: #5c636e;
+  --line: #d5d2ca;
+
+  --road: #8a8f98;
+  --highway: #f08c00;
+  --route: #c2255c;
+  --ghost: #1f2328;
+  --alert: #e03131;
+
+  --node: #ffffff;
+  --node-line: #5c636e;
+  --on-route: #ff922b;
+  --on-route-line: #a94a00;
+  --settled: #4a90e2;
+  --settled-line: #184f95;
+  --frontier: #ffd43b;
+  --frontier-line: #8a6a00;
+
+  --accent: #1c5cab;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, "Noto Sans JP", sans-serif;
+  /* ダブルタップでの拡大と文字選択を止める。ホバーに頼る表示は作らない */
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ツールバー */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.toolbar .spacer {
+  flex: 1;
+}
+
+button,
+select {
+  font: inherit;
+  font-size: 18px;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: #e7f0fc;
+}
+
+button.primary:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.segmented {
+  display: inline-flex;
+}
+
+.segmented button {
+  border-radius: 0;
+}
+
+.segmented button:first-child {
+  border-radius: 10px 0 0 10px;
+}
+
+.segmented button:last-child {
+  border-radius: 0 10px 10px 0;
+  border-left: none;
+}
+
+.segmented button.active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+
+/* 地図 */
+main {
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 8px 16px;
+}
+
+#board {
+  width: 100%;
+  height: 100%;
+}
+
+.edge {
+  stroke-linecap: round;
+}
+
+.edge.road {
+  stroke: var(--road);
+  stroke-width: 6;
+}
+
+.edge.highway {
+  stroke: var(--highway);
+  stroke-width: 16;
+}
+
+.arrowhead {
+  fill: var(--road);
+}
+
+.overlay polyline {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.overlay .route {
+  stroke: var(--route);
+  stroke-width: 14;
+  opacity: 0.6;
+}
+
+.overlay .ghost {
+  stroke: var(--ghost);
+  stroke-width: 6;
+  stroke-dasharray: 2 18;
+}
+
+.overlay .alert-path {
+  stroke: var(--alert);
+  stroke-width: 12;
+  stroke-dasharray: 24 14;
+  animation: march 0.8s linear infinite;
+}
+
+@keyframes march {
+  to {
+    stroke-dashoffset: -38;
+  }
+}
+
+.node .dot {
+  fill: var(--node);
+  stroke: var(--node-line);
+  stroke-width: 3;
+}
+
+.node .hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.node .name {
+  font-size: 30px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  fill: var(--ink);
+  pointer-events: none;
+}
+
+/* 層A: ルート上 */
+.node.on-route .dot {
+  fill: var(--on-route);
+  stroke: var(--on-route-line);
+  stroke-width: 7;
+}
+
+.node.current .dot {
+  stroke: var(--route);
+  stroke-width: 10;
+}
+
+/* 層B: 確定、候補、未到達(白・細い実線は既定の見た目) */
+.node.settled .dot {
+  fill: var(--settled);
+  stroke: var(--settled-line);
+  stroke-width: 8;
+}
+
+.node.settled .name {
+  fill: #fff;
+}
+
+.node.frontier .dot {
+  fill: var(--frontier);
+  stroke: var(--frontier-line);
+  stroke-width: 5;
+  stroke-dasharray: 10 7;
+}
+
+.node.alert .dot {
+  stroke: var(--alert);
+  stroke-width: 10;
+  stroke-dasharray: none;
+}
+
+/* 到着時間マップ: 塗りは render() が時間に応じて指定する */
+.node.map .dot {
+  stroke: var(--settled-line);
+  stroke-width: 3;
+  stroke-dasharray: none;
+}
+
+.node.map .name {
+  fill: var(--ink);
+}
+
+.node.map.dark-fill .name {
+  fill: #fff;
+}
+
+.labels {
+  pointer-events: none;
+}
+
+.weight-bg {
+  fill: #fff;
+  stroke: var(--line);
+  stroke-width: 2;
+}
+
+.weight {
+  font-size: 28px;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: central;
+  fill: var(--ink);
+}
+
+.tag {
+  font-size: 32px;
+  font-weight: 800;
+  text-anchor: middle;
+  fill: var(--ink);
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 8;
+  stroke-linejoin: round;
+}
+
+.tag.settled {
+  fill: var(--settled-line);
+}
+
+.caption {
+  font-size: 24px;
+  text-anchor: middle;
+  fill: var(--ink-muted);
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 6;
+}
+
+.fx {
+  pointer-events: none;
+}
+
+.ripple {
+  fill: none;
+  stroke: var(--settled);
+  stroke-width: 6;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ripple 0.9s ease-out forwards;
+}
+
+@keyframes ripple {
+  from {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(6);
+    opacity: 0;
+  }
+}
+
+/* メッセージ欄 */
+.messages {
+  padding: 12px 20px 16px;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  min-height: 104px;
+}
+
+.messages p {
+  margin: 0;
+}
+
+#msg {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+#sub {
+  margin-top: 6px;
+  font-size: 18px;
+  color: var(--ink-muted);
+}
+
+.stars {
+  color: #e8a400;
+  letter-spacing: 2px;
+}

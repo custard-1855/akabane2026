@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>配達員ダイクストラ</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script type="module" src="./main.js"></script>
+  </head>
+  <body>
+    <header class="toolbar">
+      <select id="stage" aria-label="ステージ"></select>
+      <div class="segmented" role="group" aria-label="モード">
+        <button type="button" id="mode-a" data-mode="A">配達</button>
+        <button type="button" id="mode-b" data-mode="B">管制室</button>
+      </div>
+      <button type="button" id="undo">1手戻る</button>
+      <button type="button" id="reset">リセット</button>
+      <button type="button" id="map" aria-pressed="false">到着時間マップ</button>
+      <button type="button" id="finish-all" hidden>続けて全地点を確定</button>
+      <span class="spacer"></span>
+      <button type="button" id="next" class="primary">次へ</button>
+    </header>
+    <main>
+      <svg id="board" role="img" aria-label="地図"></svg>
+    </main>
+    <footer class="messages" aria-live="polite">
+      <p id="msg"></p>
+      <p id="sub"></p>
+    </footer>
+  </body>
+</html>

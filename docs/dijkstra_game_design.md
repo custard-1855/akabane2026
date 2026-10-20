@@ -2,7 +2,7 @@
 
 - 作成日: 2026-09-28
 - 改訂: 2026-10-20 全面改訂。自前の基盤をやめ、Django とブラウザで動かす前提にした。ゲームの規則、ステージの条件、スケジュールを見直した
-- ステータス: 設計確定 / 実装は未着手(以前の試作は `8c0c2e8` で削除済み)
+- ステータス: 設計確定 / MVP 実装済み(2026-10-20)
 - 期限: MVP は 2026-10-20、最終版は 2026-10-26
 - 作業の一覧: `docs/dijkstra_todo.md`
 
@@ -232,9 +232,12 @@ apps/dijkstra-delivery/
 │   ├── main.js           # 起動、入力 → ラウンド → 描画の接続、自動進行
 │   ├── logic.js          # グラフ・最短経路・ラウンド状態(DOM 非依存)
 │   ├── stages.js         # ステージデータと validateStage
-│   └── view.js           # SVG 描画・演出
+│   ├── view.js           # SVG 描画・演出
+│   └── config.js         # 調整用の値(大きさ、間隔)
 └── tests/
-    ├── logic.test.js
+    ├── logic.test.js     # 最短経路
+    ├── delivery.test.js  # 層A
+    ├── control.test.js   # 層B
     └── stages.test.js
 ```
 
@@ -355,18 +358,20 @@ export function canReach(adj, from, goal, visited) {
 | `tap(n) -> { kind, ... }` | `kind`: `added` / `undone` / `invalid` / `stuck`(追加後、未訪問の交差点だけではGへ行けない)/ `finished` |
 | `undo()` | 1手戻る(ボタン用) |
 | `cost()` / `stars()` | 2.5の採点 |
+| `ghost()` | クリア後に重ねる最短ルート `path` と、同じ時間のルートがほかにもあるか `tie`(2.3) |
 
 #### `ControlRound`(層B、`logic.js`)
 
 | 項目 | 内容 |
 |---|---|
 | 状態 | `dist`(札)、`done: Set`、`prev`、`mistakes`、`finished`、`hintLevelUsed` |
-| 生成時に渡すもの | 正解の `opt`(`dist`・`prev`)。ミス時の理由を求めるのに使う |
+| 正解 `opt` | 生成時にステージから `dijkstra()` で求める(`dist`・`prev`)。ミス時の理由を求めるのに使う。Stage 6 では `bellmanFord()` の結果を渡せるようにする |
 | `candidates()` | 未確定かつ `dist` が有限のノード |
-| `settle(n) -> { kind, ... }` | `kind`: `settled` / `already` / `unreached` / `not_min`(3.6) |
+| `settle(n) -> { kind, ... }` | `kind`: `settled` / `already` / `unreached` / `not_min`(3.6)。G を確定したときも `settled` で、`finished` が true になる |
+| `stars()` | 2.5の採点 |
 
 - `settled` のとき、`relaxations: { node, via, from, cand, updated }[]` を返す。確定したノードから未確定のノードへ出る辺ごとに、元の札 `from`、候補値 `cand = dist[via] + w`、書き換えたか `updated` を持つ。画面はこれを使って、要約1行(`updated` のものだけ)と1本ずつの演出(すべて)を出す。
-- `not_min` のとき、状態は変えず(`mistakes` だけ +1)、理由 `reason` を返す(3.6)。
+- `not_min` のとき、状態は変えず(`mistakes` だけ +1)、理由 `reason` を返す(3.6)。`reason` は `{ kind: "overturn", via, viaDist, best, path }`(実際に覆る。`path` は c から n までの最短ルート)か `{ kind: "lucky", minNodes }`(たまたま合っている)。
 
 `ControlRound` は確定集合を持つ教科書どおりのダイクストラ法なので、次の用途にもそのまま使える。
 
