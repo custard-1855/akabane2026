@@ -211,6 +211,7 @@ button.large {
 }
 
 .board-wrap {
+  position: relative;
   min-height: 0;
   display: grid;
   place-items: center;
@@ -429,6 +430,64 @@ button.large {
     transform: scale(6);
     opacity: 0;
   }
+}
+
+/* 種明かし。地図の上に重ね、ゲームの言葉と正式な用語を並べる */
+.reveal {
+  position: absolute;
+  top: 32px;
+  left: 48px;
+  right: 48px;
+  max-height: calc(100% - 64px);
+  overflow: auto;
+  padding: 32px 40px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-hero);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.12);
+}
+
+.reveal h2 {
+  margin: 0 0 20px;
+  font-size: 32px;
+  font-weight: var(--heading-weight);
+}
+
+.reveal dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 18px 32px;
+  margin: 0;
+}
+
+.reveal dt {
+  font-size: var(--game-msg-font);
+  color: var(--color-text-sub);
+}
+
+.reveal dd {
+  margin: 0;
+}
+
+.reveal .term {
+  display: block;
+  font-size: var(--game-msg-font);
+  font-weight: var(--heading-weight);
+}
+
+.reveal .note {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--game-button-font);
+  line-height: var(--line-height-body);
+  color: var(--color-text-body2);
+}
+
+.reveal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 28px;
 }
 
 /* メッセージ欄 */
