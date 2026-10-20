@@ -68,6 +68,15 @@ export function pathTo(prev, s, g) {
 }
 
 /**
+ * 最短経路木の辺 [親, 子]。全地点への最短ルートを重ねると、S から枝分かれした木になる
+ * @param {Map<string, string>} prev
+ * @returns {[string, string][]}
+ */
+export function treeEdges(prev) {
+  return [...prev].map(([v, u]) => [u, v]);
+}
+
+/**
  * 各ノードから goal への最短距離(層Aヒント②用)。辺を逆向きにして goal から解く
  * @param {Stage} stage
  */

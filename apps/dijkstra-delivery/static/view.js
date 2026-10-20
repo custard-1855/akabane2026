@@ -13,6 +13,7 @@ import { CITY_DOT_R, NODE_R, HIT_R, VIEW_W, VIEW_H } from "./config.js";
  *   ghost: string[] | null,          // 層A: クリア後の最短ルート
  *   glow: string[],                  // 配達の案内で光らせる交差点(ヒント①でも使う)
  *   map: Map<string, number> | null, // 到着時間マップ(クリア後のみ)
+ *   tree: [string, string][] | null, // 層B: 最短経路木の辺(全地点を確定した後、到着時間マップと一緒に)
  * }} ViewState
  */
 
@@ -145,6 +146,7 @@ export function render(svg, stage, vs) {
   overlay.replaceChildren();
   if (vs.mode !== "B") polyline(overlay, stage, vs.route, "route");
   if (vs.ghost) polyline(overlay, stage, vs.ghost, "ghost");
+  for (const [u, v] of vs.tree ?? []) polyline(overlay, stage, [u, v], "tree");
 
   const maxDist = vs.map ? Math.max(...[...vs.map.values()].filter(Number.isFinite), 1) : 1;
   const current = vs.route.at(-1);
