@@ -1,0 +1,69 @@
+---
+// 研究室サイト(kawahara-lab-site 2231987 の src/components/Section.astro)からコピーした
+// 左に見出し(H2)と英語ラベル、右に内容。狭い画面では縦に並ぶ。全ページでこの型を使う
+interface Props {
+  title?: string;
+  label?: string;
+  /** 見出しの上に出す番号(研究テーマ) */
+  no?: string;
+  id?: string;
+  /** セクションの上の余白(px)。既定は --section-gap */
+  gap?: number;
+  /** 見出しを Mono の数字で出す(業績の年) */
+  numeric?: boolean;
+}
+const { title, label, no, id, gap, numeric = false } = Astro.props;
+const style = gap !== undefined ? `--gap: ${gap}px` : undefined;
+---
+
+<section class="container section" id={id} style={style}>
+  <div class="head">
+    {no && <span class="no mono">{no}</span>}
+    {title && <h2 class:list={{ numeric }}>{title}</h2>}
+    {label && <span class="label mono">{label}</span>}
+    <slot name="head" />
+  </div>
+  <div class="body">
+    <slot />
+  </div>
+</section>
+
+<style>
+  .section {
+    padding-top: var(--gap, var(--section-gap));
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 48px;
+    scroll-margin-top: 24px;
+  }
+  .head {
+    flex: 1 1 200px;
+  }
+  .body {
+    flex: 999 1 560px;
+    min-width: 0;
+  }
+  h2 {
+    margin: 0;
+    font-size: var(--font-size-h2);
+    line-height: 1.6;
+    letter-spacing: 0.06em;
+  }
+  h2.numeric {
+    font-family: var(--font-mono);
+    font-weight: 400;
+    font-size: 28px;
+    letter-spacing: 0.02em;
+    color: var(--color-navy);
+  }
+  .no {
+    display: block;
+    font-size: 13px;
+    color: var(--color-text-sub);
+  }
+  .label {
+    display: block;
+    font-size: 12px;
+    color: var(--color-text-sub);
+  }
+</style>
