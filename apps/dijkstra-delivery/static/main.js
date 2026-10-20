@@ -3,7 +3,7 @@
 import { nearestNode } from "./city.js";
 import { AUTO_SETTLE_MS, CITY_WAVE_MS, RELAX_EDGE_MS } from "./config.js";
 import { guideStep } from "./guide.js";
-import { ControlRound, DeliveryRound, INF, buildAdj, dijkstra, pathTo, solveFrom } from "./logic.js";
+import { ControlRound, DeliveryRound, INF, buildAdj, dijkstra, pathTo, solveFrom, treeEdges } from "./logic.js";
 import { relaxLines, stepInterval } from "./relax.js";
 import { revealFor } from "./reveal.js";
 import { STAGES } from "./stages.js";
@@ -213,7 +213,7 @@ function runControl() {
       stopAuto();
       say(
         `全地点を確定しました。お届け先 ${round.goal} までの最短は ${round.dist.get(round.goal)}分`,
-        "1回の実行で、S からすべての交差点への最短時間が求まりました。「到着時間マップ」で見られます",
+        "1回の実行で、S からすべての交差点への最短時間が求まりました。「到着時間マップ」で、最短ルートを重ねた木と一緒に見られます",
       );
       update();
       return;
@@ -339,6 +339,7 @@ function update() {
         ghost: null,
         glow: [],
         map: done && state.showMap ? city.dist : null,
+        tree: null,
       }
     : {
         mode: state.mode,
@@ -349,6 +350,7 @@ function update() {
         ghost: isA && d.finished ? d.ghost().path : null,
         glow: g?.nodes ?? [],
         map: done && state.showMap ? state.opt.dist : null,
+        tree: !isA && done && state.showMap ? treeEdges(c.prev) : null,
       });
 
   ui.stage.value = String(state.stageIndex);

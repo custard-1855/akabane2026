@@ -247,6 +247,13 @@ button.large {
   opacity: 0.6;
 }
 
+/* 最短経路木。到着時間マップの上で枝分かれが見えるよう、確定の濃い青の太線にする */
+.overlay .tree {
+  stroke: var(--settled-line);
+  stroke-width: 12;
+  opacity: 0.75;
+}
+
 .overlay .ghost {
   stroke: var(--ghost);
   stroke-width: 6;
