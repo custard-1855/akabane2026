@@ -1,14 +1,23 @@
 // 起動と、入力 → ラウンド → 描画の接続、自動進行
 
 import { nearestNode } from "./city.js";
-import { AUTO_SETTLE_MS, CITY_WAVE_MS, RELAX_EDGE_MS } from "./config.js";
+import {
+  AUTO_SETTLE_MS,
+  CITY_WAVE_MS,
+  CONGESTION_CARS,
+  CONGESTION_INTERVAL_MS,
+  CONGESTION_MS_PER_MINUTE,
+  CONGESTION_SLOWDOWN,
+  RELAX_EDGE_MS,
+} from "./config.js";
+import { Traffic } from "./congestion.js";
 import { guideStep } from "./guide.js";
 import { ControlRound, DeliveryRound, INF, buildAdj, dijkstra, pathTo, solveFrom, treeEdges } from "./logic.js";
 import { relaxLines, stepInterval } from "./relax.js";
 import { revealFor } from "./reveal.js";
 import { STAGES } from "./stages.js";
 import { bestStars, recordStars } from "./stars.js";
-import { buildMap, clearFx, clearRelax, relaxFx, render, ripple } from "./view.js";
+import { buildMap, clearFx, clearRelax, relaxFx, render, ripple, trafficFx } from "./view.js";
 
 /** @typedef {"A" | "B" | "C"} Mode A は配達、B は管制室(自動で解く様子を見る)、C は大都市(倉庫を選んで自動で解く) */
 
@@ -43,6 +52,7 @@ const ui = {
   reset: $("reset"),
   map: /** @type {HTMLButtonElement} */ ($("map")),
   run: /** @type {HTMLButtonElement} */ ($("run")),
+  traffic: /** @type {HTMLButtonElement} */ ($("traffic")),
   skipGuide: $("skip-guide"),
   next: /** @type {HTMLButtonElement} */ ($("next")),
   reveal: $("reveal"),
@@ -87,6 +97,11 @@ const state = {
   city: null,
   /** 大都市の色付けの requestAnimationFrame。止めるときに使う */
   waveFrame: 0,
+  /**
+   * 大都市の輻輳デモ。routes は出した配達車のルート(迂回した台数を数える)。frame と timer は止めるときに使う
+   * @type {{ sim: Traffic, routes: string[], frame: number, timer: number } | null}
+   */
+  traffic: null,
 };
 
 const stage = () => STAGES[state.stageIndex];
@@ -129,6 +144,11 @@ function stopAuto() {
   state.relaxTimers = [];
   cancelAnimationFrame(state.waveFrame);
   state.waveFrame = 0;
+  if (state.traffic) {
+    cancelAnimationFrame(state.traffic.frame);
+    clearTimeout(state.traffic.timer);
+    state.traffic = null;
+  }
 }
 
 /** ステージとモードを読み込み、ラウンドを作り直す */
@@ -358,6 +378,45 @@ function startGame(stageIndex) {
   load(stageIndex, "A");
 }
 
+/**
+ * 大都市: 倉庫からお届け先へ配達車を次々に出す(輻輳デモ、設計書 2.4)。
+ * 各車は出発時点の所要時間で最短を計算するので、混んだ道を避けて迂回する
+ */
+function startTraffic() {
+  const city = /** @type {NonNullable<typeof state.city>} */ (state.city);
+  const target = /** @type {string} */ (city.target);
+  const sim = new Traffic(stage(), { slowdown: CONGESTION_SLOWDOWN, msPerMinute: CONGESTION_MS_PER_MINUTE });
+  const traffic = { sim, routes: /** @type {string[]} */ ([]), frame: 0, timer: 0 };
+  state.traffic = traffic;
+  const send = () => {
+    traffic.routes.push(sim.dispatch(city.start, target).route.join(","));
+    if (traffic.routes.length < CONGESTION_CARS) traffic.timer = setTimeout(send, CONGESTION_INTERVAL_MS);
+  };
+  send();
+  say(
+    `配達車を ${CONGESTION_CARS}台、次々にお届け先へ出しています`,
+    "車が通っている道は混んで遅くなり、色が変わります。後から出る車は、出発したときの所要時間で最短を計算し直します",
+  );
+  let last = performance.now();
+  const step = (/** @type {number} */ now) => {
+    sim.advance(now - last);
+    last = now;
+    trafficFx(svg, stage(), sim);
+    if (traffic.routes.length < CONGESTION_CARS || sim.cars.length > 0) {
+      traffic.frame = requestAnimationFrame(step);
+      return;
+    }
+    const detours = traffic.routes.filter((r) => r !== traffic.routes[0]).length;
+    state.traffic = null;
+    say(
+      `全 ${CONGESTION_CARS}台が着きました。${detours}台が、混雑を避けて1台目と別のルートを通りました`,
+      "道の混み具合に合わせて計算し直すのは、インターネットで混んだ回線を避けて通信を流すのと同じ考え方です",
+    );
+    update();
+  };
+  traffic.frame = requestAnimationFrame(step);
+}
+
 function update() {
   const s = stage();
   const isA = state.mode === "A";
@@ -410,6 +469,8 @@ function update() {
   ui.map.disabled = !done;
   ui.map.setAttribute("aria-pressed", String(done && state.showMap));
   ui.run.hidden = state.mode !== "B";
+  ui.traffic.hidden = !isCity || !done || !city?.target;
+  ui.traffic.disabled = state.traffic !== null;
   ui.run.disabled = state.autoTimer !== 0 || c.finished;
   // 最後のステージの後は、「次へ」の代わりに「タイトルへ」を出す
   ui.next.textContent = isLast() ? "タイトルへ" : "次へ";
@@ -460,6 +521,10 @@ ui.map.addEventListener("click", () => {
   update();
 });
 ui.run.addEventListener("click", runControl);
+ui.traffic.addEventListener("click", () => {
+  startTraffic();
+  update();
+});
 ui.skipGuide.addEventListener("click", () => {
   state.guideOff = true;
   update();
@@ -492,7 +557,8 @@ svg.addEventListener("click", (e) => {
     const ctm = /** @type {DOMMatrix} */ (svg.getScreenCTM());
     const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse());
     const n = nearestNode(stage(), [p.x, p.y]);
-    // 1回目のタップで倉庫を置いて解き、解き終えた後のタップはお届け先にする。色付けの途中は受けない
+    // 1回目のタップで倉庫を置いて解き、解き終えた後のタップはお届け先にする。色付けと配達車の途中は受けない
+    if (state.traffic) return;
     if (state.city === null) solveCity(n);
     else if (cityDone()) showCityRoute(n);
     update();
