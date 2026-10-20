@@ -1,5 +1,6 @@
 /* 研究室サイト(kawahara-lab-site 2231987 の src/styles/tokens.css)からコピーした。
-   変数名の体系は研究室サイトに揃え、値は祭用に決まるまで研究室サイトのものを仮に使う */
+   変数名の体系と値は研究室サイトに揃え、リンクの色だけをロゴの青に変えた。
+   変えたら、ゲーム(apps/dijkstra-delivery/static/tokens.css)にも同時にコピーする */
 /* デザイントークン。コンポーネントでは色・文字・余白をここの変数だけで指定する */
 :root {
   /* 色 */
@@ -11,7 +12,7 @@
   --color-line: #e3e6eb; /* 罫線 */
   --color-line-strong: #cbd1da; /* タイムラインの線 */
   --color-navy: #0f2547; /* プライマリボタン、選択中 */
-  --color-link: #0a5bb8; /* INIADの青の代用(要確認) */
+  --color-link: #1b5faa; /* ロゴの青。白地で 6.4:1 */
   --color-code-bg: #0f1a2e;
   --color-code-text: #dce3ee;
   /* 文字 */
