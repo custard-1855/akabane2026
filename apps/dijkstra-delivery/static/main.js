@@ -38,6 +38,7 @@ const ui = {
   modeA: $("mode-a"),
   modeB: $("mode-b"),
   undo: /** @type {HTMLButtonElement} */ ($("undo")),
+  hint: /** @type {HTMLButtonElement} */ ($("hint")),
   reset: $("reset"),
   map: /** @type {HTMLButtonElement} */ ($("map")),
   run: /** @type {HTMLButtonElement} */ ($("run")),
@@ -66,6 +67,8 @@ const state = {
   sub: "",
   /** 案内を飛ばしたか。層を始めるたび(load)に戻す */
   guideOff: false,
+  /** 配達で見ているヒントの段階(0 は未使用)。①② は現在地が変わるたびに光らせ直す */
+  hintLevel: /** @type {0 | 1 | 2 | 3} */ (0),
   /** 種明かしを出しているか、この層で一度出したか。層を始めるたび(reset)に戻す */
   revealOpen: false,
   revealSeen: false,
@@ -141,6 +144,7 @@ function reset() {
   state.city = null;
   state.revealOpen = false;
   state.revealSeen = false;
+  state.hintLevel = 0;
   if (state.mode === "C") {
     say("倉庫を置きたい交差点をタップしよう", "そこから街じゅうの交差点への、いちばん早い時間を求める");
   } else if (state.mode === "A") {
@@ -187,10 +191,25 @@ function tapDelivery(n) {
         cost === round.optCost
           ? `最短です! 点線はあなたのルート${tie ? "。ほかにも同じ時間のルートがあります" : ""}`
           : `最短は ${round.optCost}分。点線が最短ルート`;
-      say(`到着! ${cost}分 ${starText(round.stars())}`, `${best}。「到着時間マップ」で全地点への最短時間を見られます`);
+      const capped = round.hintLevelUsed >= 3 ? "(最短ルートを見たので★1まで)" : "";
+      say(
+        `到着! ${cost}分 ${starText(round.stars())}${capped}`,
+        `${best}。「到着時間マップ」で全地点への最短時間を見られます`,
+      );
       break;
     }
   }
+}
+
+/** ヒントの段階を1つ上げる(2.6)。③ は★1が上限になるので、ボタンの文言で先に知らせる */
+function nextHint() {
+  const level = /** @type {1 | 2 | 3} */ (Math.min(3, state.hintLevel + 1));
+  state.hintLevel = level;
+  state.delivery.hint(level);
+  if (level === 1) say("ヒント①: 今いる所から進める交差点を光らせました");
+  else if (level === 2) say("ヒント②: ここからお届け先へいちばん早く行くなら、次は光っている交差点");
+  else say("ヒント③: 点線が最短ルート。このラウンドは★1までになります");
+  update();
 }
 
 /** 1回の確定で書き換えた札をまとめて1行にする */
@@ -326,6 +345,8 @@ function update() {
   const d = state.delivery;
   const c = state.control;
   const g = guide();
+  // ヒント①② は現在地からの一手なので、毎回求め直す。③ は最短ルートを点線で出す
+  const hint = isA && !d.finished && state.hintLevel > 0 ? d.hint(state.hintLevel) : null;
 
   const city = state.city;
 
@@ -347,8 +368,8 @@ function update() {
         settled: c.done,
         frontier: new Set(c.candidates()),
         labels: isA ? null : c.dist,
-        ghost: isA && d.finished ? d.ghost().path : null,
-        glow: g?.nodes ?? [],
+        ghost: isA && d.finished ? d.ghost().path : (hint?.path ?? null),
+        glow: g?.nodes ?? hint?.glow ?? [],
         map: done && state.showMap ? state.opt.dist : null,
         tree: !isA && done && state.showMap ? treeEdges(c.prev) : null,
       });
@@ -361,6 +382,10 @@ function update() {
   ui.modeA.classList.toggle("active", isA);
   ui.modeB.classList.toggle("active", state.mode === "B");
   ui.undo.disabled = !isA || d.finished || d.route.length < 2;
+  // 案内中は案内が交差点を光らせるので、ヒントを出さない
+  ui.hint.hidden = !isA || g !== null;
+  ui.hint.disabled = d.finished || state.hintLevel === 3;
+  ui.hint.textContent = ["ヒント", "ヒント②", "最短ルートを見る(★1まで)", "ヒント"][state.hintLevel];
   ui.map.disabled = !done;
   ui.map.setAttribute("aria-pressed", String(done && state.showMap));
   ui.run.hidden = state.mode !== "B";
@@ -407,6 +432,7 @@ ui.undo.addEventListener("click", () => {
   say(`1手戻りました。ここまで ${state.delivery.cost()}分`, `ルート: ${state.delivery.route.join(" → ")}`);
   update();
 });
+ui.hint.addEventListener("click", nextHint);
 ui.reset.addEventListener("click", reset);
 ui.map.addEventListener("click", () => {
   state.showMap = !state.showMap;
