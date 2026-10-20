@@ -23,3 +23,5 @@ export const CITY_WAVE_MS = 3000;
 
 /** 管制室で、自動で1つ確定する間隔(ミリ秒)。確定ごとの字幕2行を読める長さにする */
 export const AUTO_SETTLE_MS = 1800;
+/** 管制室で、確定した交差点から出る道を1本ずつ見せる間隔(ミリ秒)。1手に収まらなければ1手の間隔を延ばす */
+export const RELAX_EDGE_MS = 600;

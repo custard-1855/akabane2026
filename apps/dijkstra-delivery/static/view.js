@@ -86,6 +86,8 @@ export function buildMap(svg, stage) {
     el("text", { x: mx, y: my, class: "weight" }, labels).textContent = text;
   }
   el("g", { class: "overlay" }, edges);
+  // 緩和の1本ずつの表示で光らせる道。ノードの下に描き、交差点の名前を隠さない
+  el("g", { class: "relax-edges" }, edges);
 
   for (const [n, [x, y]] of Object.entries(pos)) {
     const g = el("g", { class: "node", "data-node": n }, nodes);
@@ -194,7 +196,37 @@ export function ripple(svg, stage, n) {
   c.addEventListener("animationend", () => c.remove());
 }
 
+/**
+ * 緩和の1本ずつの表示。確定した交差点から出る道を光らせ、道の横に計算を出す。
+ * 次の確定で clearRelax() が消すまで残し、その手で見た道を見比べられるようにする
+ * @param {SVGSVGElement} svg
+ * @param {Stage} stage
+ * @param {import("./relax.js").RelaxLine} line
+ */
+export function relaxFx(svg, stage, line) {
+  const cls = `relax${line.updated ? " updated" : ""}`;
+  const [x1, y1] = stage.nodes[line.via];
+  const [x2, y2] = stage.nodes[line.node];
+  const edge = el("g", { class: cls }, /** @type {SVGGElement} */ (svg.querySelector("g.relax-edges")));
+  el("line", { x1, y1, x2, y2, class: "relax-edge" }, edge);
+  // 計算は書き換える先の交差点の下に出す。1手で見る道は向きが違うので、文どうしが重なりにくい
+  const g = el("g", { class: cls }, layer(svg, "fx"));
+  const rect = el("rect", { class: "relax-bg", rx: 10 }, g);
+  const text = el("text", { x: x2, y: y2 + NODE_R + 34, class: "relax-text" }, g);
+  text.textContent = line.text;
+  const box = /** @type {SVGTextElement} */ (text).getBBox();
+  for (const [k, v] of Object.entries({
+    x: box.x - 12, y: box.y - 4, width: box.width + 24, height: box.height + 8,
+  })) rect.setAttribute(k, String(v));
+}
+
+/** @param {SVGSVGElement} svg */
+export function clearRelax(svg) {
+  for (const g of svg.querySelectorAll("g.relax")) g.remove();
+}
+
 /** @param {SVGSVGElement} svg */
 export function clearFx(svg) {
   layer(svg, "fx")?.replaceChildren();
+  svg.querySelector("g.relax-edges")?.replaceChildren();
 }
