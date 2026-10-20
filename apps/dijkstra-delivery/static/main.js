@@ -14,6 +14,13 @@ const FLOW = STAGES.flatMap((_, stageIndex) => [
 const $ = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const svg = /** @type {SVGSVGElement} */ (/** @type {unknown} */ ($("board")));
 const ui = {
+  titleScreen: $("title-screen"),
+  gameScreen: $("game-screen"),
+  titleMap: /** @type {SVGSVGElement} */ (/** @type {unknown} */ ($("title-map"))),
+  start: $("start"),
+  choose: $("choose"),
+  stageList: $("stage-list"),
+  toTitle: $("to-title"),
   stage: /** @type {HTMLSelectElement} */ ($("stage")),
   modeA: $("mode-a"),
   modeB: $("mode-b"),
@@ -52,6 +59,7 @@ const fmt = (d) => (d === INF ? "∞" : String(d));
 const starText = (n) => "★".repeat(n) + "☆".repeat(3 - n);
 const flowIndex = () =>
   FLOW.findIndex((f) => f.stageIndex === state.stageIndex && f.mode === state.mode);
+const isLast = () => flowIndex() === FLOW.length - 1;
 
 function cleared() {
   return state.mode === "A" ? state.delivery.finished : state.control.finished;
@@ -213,6 +221,22 @@ function finishAll() {
   update();
 }
 
+/** 次の来場者に端末を渡せるよう、タイトル画面に戻す */
+function showTitle() {
+  stopAuto();
+  clearFx(svg);
+  ui.gameScreen.hidden = true;
+  ui.titleScreen.hidden = false;
+  ui.stageList.hidden = true;
+  ui.choose.setAttribute("aria-expanded", "false");
+}
+
+function startGame(stageIndex) {
+  ui.titleScreen.hidden = true;
+  ui.gameScreen.hidden = false;
+  load(stageIndex, "A");
+}
+
 function update() {
   const s = stage();
   const isA = state.mode === "A";
@@ -240,10 +264,12 @@ function update() {
   ui.map.setAttribute("aria-pressed", String(done && state.showMap));
   ui.finishAll.hidden = isA || !c.finished;
   ui.finishAll.disabled = state.autoTimer !== 0 || c.candidates().length === 0;
-  ui.next.disabled = !done || flowIndex() === FLOW.length - 1;
+  // 最後のステージの後は、「次へ」の代わりに「タイトルへ」を出す
+  ui.next.textContent = isLast() ? "タイトルへ" : "次へ";
+  ui.next.disabled = !done;
   ui.msg.textContent = state.msg;
   ui.sub.textContent =
-    done && flowIndex() === FLOW.length - 1 ? `${state.sub}。全ステージクリア!` : state.sub;
+    done && isLast() ? `${state.sub}。全ステージクリア!` : state.sub;
 }
 
 ui.stage.append(
@@ -266,7 +292,23 @@ ui.finishAll.addEventListener("click", finishAll);
 ui.next.addEventListener("click", () => {
   const f = FLOW[flowIndex() + 1];
   if (f) load(f.stageIndex, f.mode);
+  else showTitle();
 });
+ui.toTitle.addEventListener("click", showTitle);
+ui.start.addEventListener("click", () => startGame(0));
+ui.choose.addEventListener("click", () => {
+  ui.stageList.hidden = !ui.stageList.hidden;
+  ui.choose.setAttribute("aria-expanded", String(!ui.stageList.hidden));
+});
+ui.stageList.append(
+  ...STAGES.map((s, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = `Stage ${i + 1} ${s.name}`;
+    b.addEventListener("click", () => startGame(i));
+    return b;
+  }),
+);
 
 // タッチもタッチパッドも click で受ける
 svg.addEventListener("click", (e) => {
@@ -278,4 +320,6 @@ svg.addEventListener("click", (e) => {
   update();
 });
 
-load(0, "A");
+// タイトル画面の挿絵として、Stage 1 の地図をゲームと同じ描画で置く
+buildMap(ui.titleMap, STAGES[0]);
+showTitle();
