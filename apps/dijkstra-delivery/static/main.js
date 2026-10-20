@@ -1,12 +1,13 @@
 // 起動と、入力 → ラウンド → 描画の接続、自動進行
 
 import { nearestNode } from "./city.js";
-import { AUTO_SETTLE_MS, CITY_WAVE_MS } from "./config.js";
+import { AUTO_SETTLE_MS, CITY_WAVE_MS, RELAX_EDGE_MS } from "./config.js";
 import { guideStep } from "./guide.js";
 import { ControlRound, DeliveryRound, INF, buildAdj, dijkstra, pathTo, solveFrom } from "./logic.js";
+import { relaxLines, stepInterval } from "./relax.js";
 import { revealFor } from "./reveal.js";
 import { STAGES } from "./stages.js";
-import { buildMap, clearFx, render, ripple } from "./view.js";
+import { buildMap, clearFx, clearRelax, relaxFx, render, ripple } from "./view.js";
 
 /** @typedef {"A" | "B" | "C"} Mode A は配達、B は管制室(自動で解く様子を見る)、C は大都市(倉庫を選んで自動で解く) */
 
@@ -70,6 +71,8 @@ const state = {
   revealSeen: false,
   /** 管制室で自動で解くタイマー。ステージやモードを変えたら止める */
   autoTimer: 0,
+  /** 緩和を1本ずつ見せるタイマー。止めるときに使う */
+  relaxTimers: /** @type {number[]} */ ([]),
   /**
    * 大都市で解いた結果。shown は、確定した順に色を付け終えた数。target は、タップしたお届け先
    * @type {{
@@ -107,8 +110,10 @@ function say(msg, sub = "") {
 }
 
 function stopAuto() {
-  clearInterval(state.autoTimer);
+  clearTimeout(state.autoTimer);
   state.autoTimer = 0;
+  state.relaxTimers.forEach(clearTimeout);
+  state.relaxTimers = [];
   cancelAnimationFrame(state.waveFrame);
   state.waveFrame = 0;
 }
@@ -195,10 +200,14 @@ function summarize(relaxations) {
   return `札の書き換え: ${updated.map((x) => `${x.node}: ${fmt(x.from)}→${x.cand}`).join(", ")}`;
 }
 
-/** 管制室: 札が最小の候補を確定するのを、全地点を確定し終えるまで自動で繰り返す */
+/**
+ * 管制室: 札が最小の候補を確定するのを、全地点を確定し終えるまで自動で繰り返す。
+ * 確定した交差点から出る道は1本ずつ見せ、見せ終えるまで次の確定を待つ
+ */
 function runControl() {
   const round = state.control;
-  state.autoTimer = setInterval(() => {
+  const tick = () => {
+    clearRelax(svg);
     const r = round.step();
     if (r === null) {
       stopAuto();
@@ -211,10 +220,16 @@ function runControl() {
     }
     const n = r.node;
     ripple(svg, stage(), n);
+    const lines = relaxLines(r, round.dist.get(n));
+    state.relaxTimers = lines.map((line, i) =>
+      setTimeout(() => relaxFx(svg, stage(), line), i * RELAX_EDGE_MS),
+    );
     const goal = n === round.goal ? "。お届け先までの最短が決まった。残りの交差点も続けて確定する" : "";
     say(`札がいちばん小さい ${n}(${round.dist.get(n)}分)を確定${goal}`, summarize(r.relaxations));
     update();
-  }, AUTO_SETTLE_MS);
+    state.autoTimer = setTimeout(tick, stepInterval(lines.length));
+  };
+  state.autoTimer = setTimeout(tick, AUTO_SETTLE_MS);
   update();
 }
 
