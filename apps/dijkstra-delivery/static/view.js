@@ -44,8 +44,10 @@ export function buildMap(svg, stage) {
   svg.replaceChildren();
   svg.setAttribute("viewBox", `0 0 ${VIEW_W} ${VIEW_H}`);
   const defs = el("defs", {}, svg);
+  // 同じページに地図が2枚(タイトル画面とゲーム)あるので、矢印の id を地図ごとに分ける
+  const arrowId = `arrow-${svg.id}`;
   const marker = el("marker", {
-    id: "arrow", viewBox: "0 0 10 10", refX: 9, refY: 5,
+    id: arrowId, viewBox: "0 0 10 10", refX: 9, refY: 5,
     markerWidth: 5, markerHeight: 5, orient: "auto-start-reverse",
   }, defs);
   el("path", { d: "M0,0 L10,5 L0,10 z", class: "arrowhead" }, marker);
@@ -71,7 +73,7 @@ export function buildMap(svg, stage) {
     el("line", {
       x1, y1, x2, y2,
       class: `edge ${e.kind === "highway" ? "highway" : "road"}`,
-      ...(e.directed ? { "marker-end": "url(#arrow)" } : {}),
+      ...(e.directed ? { "marker-end": `url(#${arrowId})` } : {}),
     }, edges);
 
     const [mx, my] = [(pos[e.u][0] + pos[e.v][0]) / 2, (pos[e.u][1] + pos[e.v][1]) / 2];

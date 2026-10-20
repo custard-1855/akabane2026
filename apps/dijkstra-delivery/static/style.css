@@ -1,18 +1,16 @@
+/* 外枠(色、フォント、角丸、見出しの太さ)は特設サイトのトークン(tokens.css)に揃える。
+   地図の状態の色と、文字やボタンの大きさはゲーム独自の値にする。
+   研究室サイトのヒーローがサイトのトークンに合わせず自前の色を持つのと同じ考え方 */
 :root {
-  --bg: #f7f5f0;
-  --panel: #ffffff;
-  --ink: #1f2328;
-  --ink-muted: #5c636e;
-  --line: #d5d2ca;
-
+  /* 地図の状態の色。遊び方を伝える色なので、サイトのトークンには合わせない */
   --road: #8a8f98;
   --highway: #f08c00;
   --route: #c2255c;
-  --ghost: #1f2328;
+  --ghost: var(--color-text);
   --alert: #e03131;
 
   --node: #ffffff;
-  --node-line: #5c636e;
+  --node-line: var(--color-text-sub);
   --on-route: #ff922b;
   --on-route-line: #a94a00;
   --settled: #4a90e2;
@@ -20,7 +18,10 @@
   --frontier: #ffd43b;
   --frontier-line: #8a6a00;
 
-  --accent: #1c5cab;
+  /* ゲームの大きさ。14型の端末を指で操作するので、サイトより大きくする */
+  --game-tap: 48px;
+  --game-button-font: 18px;
+  --game-msg-font: 22px;
 }
 
 * {
@@ -34,43 +35,37 @@ body {
 }
 
 body {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  background: var(--bg);
-  color: var(--ink);
-  font-family: system-ui, "Noto Sans JP", sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  letter-spacing: var(--letter-spacing-body);
   /* ダブルタップでの拡大と文字選択を止める。ホバーに頼る表示は作らない */
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
 }
 
-/* ツールバー */
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--line);
+[hidden] {
+  display: none !important;
 }
 
-.toolbar .spacer {
-  flex: 1;
-}
-
+/* ボタン。特設サイト(研究室サイト)の Button / PillLink に揃え、丸い角と面の色にする */
 button,
 select {
   font: inherit;
-  font-size: 18px;
-  min-height: 48px;
-  padding: 0 18px;
-  border: 2px solid var(--line);
-  border-radius: 10px;
-  background: var(--panel);
-  color: var(--ink);
+  font-size: var(--game-button-font);
+  letter-spacing: inherit;
+  min-height: var(--game-tap);
+  padding: 0 22px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
   cursor: pointer;
+}
+
+select {
+  padding-right: 14px;
 }
 
 button:disabled {
@@ -78,51 +73,156 @@ button:disabled {
   cursor: default;
 }
 
-button[aria-pressed="true"] {
-  border-color: var(--accent);
-  background: #e7f0fc;
+:focus-visible {
+  outline: 2px solid var(--color-link);
+  outline-offset: 2px;
+}
+
+button[aria-pressed="true"],
+.segmented button.active {
+  background: var(--color-navy);
+  color: var(--color-bg);
 }
 
 button.primary:not(:disabled) {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background: var(--color-navy);
+  color: var(--color-bg);
+}
+
+button.quiet {
+  background: none;
+  color: var(--color-link);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* タイトル画面 */
+.title-screen {
+  min-height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.brand-bar {
+  display: flex;
+  flex-direction: column;
+  padding: 20px var(--gutter);
+  border-bottom: 1px solid var(--color-line);
+  line-height: 1.5;
+}
+
+/* 特設サイトでは 600 だが、フォントの太さを 400 と 500 に絞ったので 500 で描く */
+.brand-name {
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.brand-sub {
+  font-size: 13px;
+  color: var(--color-text-sub);
+}
+
+.title-body {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  align-items: center;
+  gap: 48px;
+  padding: 40px var(--gutter);
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.game-name {
+  margin: 0 0 28px;
+  font-size: 56px;
+  font-weight: var(--heading-weight);
+  line-height: 1.3;
+  letter-spacing: 0.06em;
+}
+
+.concept {
+  margin: 0 0 16px;
+  max-width: var(--measure);
+  font-size: 20px;
+  line-height: var(--line-height-body);
+  color: var(--color-text-body2);
+}
+
+.title-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 24px;
+  margin-top: 40px;
+}
+
+button.large {
+  min-height: 64px;
+  padding: 0 48px;
+  font-size: 24px;
+}
+
+.stage-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.title-map {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  background: var(--color-surface);
+  border-radius: var(--radius-hero);
+  pointer-events: none;
+}
+
+/* ゲーム画面 */
+.game-screen {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.toolbar .spacer {
+  flex: 1;
 }
 
 .segmented {
   display: inline-flex;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
 }
 
 .segmented button {
-  border-radius: 0;
+  min-height: calc(var(--game-tap) - 6px);
 }
 
-.segmented button:first-child {
-  border-radius: 10px 0 0 10px;
-}
-
-.segmented button:last-child {
-  border-radius: 0 10px 10px 0;
-  border-left: none;
-}
-
-.segmented button.active {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: #fff;
-}
-
-/* 地図 */
-main {
+.board-wrap {
   min-height: 0;
   display: grid;
   place-items: center;
-  padding: 8px 16px;
+  padding: 12px 16px;
 }
 
 #board {
   width: 100%;
   height: 100%;
+  background: var(--color-surface);
+  border-radius: var(--radius-hero);
 }
 
 .edge {
@@ -185,12 +285,13 @@ main {
   cursor: pointer;
 }
 
+/* 地図の文字は、読み込む太さ(400 と 500)のうち太いほうで描く */
 .node .name {
   font-size: 30px;
-  font-weight: 700;
+  font-weight: 500;
   text-anchor: middle;
   dominant-baseline: central;
-  fill: var(--ink);
+  fill: var(--color-text);
   pointer-events: none;
 }
 
@@ -238,7 +339,7 @@ main {
 }
 
 .node.map .name {
-  fill: var(--ink);
+  fill: var(--color-text);
 }
 
 .node.map.dark-fill .name {
@@ -250,26 +351,27 @@ main {
 }
 
 .weight-bg {
-  fill: #fff;
-  stroke: var(--line);
+  fill: var(--color-bg);
+  stroke: var(--color-line-strong);
   stroke-width: 2;
 }
 
 .weight {
   font-size: 28px;
-  font-weight: 600;
+  font-weight: 500;
   text-anchor: middle;
   dominant-baseline: central;
-  fill: var(--ink);
+  fill: var(--color-text);
 }
 
+/* 札。縁取りは地図の面の色にして、辺の線と重なっても読めるようにする */
 .tag {
   font-size: 32px;
-  font-weight: 800;
+  font-weight: 500;
   text-anchor: middle;
-  fill: var(--ink);
+  fill: var(--color-text);
   paint-order: stroke;
-  stroke: var(--bg);
+  stroke: var(--color-surface);
   stroke-width: 8;
   stroke-linejoin: round;
 }
@@ -281,9 +383,9 @@ main {
 .caption {
   font-size: 24px;
   text-anchor: middle;
-  fill: var(--ink-muted);
+  fill: var(--color-text-sub);
   paint-order: stroke;
-  stroke: var(--bg);
+  stroke: var(--color-surface);
   stroke-width: 6;
 }
 
@@ -313,10 +415,10 @@ main {
 
 /* メッセージ欄 */
 .messages {
-  padding: 12px 20px 16px;
-  background: var(--panel);
-  border-top: 1px solid var(--line);
-  min-height: 104px;
+  padding: 12px 24px 18px;
+  border-top: 1px solid var(--color-line);
+  min-height: 108px;
+  line-height: 1.6;
 }
 
 .messages p {
@@ -324,17 +426,12 @@ main {
 }
 
 #msg {
-  font-size: 22px;
-  font-weight: 700;
+  font-size: var(--game-msg-font);
+  font-weight: var(--heading-weight);
 }
 
 #sub {
   margin-top: 6px;
-  font-size: 18px;
-  color: var(--ink-muted);
-}
-
-.stars {
-  color: #e8a400;
-  letter-spacing: 2px;
+  font-size: var(--game-button-font);
+  color: var(--color-text-sub);
 }
