@@ -2,11 +2,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { ControlRound, INF, buildAdj, dijkstra } from "../static/logic.js";
 import { STAGES } from "../static/stages.js";
+import { oneway } from "./graphs.js";
 
 const stage = (id) => STAGES.find((s) => s.id === id);
 
-/** 順に settle して、最後の結果を返す */
-const settleAll = (round, nodes) => nodes.map((n) => round.settle(n)).at(-1);
+/** n 回 step して、最後の結果を返す */
+const stepN = (round, n) => Array.from({ length: n }, () => round.step()).at(-1);
 
 test("最初は S だけが候補で、札は S が 0、ほかは ∞", () => {
   const round = new ControlRound(stage("downtown"));
@@ -17,8 +18,8 @@ test("最初は S だけが候補で、札は S が 0、ほかは ∞", () => {
 
 test("S を確定すると、隣の札が書き換わる", () => {
   const round = new ControlRound(stage("downtown"));
-  const r = round.settle("S");
-  assert.equal(r.kind, "settled");
+  const r = round.step();
+  assert.equal(r.node, "S");
   assert.deepEqual(r.relaxations, [
     { node: "A", via: "S", from: INF, cand: 4, updated: true },
     { node: "B", via: "S", from: INF, cand: 3, updated: true },
@@ -26,52 +27,20 @@ test("S を確定すると、隣の札が書き換わる", () => {
   assert.deepEqual(round.candidates(), ["A", "B"]);
 });
 
-test("確定済みを選ぶと already、札が ∞ なら unreached。どちらもミスに数えない", () => {
+test("札が最小の候補から確定する(S 確定後は B(3)が A(4)より先)", () => {
   const round = new ControlRound(stage("downtown"));
-  round.settle("S");
-  assert.equal(round.settle("S").kind, "already");
-  assert.equal(round.settle("G").kind, "unreached");
-  assert.equal(round.mistakes, 0);
-  assert.equal(round.done.has("G"), false);
+  round.step();
+  assert.equal(round.next(), "B");
+  assert.equal(round.step().node, "B");
 });
 
-test("札が最小でない候補を選ぶと not_min。ミスが1増え、確定はしない", () => {
+test("同値の候補は nodes の記述順で先のものを確定する(Stage 1 の C と H はどちらも 9)", () => {
   const round = new ControlRound(stage("downtown"));
-  round.settle("S");
-  const before = new Map(round.dist);
-  // 候補は B(3) と A(4)
-  assert.equal(round.settle("A").kind, "not_min");
-  assert.equal(round.mistakes, 1);
-  assert.equal(round.done.has("A"), false);
-  assert.deepEqual(round.dist, before);
-});
-
-test("同値の候補はどれを選んでも正解(Stage 1 の C と H はどちらも 9)", () => {
-  const round = new ControlRound(stage("downtown"));
-  settleAll(round, ["S", "B", "A", "D", "E"]);
-  assert.equal(round.settle("H").kind, "settled");
-  assert.equal(round.settle("C").kind, "settled");
-  assert.equal(round.mistakes, 0);
-});
-
-test("not_min の理由: 札がたまたま正しいときは lucky で、札が最小の候補を示す", () => {
-  const round = new ControlRound(stage("downtown"));
-  round.settle("S");
-  // A の札 4 は本当の最短と同じだが、B(3)が残っている
-  assert.deepEqual(round.settle("A").reason, { kind: "lucky", minNodes: ["B"] });
-});
-
-test("not_min の理由: 札が後で覆るときは overturn で、経由する未確定の c を示す", () => {
-  const round = new ControlRound(stage("downtown"));
-  settleAll(round, ["S", "B"]);
-  // 候補は A(4)、E(7)、D(9)。D の本当の最短は S-A-D の 6
-  assert.deepEqual(round.settle("D").reason, {
-    kind: "overturn",
-    via: "A",
-    viaDist: 4,
-    best: 6,
-    path: ["A", "D"],
-  });
+  stepN(round, 5); // S、B、A、D、E
+  assert.equal(round.dist.get("C"), 9);
+  assert.equal(round.dist.get("H"), 9);
+  assert.equal(round.step().node, "C");
+  assert.equal(round.step().node, "H");
 });
 
 /** 書き換えた札だけを「D: 9→6」の形にする。辺の順は仕様でないので並べ替える */
@@ -83,87 +52,54 @@ const updates = (r) =>
 
 test("Stage 1: A を確定すると D: 9→6。D の確定では、そのままの C も返す", () => {
   const round = new ControlRound(stage("downtown"));
-  settleAll(round, ["S", "B"]);
-  assert.deepEqual(updates(round.settle("A")), ["C: ∞→9", "D: 9→6"]);
-  const r = round.settle("D");
-  assert.deepEqual(r.relaxations.find((x) => x.node === "C"), {
+  stepN(round, 2); // S、B
+  const a = round.step();
+  assert.equal(a.node, "A");
+  assert.deepEqual(updates(a), ["C: ∞→9", "D: 9→6"]);
+  const d = round.step();
+  assert.equal(d.node, "D");
+  assert.deepEqual(d.relaxations.find((x) => x.node === "C"), {
     node: "C", via: "D", from: 9, cand: 9, updated: false,
   });
 });
 
-test("Stage 2: Q を確定すると B: 13→8", () => {
-  const round = new ControlRound(stage("highway"));
-  settleAll(round, ["S", "P"]);
-  assert.deepEqual(updates(round.settle("A")), ["B: ∞→13"]);
-  round.settle("R");
-  assert.deepEqual(updates(round.settle("Q")), ["B: 13→8", "G: ∞→9"]);
+test("有向辺: 一方通行のグラフで、C で D: 12→10、E で G: 16→14", () => {
+  const round = new ControlRound(oneway);
+  stepN(round, 3); // S、A、B
+  assert.deepEqual(updates(round.step()), ["D: 12→10", "E: ∞→12"]);
+  round.step(); // D
+  assert.deepEqual(updates(round.step()), ["G: 16→14"]);
 });
 
-test("Stage 3: C で D: 12→10、E で G: 16→14", () => {
-  const round = new ControlRound(stage("oneway"));
-  settleAll(round, ["S", "A", "B"]);
-  assert.deepEqual(updates(round.settle("C")), ["D: 12→10", "E: ∞→12"]);
-  round.settle("D");
-  assert.deepEqual(updates(round.settle("E")), ["G: 16→14"]);
-});
-
-test("G を確定するとクリア。それまでは finished にならない", () => {
-  const round = new ControlRound(stage("oneway"));
-  settleAll(round, ["S", "A", "B", "C", "D", "E"]);
+test("行ける交差点をすべて確定すると finished になり、step は null を返す", () => {
+  const round = new ControlRound(oneway);
+  stepN(round, 6); // S、A、B、C、D、E
   assert.equal(round.finished, false);
-  assert.equal(round.settle("G").kind, "settled");
+  assert.equal(round.step().node, "G");
   assert.equal(round.finished, true);
+  assert.equal(round.step(), null);
 });
 
 for (const s of STAGES) {
-  test(`${s.id}: 候補の最小を選び続けると dijkstra() と同じ札になる`, () => {
+  test(`${s.id}: 最後まで進めると dijkstra() と同じ札になる`, () => {
     const round = new ControlRound(s);
-    while (round.candidates().length > 0) {
-      const next = round.candidates().reduce((a, b) => (round.dist.get(b) < round.dist.get(a) ? b : a));
-      assert.notEqual(round.settle(next).kind, "not_min");
-    }
-    assert.deepEqual(round.dist, dijkstra(buildAdj(s), "S").dist);
-  });
-}
-
-for (const [mistakes, stars] of [[0, 3], [1, 2], [2, 2], [3, 1]]) {
-  test(`層Bの星: ミス${mistakes}回なら★${stars}`, () => {
-    const round = new ControlRound(stage("downtown"));
-    round.settle("S");
-    // S 確定後の A(4)は B(3)より大きいので、選ぶたびにミスになる
-    for (let i = 0; i < mistakes; i++) round.settle("A");
-    settleAll(round, ["B", "A", "D", "E", "C", "H", "G"]);
-    assert.equal(round.mistakes, mistakes);
-    assert.equal(round.stars(), stars);
+    while (round.step() !== null);
+    assert.deepEqual(round.dist, dijkstra(buildAdj(s), s.start ?? "S").dist);
   });
 }
 
 test("確定済みの交差点へ向かう辺は relaxations に含めない", () => {
   const round = new ControlRound(stage("downtown"));
-  round.settle("S");
-  const r = round.settle("B");
+  round.step();
+  const r = round.step();
   assert.deepEqual(r.relaxations.map((x) => x.node).sort(), ["D", "E"]);
 });
 
-test("not_min の理由: c は n の1つ手前とは限らず、最短ルート上で最初の未確定ノード", () => {
-  // S-X-Y-N(合計3)が最短。S を確定した直後は X(1) と N(10) が候補
-  const line = {
-    nodes: { S: [0, 0], X: [0, 0], Y: [0, 0], N: [0, 0], G: [0, 0] },
-    edges: [
-      { u: "S", v: "X", w: 1 },
-      { u: "X", v: "Y", w: 1 },
-      { u: "Y", v: "N", w: 1 },
-      { u: "S", v: "N", w: 10 },
-      { u: "N", v: "G", w: 1 },
-    ],
-  };
-  const round = new ControlRound(line);
-  round.settle("S");
-  assert.deepEqual(round.settle("N").reason, {
-    kind: "overturn",
-    via: "X",
-    viaDist: 1,
-    best: 3,
-    path: ["X", "Y", "N"],
-  });
+test("Stage 2 の札の2回の書き換え: E の札が ∞→10→8→6 と書き換わる", () => {
+  const round = new ControlRound(stage("residential"));
+  const history = [];
+  for (let r = round.step(); r !== null; r = round.step()) {
+    history.push(...updates(r).filter((u) => u.startsWith("E:")));
+  }
+  assert.deepEqual(history, ["E: ∞→10", "E: 10→8", "E: 8→6"]);
 });

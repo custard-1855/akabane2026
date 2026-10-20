@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { INF, buildAdj, dijkstra, distToGoal, pathTo } from "../static/logic.js";
 import { STAGES } from "../static/stages.js";
+import { oneway } from "./graphs.js";
 
 const stage = (id) => STAGES.find((s) => s.id === id);
 
@@ -10,16 +11,10 @@ test("Stage 1 で S から G までの最短は 13", () => {
   assert.equal(dist.get("G"), 13);
 });
 
-test("Stage 3 は一方通行を守ると 14、逆走を許すと 12", () => {
-  const s = stage("oneway");
+test("有向辺は向きを守る: 一方通行のグラフは 14、逆走を許すと 12", () => {
+  const s = oneway;
   assert.equal(dijkstra(buildAdj(s), "S").dist.get("G"), 14);
   assert.equal(dijkstra(buildAdj(s, { undirected: true }), "S").dist.get("G"), 12);
-});
-
-test("Stage 2 の最短は高速道路経由の 9(S-P-Q-G)", () => {
-  const { dist, prev } = dijkstra(buildAdj(stage("highway")), "S");
-  assert.equal(dist.get("G"), 9);
-  assert.deepEqual(pathTo(prev, "S", "G"), ["S", "P", "Q", "G"]);
 });
 
 test("届かない地点は距離が INF のままで、経路は null", () => {
@@ -32,8 +27,8 @@ test("届かない地点は距離が INF のままで、経路は null", () => {
   assert.equal(pathTo(prev, "S", "X"), null);
 });
 
-test("distToGoal は一方通行を逆にたどる(Stage 3 の A から G まで 11)", () => {
-  const toGoal = distToGoal(stage("oneway"));
+test("distToGoal は一方通行を逆にたどる(一方通行のグラフの A から G まで 11)", () => {
+  const toGoal = distToGoal(oneway);
   assert.equal(toGoal.get("A"), 11);
   assert.equal(toGoal.get("G"), 0);
 });

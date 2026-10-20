@@ -4,10 +4,8 @@
 :root {
   /* 地図の状態の色。遊び方を伝える色なので、サイトのトークンには合わせない */
   --road: #8a8f98;
-  --highway: #f08c00;
   --route: #c2255c;
   --ghost: var(--color-text);
-  --alert: #e03131;
 
   --node: #ffffff;
   --node-line: var(--color-text-sub);
@@ -17,6 +15,7 @@
   --settled-line: #184f95;
   --frontier: #ffd43b;
   --frontier-line: #8a6a00;
+  --glow: #2f9e44;
 
   /* ゲームの大きさ。14型の端末を指で操作するので、サイトより大きくする */
   --game-tap: 48px;
@@ -226,17 +225,9 @@ button.large {
 }
 
 .edge {
-  stroke-linecap: round;
-}
-
-.edge.road {
   stroke: var(--road);
   stroke-width: 6;
-}
-
-.edge.highway {
-  stroke: var(--highway);
-  stroke-width: 16;
+  stroke-linecap: round;
 }
 
 .arrowhead {
@@ -261,23 +252,56 @@ button.large {
   stroke-dasharray: 2 18;
 }
 
-.overlay .alert-path {
-  stroke: var(--alert);
-  stroke-width: 12;
-  stroke-dasharray: 24 14;
-  animation: march 0.8s linear infinite;
-}
-
-@keyframes march {
-  to {
-    stroke-dashoffset: -38;
-  }
-}
-
 .node .dot {
   fill: var(--node);
   stroke: var(--node-line);
   stroke-width: 3;
+}
+
+/* 案内とヒント①で光らせる交差点。状態の塗りと枠を残したまま、外側の輪を脈打たせる */
+.node .glow-ring {
+  fill: none;
+  stroke: var(--glow);
+  stroke-width: 8;
+  opacity: 0;
+}
+
+.node.glow .glow-ring {
+  animation: glow 1.2s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* 大都市: 交差点は小さい点、道は細い線 */
+.dense .edge {
+  stroke-width: 3;
+}
+
+.dense .node .dot {
+  stroke-width: 2;
+}
+
+.dense .node.settled .dot,
+.dense .node.map .dot {
+  stroke-width: 1;
+}
+
+.dense .node.current .dot {
+  stroke-width: 5;
+}
+
+/* 大都市のルートは、到着時間マップの濃い青の上でも見えるよう、細めにして不透明にする */
+.dense .overlay .route {
+  stroke-width: 9;
+  opacity: 0.9;
 }
 
 .node .hit {
@@ -323,12 +347,6 @@ button.large {
   stroke: var(--frontier-line);
   stroke-width: 5;
   stroke-dasharray: 10 7;
-}
-
-.node.alert .dot {
-  stroke: var(--alert);
-  stroke-width: 10;
-  stroke-dasharray: none;
 }
 
 /* 到着時間マップ: 塗りは render() が時間に応じて指定する */
@@ -428,6 +446,17 @@ button.large {
 #msg {
   font-size: var(--game-msg-font);
   font-weight: var(--heading-weight);
+}
+
+/* 案内中に光っていない交差点を押したとき、同じ字幕をもう一度目に留めさせる */
+#msg.again {
+  animation: again 0.5s ease-out;
+}
+
+@keyframes again {
+  from {
+    color: var(--glow);
+  }
 }
 
 #sub {

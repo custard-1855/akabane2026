@@ -1,24 +1,24 @@
 // ステージデータと validateStage。座標は viewBox 1600×900 基準
 
-import { HIT_R, MARGIN, MIN_EDGE_GAP, MIN_NODE_GAP, VIEW_H, VIEW_W } from "./config.js";
+import { generateCity } from "./city.js";
+import { CITY_SEED, HIT_R, MARGIN, MIN_EDGE_GAP, MIN_NODE_GAP, VIEW_H, VIEW_W } from "./config.js";
 import { INF, buildAdj, dijkstra } from "./logic.js";
 
 /**
  * @typedef {{
  *   u: string, v: string, w: number,
  *   directed?: boolean,
- *   kind?: "road" | "highway",
- *   trap?: boolean,
  * }} Edge
  * @typedef {{
  *   id: string,
  *   name: string, desc: string,
  *   nodes: Record<string, [number, number]>,
  *   edges: Edge[],
- *   expectedCost: number,
- *   star2: number,
+ *   expectedCost?: number,   // 大都市(dense)にはない
+ *   star2?: number,          // 大都市(dense)にはない
  *   start?: string, goal?: string,
  *   allowNegative?: boolean,
+ *   dense?: boolean,
  * }} Stage
  */
 
@@ -54,39 +54,28 @@ export const STAGES = [
     star2: 16,
   },
   {
-    id: "highway",
-    name: "高速道路",
-    desc: "遠回りに見えても、速い道があるかもしれない",
+    id: "residential",
+    name: "住宅街",
+    desc: "街が広くなった。倉庫 S からお届け先 G まで、いちばん早いルートで届けよう",
     nodes: scale({
-      S: [80, 250], A: [250, 250], B: [450, 250], G: [720, 250],
-      P: [250, 90], Q: [500, 90], R: [250, 420], T: [500, 420],
+      S: [80, 250],
+      A: [200, 80], B: [200, 250], C: [200, 420],
+      D: [330, 80], E: [330, 250], F: [330, 420],
+      H: [460, 80], I: [460, 250], J: [460, 420],
+      K: [590, 80], L: [590, 250], M: [590, 420],
+      G: [720, 250],
     }),
-    edges: [
-      ...roads("S-P 3, P-Q 2, Q-G 4", { kind: "highway" }),
-      // 直線ルート S-A-B-G は合計 18。見た目では最も短く見える罠。
-      // どの辺に trap を付けるかは、重みを作り直すとき(10/26)に決める
-      ...roads("S-A 4, A-B 9, B-G 5"),
-      ...roads("P-A 4, Q-B 3, R-A 3, T-B 4, S-R 4, R-T 4, T-G 4"),
-    ],
-    expectedCost: 9,
-    star2: 12,
-  },
-  {
-    id: "oneway",
-    name: "一方通行",
-    desc: "矢印の向きにしか進めない道がある",
-    nodes: scale({
-      S: [80, 250], A: [240, 130], B: [240, 370], C: [420, 250], D: [600, 130],
-      E: [600, 370], G: [740, 250],
-    }),
+    // 目先の罠: S から出るいちばん短い道 S-B(1)は、どの最短ルートにも含まれない。
+    // B から先は最善でも 22 で、star2 を超える
     edges: roads(
-      "S-A 3, S-B 5, A-C 4, B-C 2, C-D 3, C-E 5, D-G 6, E-G 2, A-D 9, B-A 1, E-D 1",
-      { directed: true },
+      "S-A 3, S-B 1, S-C 5, A-B 8, B-C 7, A-D 1, A-E 5, B-E 9, C-F 3, D-E 2, E-F 9, " +
+        "D-H 8, E-I 3, F-I 6, F-J 8, H-I 9, I-J 4, H-K 8, H-L 7, I-L 5, J-M 9, " +
+        "K-L 8, L-M 5, K-G 5, L-G 4, M-G 9",
     ),
-    // 同点 2 経路(S-A-C-E-G と S-B-C-E-G)。判定はコストで行う
-    expectedCost: 14,
-    star2: 17,
+    expectedCost: 18,
+    star2: 20,
   },
+  generateCity(CITY_SEED),
 ];
 
 /**
@@ -142,6 +131,9 @@ export function validateStage(stage) {
       errors.push(`${n} (${x}, ${y}) が viewBox の余白にはみ出している`);
     }
   }
+  // 大都市は交差点を小さい点で描き、押した位置にいちばん近い交差点としてタップを受けるので、
+  // タップ判定の円の間隔と、辺がノードの上を通るかは検査しない
+  if (stage.dense) return errors;
   for (let i = 0; i < pts.length; i++) {
     for (let j = i + 1; j < pts.length; j++) {
       const [a, p] = pts[i];
