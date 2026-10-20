@@ -120,6 +120,35 @@ export class DeliveryRound {
     this.opt = dijkstra(this.adj, this.route[0]);
     this.optCost = this.opt.dist.get(this.goal);
     this.star2 = stage.star2;
+    /** 各交差点から G への最短。ヒント②で、現在地からの次の一手を求めるのに使う */
+    this.goalDist = distToGoal(stage);
+    /** 使ったヒントのいちばん上の段階。0 は未使用 */
+    this.hintLevelUsed = 0;
+  }
+
+  /**
+   * ヒント(2.6)。① 進める交差点、② 現在地から G への最短で次に進む交差点を光らせる。③ 最短ルートを示す。
+   * ③ を使ったラウンドは★1が上限になる
+   * @param {1 | 2 | 3} level
+   * @returns {{ glow: string[], path: string[] | null }}
+   */
+  hint(level) {
+    this.hintLevelUsed = Math.max(this.hintLevelUsed, level);
+    if (level === 3) return { glow: [], path: pathTo(this.opt.prev, this.route[0], this.goal) };
+    const here = this.route.at(-1);
+    const next = [...this.adj.get(here).keys()].filter((n) => !this.route.includes(n));
+    if (level === 1) return { glow: next, path: null };
+    // 遠回りした後でも、今いる所から G へいちばん早い一手を示す。袋小路に入る一手は勧めない
+    let best = null;
+    let bestCost = INF;
+    for (const n of next) {
+      const c = this.adj.get(here).get(n) + this.goalDist.get(n);
+      if (c < bestCost && canReach(this.adj, n, this.goal, this.route)) {
+        best = n;
+        bestCost = c;
+      }
+    }
+    return { glow: best === null ? [] : [best], path: null };
   }
 
   /** @param {string} n */
@@ -191,6 +220,8 @@ export class DeliveryRound {
   /** 経路ではなくコストで判定する。同点の最短ルートはどれでも★3 */
   stars() {
     const c = this.cost();
+    // 最短ルートを見たら(ヒント③)、そのとおりに進んでも★1
+    if (this.hintLevelUsed >= 3) return 1;
     if (c === this.optCost) return 3;
     if (c <= this.star2) return 2;
     return 1;
