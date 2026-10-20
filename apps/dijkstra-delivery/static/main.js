@@ -7,6 +7,7 @@ import { ControlRound, DeliveryRound, INF, buildAdj, dijkstra, pathTo, solveFrom
 import { relaxLines, stepInterval } from "./relax.js";
 import { revealFor } from "./reveal.js";
 import { STAGES } from "./stages.js";
+import { bestStars, recordStars } from "./stars.js";
 import { buildMap, clearFx, clearRelax, relaxFx, render, ripple } from "./view.js";
 
 /** @typedef {"A" | "B" | "C"} Mode A は配達、B は管制室(自動で解く様子を見る)、C は大都市(倉庫を選んで自動で解く) */
@@ -91,6 +92,15 @@ const state = {
 const stage = () => STAGES[state.stageIndex];
 const fmt = (d) => (d === INF ? "∞" : String(d));
 const starText = (n) => "★".repeat(n) + "☆".repeat(3 - n);
+
+/** 星の保存先。プライベートモードなどで localStorage に触れないときは null(保存せずに遊ぶ) */
+const starStore = (() => {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+})();
 const cityDone = () => state.city !== null && state.city.shown === state.city.order.length;
 const flowIndex = () =>
   FLOW.findIndex((f) => f.stageIndex === state.stageIndex && f.mode === state.mode);
@@ -192,8 +202,9 @@ function tapDelivery(n) {
           ? `最短です! 点線はあなたのルート${tie ? "。ほかにも同じ時間のルートがあります" : ""}`
           : `最短は ${round.optCost}分。点線が最短ルート`;
       const capped = round.hintLevelUsed >= 3 ? "(最短ルートを見たので★1まで)" : "";
+      recordStars(starStore, stage().id, round.stars());
       say(
-        `到着! ${cost}分 ${starText(round.stars())}${capped}`,
+        `到着! ${cost}分 ${starText(round.stars())}${capped}　最高 ${starText(bestStars(starStore, stage().id))}`,
         `${best}。「到着時間マップ」で全地点への最短時間を見られます`,
       );
       break;
@@ -321,6 +332,15 @@ function goNext() {
   else showTitle();
 }
 
+/** ステージを選ぶボタンに、配達の最高記録を添える。大都市は採点しないので添えない */
+function showStageStars() {
+  stageButtons.forEach((b, i) => {
+    const s = STAGES[i];
+    const best = s.dense ? 0 : bestStars(starStore, s.id);
+    b.textContent = `Stage ${i + 1} ${s.name}${best ? ` ${starText(best)}` : ""}`;
+  });
+}
+
 /** 次の来場者に端末を渡せるよう、タイトル画面に戻す */
 function showTitle() {
   stopAuto();
@@ -328,6 +348,7 @@ function showTitle() {
   ui.gameScreen.hidden = true;
   ui.titleScreen.hidden = false;
   ui.stageList.hidden = true;
+  showStageStars();
   ui.choose.setAttribute("aria-expanded", "false");
 }
 
@@ -455,15 +476,14 @@ ui.choose.addEventListener("click", () => {
   ui.stageList.hidden = !ui.stageList.hidden;
   ui.choose.setAttribute("aria-expanded", String(!ui.stageList.hidden));
 });
-ui.stageList.append(
-  ...STAGES.map((s, i) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.textContent = `Stage ${i + 1} ${s.name}`;
-    b.addEventListener("click", () => startGame(i));
-    return b;
-  }),
-);
+const stageButtons = STAGES.map((s, i) => {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.addEventListener("click", () => startGame(i));
+  return b;
+});
+ui.stageList.append(...stageButtons);
+showStageStars();
 
 // タッチもタッチパッドも click で受ける
 svg.addEventListener("click", (e) => {
