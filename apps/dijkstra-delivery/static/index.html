@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>配達員ダイクストラ|スカラベ・ネットワーク研究会</title>
+    <link rel="stylesheet" href="./fonts/ibm-plex-sans-jp/400.css" />
+    <link rel="stylesheet" href="./fonts/ibm-plex-sans-jp/500.css" />
+    <link rel="stylesheet" href="./tokens.css" />
+    <link rel="stylesheet" href="./style.css" />
+    <script type="module" src="./main.js"></script>
+  </head>
+  <body>
+    <!-- タイトル画面。企画名は特設サイトの見出しと同じ書き方にする -->
+    <div id="title-screen" class="title-screen">
+      <header class="brand-bar">
+        <span class="brand-name">スカラベ・ネットワーク研究会</span>
+        <span class="brand-sub">川原研究室|赤羽台祭2026</span>
+      </header>
+      <main class="title-body">
+        <div class="title-text">
+          <h1 class="game-name">配達員ダイクストラ</h1>
+          <!-- プレイ中と同じく、ゲームの言葉だけで書く(設計書 1.2) -->
+          <p class="concept">
+            あなたは街の配達員。倉庫からお届け先まで、いちばん早いルートで荷物を届けよう。
+          </p>
+          <p class="concept">
+            後半は管制室へ。街じゅうの交差点へのいちばん早い時間を、ひとつずつ確かめながら求めていく。
+          </p>
+          <div class="title-actions">
+            <button type="button" id="start" class="primary large">はじめる</button>
+            <button type="button" id="choose" class="quiet" aria-expanded="false">
+              ステージを選ぶ
+            </button>
+          </div>
+          <div id="stage-list" class="stage-list" hidden></div>
+        </div>
+        <svg id="title-map" class="title-map" aria-hidden="true"></svg>
+      </main>
+    </div>
+
+    <div id="game-screen" class="game-screen" hidden>
+      <header class="toolbar">
+        <button type="button" id="to-title">タイトルへ</button>
+        <select id="stage" aria-label="ステージ"></select>
+        <div class="segmented" role="group" aria-label="モード">
+          <button type="button" id="mode-a" data-mode="A">配達</button>
+          <button type="button" id="mode-b" data-mode="B">管制室</button>
+        </div>
+        <button type="button" id="undo">1手戻る</button>
+        <button type="button" id="reset">リセット</button>
+        <button type="button" id="map" aria-pressed="false">到着時間マップ</button>
+        <button type="button" id="finish-all" hidden>続けて全地点を確定</button>
+        <span class="spacer"></span>
+        <button type="button" id="next" class="primary">次へ</button>
+      </header>
+      <main class="board-wrap">
+        <svg id="board" role="img" aria-label="地図"></svg>
+      </main>
+      <footer class="messages" aria-live="polite">
+        <p id="msg"></p>
+        <p id="sub"></p>
+      </footer>
+    </div>
+  </body>
+</html>

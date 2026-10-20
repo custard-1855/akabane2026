@@ -1,5 +1,7 @@
 ---
 // トップ: 企画の紹介、スカラベの解説、日時と場所、展示紹介と研究室サイトへのリンク
+import { Image } from "astro:assets";
+import logo from "../assets/logo.png";
 import Hero from "../components/Hero.astro";
 import Section from "../components/Section.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
@@ -11,34 +13,39 @@ import { SITE } from "../site.config";
   <section class="container top">
     <Hero />
     <div class="intro">
-      <!-- ロゴの枠。素材が入るまで空にしておく -->
-      <div class="art logo" aria-hidden="true"></div>
+      <!-- ロゴの背景は白で塗られているので、白地に直接置く -->
+      <Image class="logo" src={logo} alt="" width={240} />
       <div>
         <h1>{SITE.name}</h1>
-        <p class="lead">[プレースホルダー: 企画の紹介]</p>
+        <p class="lead">
+          点と線でできた「グラフ」は、駅と線路、人と人のつながり、インターネットを支える通信ネットワークまで、さまざまなつながりを表せます。スカラベ・ネットワーク研究会では、グラフを題材にしたゲームで、つながりの中から答えを探すアルゴリズムを体験できます。予備知識はいりません。
+        </p>
       </div>
     </div>
   </section>
 
   <Section title="スカラベ" label="Scarab" id="scarab">
     <div class="scarab">
-      <p>[プレースホルダー: スカラベの解説と、企画のモチーフにした理由]</p>
-      <!-- イラストの枠。素材が入るまで空にしておく -->
-      <div class="art illustration" aria-hidden="true"></div>
+      <p>
+        スカラベは、動物のふんを丸めて転がすコガネムシの仲間で、フンコロガシとも呼ばれます。古代エジプトでは、ふんの玉を転がす姿が太陽を運ぶ神に重ねられ、再生の象徴とされました。夜には天の川の光を手がかりに、まっすぐ進むことも知られています。
+      </p>
+      <p>
+        企画のロゴのスカラベは、脚を点と線で描いています。脚がそのままグラフになっていることから、グラフを題材にするこの企画のモチーフにしました。
+      </p>
     </div>
   </Section>
 
   <Section title="日時と場所" label="Date & Place" id="date">
     <dl class="facts">
       <dt>日時</dt>
-      <dd>[プレースホルダー: 赤羽台祭の日時]</dd>
+      <dd>{SITE.date}</dd>
       <dt>場所</dt>
-      <dd>[プレースホルダー: 展示の場所(建物・部屋)]</dd>
+      <dd>{SITE.place}</dd>
     </dl>
   </Section>
 
   <Section title="展示" label="Exhibits" id="exhibits">
-    <p>[プレースホルダー: 展示の概要]</p>
+    <p>会場では、グラフを題材にしたゲームを1人1台の端末で遊べます。1回5〜10分ほどです。</p>
     <p class="links">
       <a class="text-link" href={href("/exhibits/")}>
         展示紹介 →
@@ -72,29 +79,17 @@ import { SITE } from "../site.config";
     color: var(--color-text-sub);
     max-width: var(--measure);
   }
-  /* ロゴとイラストの枠。素材の縦横比が決まったら合わせる */
-  .art {
-    flex: none;
-    border-radius: var(--radius-card);
-    background: var(--color-surface);
-  }
+  /* 2倍の密度で出力したものを半分の幅で表示する */
   .logo {
+    flex: none;
     width: 120px;
-    height: 120px;
+    height: auto;
   }
   .scarab {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 24px 40px;
-  }
-  .scarab p {
-    flex: 1 1 320px;
-    margin: 0;
     max-width: var(--measure);
   }
-  .illustration {
-    width: 240px;
-    height: 240px;
+  .scarab p + p {
+    margin-top: 16px;
   }
   .facts {
     display: grid;
@@ -107,6 +102,9 @@ import { SITE } from "../site.config";
   }
   .facts dd {
     margin: 0;
+    /* 「3201教室」の途中で折り返さないよう、空白の位置だけで折り返す。入りきらないときは途中でも折る */
+    word-break: keep-all;
+    overflow-wrap: anywhere;
   }
   p {
     margin: 0;
