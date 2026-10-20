@@ -5,30 +5,30 @@
 ## 10/20(MVP)
 
 ### 骨組み
-- [ ] `apps/dijkstra-delivery/` に `package.json`(`{"type": "module"}`)と `static/index.html` を作る(3.2)
+- [x] `apps/dijkstra-delivery/` に `package.json`(`{"type": "module"}`)と `static/index.html` を作る(3.2)
 
 ### ロジック(`logic.js`、DOM 非依存)
-- [ ] `buildAdj`、`dijkstra`、`pathTo`、`distToGoal`(3.4)
-- [ ] `canReach`: 訪問済みノードを通らずに goal へ行けるか(3.4)
-- [ ] `DeliveryRound`: `tap` の5分岐。`stuck` は `canReach` で判定する(3.5、3.6)
-- [ ] `ControlRound`: `settle` の4分岐。`settled` で `relaxations`(「そのまま」の辺も含む)を返す。`not_min` は状態を変えずに `reason` を返す(3.5、3.6)
-- [ ] `not_min` の理由: `opt.dist` と比べて「実際に覆る/たまたま合っている」を分け、覆る場合は最短ルート上で最初の未確定ノード c を求める(3.6)
-- [ ] 星判定(2.5)
+- [x] `buildAdj`、`dijkstra`、`pathTo`、`distToGoal`(3.4)
+- [x] `canReach`: 訪問済みノードを通らずに goal へ行けるか(3.4)
+- [x] `DeliveryRound`: `tap` の5分岐。`stuck` は `canReach` で判定する(3.5、3.6)
+- [x] `ControlRound`: `settle` の4分岐。`settled` で `relaxations`(「そのまま」の辺も含む)を返す。`not_min` は状態を変えずに `reason` を返す(3.5、3.6)
+- [x] `not_min` の理由: `opt.dist` と比べて「実際に覆る/たまたま合っている」を分け、覆る場合は最短ルート上で最初の未確定ノード c を求める(3.6)
+- [x] 星判定(2.5)
 
 ### ステージ(`stages.js`)
-- [ ] Stage 1〜3 のデータ。座標は `x' = 1.8x + 80`、`y' = 1.8y` で 1600×900 に拡大する(3.9)
-- [ ] `validateStage`: 重みと長さの比の検査を除く条件(3.3)。負の辺と負の閉路の検査も入れる
+- [x] Stage 1〜3 のデータ。座標は `x' = 1.8x + 80`、`y' = 1.8y` で 1600×900 に拡大する(3.9)
+- [x] `validateStage`: 重みと長さの比の検査を除く条件(3.3)。負の辺と負の閉路の検査も入れる
 
 ### 単体テスト(`node --test`)
-- [ ] 3.10 の単体テストのうち、ヒント以外のもの
+- [x] 3.10 の単体テストのうち、ヒント以外のもの
 
 ### 画面(`view.js`、`main.js`、`style.css`)
-- [ ] 地図の描画: 辺(重み、有向辺の矢印、高速道路の太線)、ノード、札、4層の `<g>`(3.5、3.7)
-- [ ] 層A: タップでルートを作る、1手戻る、行き止まりと不正な操作のメッセージ、星、ゴースト(同点の扱いは 2.3)
-- [ ] 層B: 確定、フロンティアの強調、波紋、更新の要約1行、ミス時の2通りのメッセージと経由ルートの強調、星、クリア後の全地点確定
-- [ ] 到着時間マップ(クリア後のみ有効)
-- [ ] 自動進行: Stage 1 層A → … → Stage 3 層B を「次へ」で進める。メニューで自由に選べる
-- [ ] ノードの状態を色と枠線で区別する(3.7)。`touch-action: manipulation`
+- [x] 地図の描画: 辺(重み、有向辺の矢印、高速道路の太線)、ノード、札、4層の `<g>`(3.5、3.7)
+- [x] 層A: タップでルートを作る、1手戻る、行き止まりと不正な操作のメッセージ、星、ゴースト(同点の扱いは 2.3)
+- [x] 層B: 確定、フロンティアの強調、波紋、更新の要約1行、ミス時の2通りのメッセージと経由ルートの強調、星、クリア後の全地点確定
+- [x] 到着時間マップ(クリア後のみ有効)
+- [x] 自動進行: Stage 1 層A → … → Stage 3 層B を「次へ」で進める。メニューで自由に選べる
+- [x] ノードの状態を色と枠線で区別する(3.7)。`touch-action: manipulation`
 
 ### 確認
 - [ ] 静的サーバ(`python3 -m http.server -d apps/dijkstra-delivery/static`)で PC の Chrome から通しで遊ぶ
