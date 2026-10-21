@@ -6,11 +6,13 @@ import {
   cycleRoads,
   isConnected,
   kruskalSteps,
+  laidRoads,
   minimumRoads,
   roadKey,
   starsFor,
   toggle,
   totalCost,
+  undo,
 } from "../static/logic.js";
 
 const road = (u, v, w) => ({ u, v, w });
@@ -86,4 +88,41 @@ test("層A: 完成の後は道のタップを受け付けない", () => {
   for (const k of ["A-B", "B-C", "C-D"]) r = toggle(r, k);
   r = complete(SMALL, r);
   assert.deepEqual(toggle(r, "A-C").laid, r.laid);
+});
+
+test("1手戻る: 最後に敷いた道を外す", () => {
+  const r = undo(toggle(toggle(createRound(), "A-B"), "B-C"));
+  assert.deepEqual(r.laid, ["A-B"]);
+});
+
+test("1手戻る: 最後に外した道を敷き直す", () => {
+  const r = undo(toggle(toggle(createRound(), "A-B"), "A-B"));
+  assert.deepEqual(r.laid, ["A-B"]);
+});
+
+test("1手戻る: 完成の後なら、完成を取り消して最後の手を戻す", () => {
+  let r = createRound();
+  for (const k of ["A-B", "B-C", "C-D"]) r = toggle(r, k);
+  r = undo(complete(SMALL, r));
+  assert.equal(r.done, false);
+  assert.deepEqual(r.laid, ["A-B", "B-C"]);
+});
+
+test("1手戻る: 何も手がなければ何もしない", () => {
+  assert.deepEqual(undo(createRound()), createRound());
+});
+
+test("1手戻る: 輪を作った道を戻すと、輪がなくなる", () => {
+  let r = createRound();
+  for (const k of ["A-B", "B-C", "A-C"]) r = toggle(r, k);
+  assert.equal(cycleRoads(laidRoads(SMALL, r)).size, 3);
+  assert.equal(cycleRoads(laidRoads(SMALL, undo(r))).size, 0);
+});
+
+test("リセット: 何も敷いていない最初の状態に戻る", () => {
+  let r = createRound();
+  for (const k of ["A-B", "B-C", "C-D"]) r = toggle(r, k);
+  r = complete(SMALL, r);
+  assert.deepEqual(createRound(), { laid: [], history: [], done: false });
+  assert.equal(totalCost(laidRoads(SMALL, createRound())), 0);
 });
