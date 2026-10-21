@@ -133,3 +133,17 @@ export function tap(assign, node, max) {
  */
 export const canComplete = (stage, assign) =>
   Object.keys(stage.nodes).every((n) => assign[n] !== undefined) && conflicts(stage, assign).size === 0;
+
+/**
+ * 層Bの1手の字幕。それまでに使っていない番号を使う手では、隣が使っている番号を添える
+ * @param {GreedyStep[]} steps
+ * @param {number} i
+ */
+export function captionFor(steps, i) {
+  const { node, channel } = steps[i];
+  const before = Math.max(0, ...steps.slice(0, i).map((s) => s.channel));
+  if (channel <= before) return `${node}: 隣が使っていない中でいちばん小さい ${channel} にする`;
+  if (channel === 1) return `${node}: 隣が使っていない中でいちばん小さい 1 にする`;
+  const used = Array.from({ length: channel - 1 }, (_, k) => k + 1).join("・");
+  return `${node}: 隣が ${used} を使っているので、新しいチャンネル ${channel} を使う`;
+}
