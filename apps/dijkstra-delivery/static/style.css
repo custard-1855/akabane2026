@@ -301,54 +301,6 @@ button.large {
   }
 }
 
-/* 大都市: 交差点は小さい点、道は細い線 */
-.dense .edge {
-  stroke-width: 3;
-}
-
-.dense .node .dot {
-  stroke-width: 2;
-}
-
-.dense .node.settled .dot,
-.dense .node.map .dot {
-  stroke-width: 1;
-}
-
-.dense .node.current .dot {
-  stroke-width: 5;
-}
-
-/* 大都市のルートは、到着時間マップの濃い青の上でも見えるよう、細めにして不透明にする */
-/* 輻輳デモ: 配達車がいる道を台数で色分けする(1台 黄、2台 橙、3台以上 赤) */
-.traffic .jam {
-  stroke-width: 10;
-  stroke-linecap: round;
-}
-
-.traffic .jam-1 {
-  stroke: var(--frontier);
-}
-
-.traffic .jam-2 {
-  stroke: var(--on-route);
-}
-
-.traffic .jam-3 {
-  stroke: #e03131;
-}
-
-.traffic .car {
-  fill: var(--color-text);
-  stroke: var(--color-bg);
-  stroke-width: 3;
-}
-
-.dense .overlay .route {
-  stroke-width: 9;
-  opacity: 0.9;
-}
-
 .node .hit {
   fill: transparent;
   cursor: pointer;
@@ -520,7 +472,7 @@ button.large {
   }
 }
 
-/* 種明かし。地図の上に重ね、ゲームの言葉と正式な用語を並べる */
+/* 解説。地図の上に重ね、ゲームの言葉と正式な用語を並べる */
 .reveal {
   position: absolute;
   top: 32px;

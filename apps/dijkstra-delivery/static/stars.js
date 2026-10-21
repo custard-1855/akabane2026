@@ -1,4 +1,4 @@
-// 星の保存(設計書 2.5、3.8)。保存先は端末内(localStorage)。Django に決まったら、ここを差し替える。
+// 星の保存(設計書 2.5、3.8)。保存先は端末内(localStorage)。
 // 入れ物は引数で受け取り、Node ではメモリ上の偽物でテストする。保存できない端末でも遊べるよう、読み書きの失敗は握りつぶす
 
 const key = (stageId) => `dijkstra-delivery:stars:${stageId}`;

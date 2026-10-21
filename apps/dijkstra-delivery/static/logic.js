@@ -24,7 +24,7 @@ export function buildAdj(stage, { reverse = false, undirected = false } = {}) {
 }
 
 /**
- * 確定集合を持つ O(V²) 版。数百頂点(Stage 3 大都市)まではこれで足りる。
+ * 確定集合を持つ O(V²) 版。手で遊ぶステージの大きさならこれで足りる。
  * 同じ距離の候補は隣接表(= nodes の記述順)で先のものを選び、結果を決定的にする
  * @param {Adj} adj
  * @param {string} s
@@ -230,7 +230,7 @@ export class DeliveryRound {
 
 /**
  * 層B(管制室)のラウンド。札が最小の候補を確定し、隣の札を書き換えるのを繰り返す。
- * 管制室ではこれを自動で1手ずつ進めて見せ、大都市では一気に回す
+ * 管制室ではこれを自動で1手ずつ進めて見せる
  */
 export class ControlRound {
   /** @param {Stage} stage */
@@ -283,18 +283,4 @@ export class ControlRound {
     }
     return { node: n, relaxations };
   }
-}
-
-/**
- * start から全地点を自動で解く(Stage 3 大都市)。管制室と同じ手順を一気に回す。
- * order は確定した順で、波紋の演出にそのまま使う。prev は、お届け先までのルートを出すのに使う
- * @param {Stage} stage
- * @param {string} start
- */
-export function solveFrom(stage, start) {
-  const round = new ControlRound({ ...stage, start });
-  /** @type {string[]} */
-  const order = [];
-  for (let r = round.step(); r !== null; r = round.step()) order.push(r.node);
-  return { order, dist: round.dist, prev: round.prev };
 }
