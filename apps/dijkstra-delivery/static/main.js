@@ -1,38 +1,24 @@
 // 起動と、入力 → ラウンド → 描画の接続、自動進行
 
-import { nearestNode } from "./city.js";
-import {
-  AUTO_SETTLE_MS,
-  CITY_WAVE_MS,
-  CONGESTION_CARS,
-  CONGESTION_INTERVAL_MS,
-  CONGESTION_MS_PER_MINUTE,
-  CONGESTION_SLOWDOWN,
-  RELAX_EDGE_MS,
-} from "./config.js";
-import { Traffic } from "./congestion.js";
+import { AUTO_SETTLE_MS, RELAX_EDGE_MS } from "./config.js";
 import { guideStep } from "./guide.js";
-import { ControlRound, DeliveryRound, INF, buildAdj, dijkstra, pathTo, solveFrom, treeEdges } from "./logic.js";
+import { ControlRound, DeliveryRound, INF, buildAdj, dijkstra, treeEdges } from "./logic.js";
 import { relaxLines, stepInterval } from "./relax.js";
 import { revealFor } from "./reveal.js";
 import { STAGES } from "./stages.js";
 import { bestStars, recordStars } from "./stars.js";
-import { buildMap, clearFx, clearRelax, relaxFx, render, ripple, trafficFx } from "./view.js";
+import { buildMap, clearFx, clearRelax, relaxFx, render, ripple } from "./view.js";
 
-/** @typedef {"A" | "B" | "C"} Mode A は配達、B は管制室(自動で解く様子を見る)、C は大都市(倉庫を選んで自動で解く) */
+/** @typedef {"A" | "B"} Mode A は配達、B は管制室(自動で解く様子を見る) */
 
 /**
- * 自動進行の順。各ステージで層A(配達)→ 層B(管制室)。大都市は C だけ
+ * 自動進行の順。各ステージで層A(配達)→ 層B(管制室)
  * @type {{ stageIndex: number, mode: Mode }[]}
  */
-const FLOW = STAGES.flatMap((s, stageIndex) =>
-  s.dense
-    ? [{ stageIndex, mode: "C" }]
-    : [
-        { stageIndex, mode: "A" },
-        { stageIndex, mode: "B" },
-      ],
-);
+const FLOW = STAGES.flatMap((_, stageIndex) => [
+  { stageIndex, mode: /** @type {Mode} */ ("A") },
+  { stageIndex, mode: /** @type {Mode} */ ("B") },
+]);
 
 const $ = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const svg = /** @type {SVGSVGElement} */ (/** @type {unknown} */ ($("board")));
@@ -52,7 +38,6 @@ const ui = {
   reset: $("reset"),
   map: /** @type {HTMLButtonElement} */ ($("map")),
   run: /** @type {HTMLButtonElement} */ ($("run")),
-  traffic: /** @type {HTMLButtonElement} */ ($("traffic")),
   skipGuide: $("skip-guide"),
   next: /** @type {HTMLButtonElement} */ ($("next")),
   reveal: $("reveal"),
@@ -80,28 +65,13 @@ const state = {
   guideOff: false,
   /** 配達で見ているヒントの段階(0 は未使用)。①② は現在地が変わるたびに光らせ直す */
   hintLevel: /** @type {0 | 1 | 2 | 3} */ (0),
-  /** 種明かしを出しているか、この層で一度出したか。層を始めるたび(reset)に戻す */
+  /** 解説を出しているか、この層で一度出したか。層を始めるたび(reset)に戻す */
   revealOpen: false,
   revealSeen: false,
   /** 管制室で自動で解くタイマー。ステージやモードを変えたら止める */
   autoTimer: 0,
   /** 緩和を1本ずつ見せるタイマー。止めるときに使う */
   relaxTimers: /** @type {number[]} */ ([]),
-  /**
-   * 大都市で解いた結果。shown は、確定した順に色を付け終えた数。target は、タップしたお届け先
-   * @type {{
-   *   start: string, order: string[], dist: Map<string, number>, prev: Map<string, string>,
-   *   shown: number, target: string | null,
-   * } | null}
-   */
-  city: null,
-  /** 大都市の色付けの requestAnimationFrame。止めるときに使う */
-  waveFrame: 0,
-  /**
-   * 大都市の輻輳デモ。routes は出した配達車のルート(迂回した台数を数える)。frame と timer は止めるときに使う
-   * @type {{ sim: Traffic, routes: string[], frame: number, timer: number } | null}
-   */
-  traffic: null,
 };
 
 const stage = () => STAGES[state.stageIndex];
@@ -116,7 +86,6 @@ const starStore = (() => {
     return null;
   }
 })();
-const cityDone = () => state.city !== null && state.city.shown === state.city.order.length;
 const flowIndex = () =>
   FLOW.findIndex((f) => f.stageIndex === state.stageIndex && f.mode === state.mode);
 const isLast = () => flowIndex() === FLOW.length - 1;
@@ -128,7 +97,6 @@ function guide() {
 }
 
 function cleared() {
-  if (state.mode === "C") return cityDone();
   return state.mode === "A" ? state.delivery.finished : state.control.finished;
 }
 
@@ -142,23 +110,15 @@ function stopAuto() {
   state.autoTimer = 0;
   state.relaxTimers.forEach(clearTimeout);
   state.relaxTimers = [];
-  cancelAnimationFrame(state.waveFrame);
-  state.waveFrame = 0;
-  if (state.traffic) {
-    cancelAnimationFrame(state.traffic.frame);
-    clearTimeout(state.traffic.timer);
-    state.traffic = null;
-  }
 }
 
 /** ステージとモードを読み込み、ラウンドを作り直す */
 function load(stageIndex, mode) {
   stopAuto();
   state.stageIndex = stageIndex;
+  state.mode = mode;
   state.guideOff = false;
   const s = stage();
-  // 大都市には配達と管制室がなく、ほかのステージには C がない
-  state.mode = s.dense ? "C" : mode === "C" ? "A" : mode;
   state.opt = dijkstra(buildAdj(s), s.start ?? "S");
   buildMap(svg, s);
   reset();
@@ -171,13 +131,10 @@ function reset() {
   state.delivery = new DeliveryRound(s);
   state.control = new ControlRound(s);
   state.showMap = false;
-  state.city = null;
   state.revealOpen = false;
   state.revealSeen = false;
   state.hintLevel = 0;
-  if (state.mode === "C") {
-    say("倉庫を置きたい交差点をタップしよう", "そこから街じゅうの交差点への、いちばん早い時間を求める");
-  } else if (state.mode === "A") {
+  if (state.mode === "A") {
     say(
       "倉庫 S から、お届け先 G まで、いちばん早いルートで届けよう",
       "隣の交差点をタップして進む。道の数字は所要時間(分)。同じ交差点は2度通れない",
@@ -283,63 +240,7 @@ function runControl() {
   update();
 }
 
-/**
- * 大都市: n から全地点を解き、確定した順に色を付けてから到着時間マップを出す。
- * 一瞬で表示すると、近い順に広がる様子が見えないので、約3秒かけて流す
- * @param {string} n
- */
-function solveCity(n) {
-  stopAuto();
-  clearFx(svg);
-  const t0 = performance.now();
-  const { order, dist, prev } = solveFrom(stage(), n);
-  const ms = performance.now() - t0;
-  state.city = { start: n, order, dist, prev, shown: 0, target: null };
-  state.showMap = false;
-  ripple(svg, stage(), n);
-  say("倉庫から近い順に、交差点を確定しています", "");
-  const begin = performance.now();
-  const step = (/** @type {number} */ now) => {
-    const city = /** @type {NonNullable<typeof state.city>} */ (state.city);
-    city.shown = Math.min(order.length, Math.ceil((order.length * (now - begin)) / CITY_WAVE_MS));
-    if (city.shown < order.length) {
-      state.waveFrame = requestAnimationFrame(step);
-    } else {
-      state.waveFrame = 0;
-      state.showMap = true;
-      const took = ms < 1 ? "1ミリ秒もかかっていません" : `約${Math.round(ms)}ミリ秒です`;
-      const minutes = Math.round((order.length * AUTO_SETTLE_MS) / 60000);
-      say(
-        `全 ${order.length} 地点へのいちばん早い時間が求まりました。計算は${took}`,
-        `管制室と同じ速さで1つずつ確定したら約${minutes}分かかります。お届け先にしたい交差点をタップしよう`,
-      );
-    }
-    update();
-  };
-  state.waveFrame = requestAnimationFrame(step);
-  update();
-}
-
-/**
- * 大都市: 解き終えた後にタップした交差点まで、最短ルートを出す。
- * 全地点への最短はもう求まっているので、計算し直さずに prev をたどるだけでよい
- * @param {string} n
- */
-function showCityRoute(n) {
-  const city = /** @type {NonNullable<typeof state.city>} */ (state.city);
-  if (n === city.start) {
-    say("そこは倉庫です", "お届け先にしたい交差点をタップしよう。倉庫を動かすときは「倉庫を置き直す」");
-    city.target = null;
-    return;
-  }
-  city.target = n;
-  say(
-    `倉庫からここまで、いちばん早くて ${city.dist.get(n)}分`,
-    "全地点への最短はもう求まっているので、どこへのルートも計算し直さずに出せる。ほかの交差点もタップしてみよう",
-  );
-}
-
-/** 自動進行の次の層へ。種明かしのある層では、まだ出していなければ先に出す(2.2「各層の後には種明かしを挟む」) */
+/** 自動進行の次の層へ。解説のある層では、まだ出していなければ先に出す(2.2「各層の後には解説を挟む」) */
 function goNext() {
   if (!state.revealSeen && revealFor(stage(), state.mode)) {
     state.revealOpen = true;
@@ -352,11 +253,11 @@ function goNext() {
   else showTitle();
 }
 
-/** ステージを選ぶボタンに、配達の最高記録を添える。大都市は採点しないので添えない */
+/** ステージを選ぶボタンに、配達の最高記録を添える */
 function showStageStars() {
   stageButtons.forEach((b, i) => {
     const s = STAGES[i];
-    const best = s.dense ? 0 : bestStars(starStore, s.id);
+    const best = bestStars(starStore, s.id);
     b.textContent = `Stage ${i + 1} ${s.name}${best ? ` ${starText(best)}` : ""}`;
   });
 }
@@ -378,49 +279,9 @@ function startGame(stageIndex) {
   load(stageIndex, "A");
 }
 
-/**
- * 大都市: 倉庫からお届け先へ配達車を次々に出す(輻輳デモ、設計書 2.4)。
- * 各車は出発時点の所要時間で最短を計算するので、混んだ道を避けて迂回する
- */
-function startTraffic() {
-  const city = /** @type {NonNullable<typeof state.city>} */ (state.city);
-  const target = /** @type {string} */ (city.target);
-  const sim = new Traffic(stage(), { slowdown: CONGESTION_SLOWDOWN, msPerMinute: CONGESTION_MS_PER_MINUTE });
-  const traffic = { sim, routes: /** @type {string[]} */ ([]), frame: 0, timer: 0 };
-  state.traffic = traffic;
-  const send = () => {
-    traffic.routes.push(sim.dispatch(city.start, target).route.join(","));
-    if (traffic.routes.length < CONGESTION_CARS) traffic.timer = setTimeout(send, CONGESTION_INTERVAL_MS);
-  };
-  send();
-  say(
-    `配達車を ${CONGESTION_CARS}台、次々にお届け先へ出しています`,
-    "車が通っている道は混んで遅くなり、色が変わります。後から出る車は、出発したときの所要時間で最短を計算し直します",
-  );
-  let last = performance.now();
-  const step = (/** @type {number} */ now) => {
-    sim.advance(now - last);
-    last = now;
-    trafficFx(svg, stage(), sim);
-    if (traffic.routes.length < CONGESTION_CARS || sim.cars.length > 0) {
-      traffic.frame = requestAnimationFrame(step);
-      return;
-    }
-    const detours = traffic.routes.filter((r) => r !== traffic.routes[0]).length;
-    state.traffic = null;
-    say(
-      `全 ${CONGESTION_CARS}台が着きました。${detours}台が、混雑を避けて1台目と別のルートを通りました`,
-      "道の混み具合に合わせて計算し直すのは、インターネットで混んだ回線を避けて通信を流すのと同じ考え方です",
-    );
-    update();
-  };
-  traffic.frame = requestAnimationFrame(step);
-}
-
 function update() {
   const s = stage();
   const isA = state.mode === "A";
-  const isCity = state.mode === "C";
   const done = cleared();
   const d = state.delivery;
   const c = state.control;
@@ -428,37 +289,19 @@ function update() {
   // ヒント①② は現在地からの一手なので、毎回求め直す。③ は最短ルートを点線で出す
   const hint = isA && !d.finished && state.hintLevel > 0 ? d.hint(state.hintLevel) : null;
 
-  const city = state.city;
-
-  render(svg, s, isCity
-    ? {
-        mode: "C",
-        route: !city ? [] : city.target ? pathTo(city.prev, city.start, city.target) : [city.start],
-        settled: new Set(city ? city.order.slice(0, city.shown) : []),
-        frontier: new Set(),
-        labels: null,
-        ghost: null,
-        glow: [],
-        map: done && state.showMap ? city.dist : null,
-        tree: null,
-      }
-    : {
-        mode: state.mode,
-        route: d.route,
-        settled: c.done,
-        frontier: new Set(c.candidates()),
-        labels: isA ? null : c.dist,
-        ghost: isA && d.finished ? d.ghost().path : (hint?.path ?? null),
-        glow: g?.nodes ?? hint?.glow ?? [],
-        map: done && state.showMap ? state.opt.dist : null,
-        tree: !isA && done && state.showMap ? treeEdges(c.prev) : null,
-      });
+  render(svg, s, {
+    mode: state.mode,
+    route: d.route,
+    settled: c.done,
+    frontier: new Set(c.candidates()),
+    labels: isA ? null : c.dist,
+    ghost: isA && d.finished ? d.ghost().path : (hint?.path ?? null),
+    glow: g?.nodes ?? hint?.glow ?? [],
+    map: done && state.showMap ? state.opt.dist : null,
+    tree: !isA && done && state.showMap ? treeEdges(c.prev) : null,
+  });
 
   ui.stage.value = String(state.stageIndex);
-  // 大都市では、配達・管制室の切り替えと「1手戻る」を出さない
-  /** @type {HTMLElement} */ (ui.modeA.parentElement).hidden = isCity;
-  ui.undo.hidden = isCity;
-  ui.reset.textContent = isCity ? "倉庫を置き直す" : "リセット";
   ui.modeA.classList.toggle("active", isA);
   ui.modeB.classList.toggle("active", state.mode === "B");
   ui.undo.disabled = !isA || d.finished || d.route.length < 2;
@@ -469,8 +312,6 @@ function update() {
   ui.map.disabled = !done;
   ui.map.setAttribute("aria-pressed", String(done && state.showMap));
   ui.run.hidden = state.mode !== "B";
-  ui.traffic.hidden = !isCity || !done || !city?.target;
-  ui.traffic.disabled = state.traffic !== null;
   ui.run.disabled = state.autoTimer !== 0 || c.finished;
   // 最後のステージの後は、「次へ」の代わりに「タイトルへ」を出す
   ui.next.textContent = isLast() ? "タイトルへ" : "次へ";
@@ -521,10 +362,6 @@ ui.map.addEventListener("click", () => {
   update();
 });
 ui.run.addEventListener("click", runControl);
-ui.traffic.addEventListener("click", () => {
-  startTraffic();
-  update();
-});
 ui.skipGuide.addEventListener("click", () => {
   state.guideOff = true;
   update();
@@ -552,18 +389,6 @@ showStageStars();
 
 // タッチもタッチパッドも click で受ける
 svg.addEventListener("click", (e) => {
-  if (state.mode === "C") {
-    // 大都市は交差点が小さく間隔も狭いので、押した位置にいちばん近い交差点を選んだことにする
-    const ctm = /** @type {DOMMatrix} */ (svg.getScreenCTM());
-    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse());
-    const n = nearestNode(stage(), [p.x, p.y]);
-    // 1回目のタップで倉庫を置いて解き、解き終えた後のタップはお届け先にする。色付けと配達車の途中は受けない
-    if (state.traffic) return;
-    if (state.city === null) solveCity(n);
-    else if (cityDone()) showCityRoute(n);
-    update();
-    return;
-  }
   // 管制室は自動で進むので、タップを受けない
   if (state.mode === "B") return;
   const hit = /** @type {Element} */ (e.target).closest("[data-node]");

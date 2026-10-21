@@ -56,16 +56,15 @@
         <button type="button" id="reset">リセット</button>
         <button type="button" id="map" aria-pressed="false">到着時間マップ</button>
         <button type="button" id="run" class="primary" hidden>自動で解く</button>
-        <button type="button" id="traffic" class="primary" hidden>配達車を出す</button>
         <button type="button" id="skip-guide" hidden>案内を飛ばす</button>
         <span class="spacer"></span>
         <button type="button" id="next" class="primary">次へ</button>
       </header>
       <main class="board-wrap">
         <svg id="board" role="img" aria-label="地図"></svg>
-        <!-- 種明かし。クリア後に「次へ」を押したとき、次の層へ進む前に地図に重ねて出す -->
+        <!-- 解説。クリア後に「次へ」を押したとき、次の層へ進む前に地図に重ねて出す -->
         <section id="reveal" class="reveal" aria-labelledby="reveal-title" hidden>
-          <h2 id="reveal-title">種明かし</h2>
+          <h2 id="reveal-title">解説</h2>
           <dl id="reveal-list"></dl>
           <div class="reveal-actions">
             <button type="button" id="reveal-close">地図に戻る</button>

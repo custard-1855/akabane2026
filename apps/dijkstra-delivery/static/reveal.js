@@ -1,4 +1,4 @@
-// 種明かし。層を終えるたびに、ゲームの言葉を正式な用語と結びつける。DOM に依存させず、Node で直接テストする
+// 解説。層を終えるたびに、ゲームの言葉を正式な用語と結びつける。DOM に依存させず、Node で直接テストする
 // 文面は仮(設計書 2.8。10/26 までに仕上げる)
 
 /**
@@ -6,7 +6,7 @@
  * @typedef {{ game: string, term: string, note: string }} RevealItem
  */
 
-/** @type {Record<string, Partial<Record<"A" | "B" | "C", RevealItem[]>>>} */
+/** @type {Record<string, Partial<Record<"A" | "B", RevealItem[]>>>} */
 const REVEALS = {
   downtown: {
     A: [
@@ -41,9 +41,9 @@ const REVEALS = {
 };
 
 /**
- * その層を終えたあとに出す種明かし。出す用語のない層では null
+ * その層を終えたあとに出す解説。出す用語のない層では null
  * @param {Stage} stage
- * @param {"A" | "B" | "C"} mode
+ * @param {"A" | "B"} mode
  * @returns {RevealItem[] | null}
  */
 export function revealFor(stage, mode) {
