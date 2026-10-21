@@ -24,7 +24,7 @@ export function buildAdj(stage, { reverse = false, undirected = false } = {}) {
 }
 
 /**
- * 確定集合を持つ O(V²) 版。数百頂点(Stage 3 大都市)まではこれで足りる。
+ * 確定集合を持つ O(V²) 版。手で遊ぶステージの大きさならこれで足りる。
  * 同じ距離の候補は隣接表(= nodes の記述順)で先のものを選び、結果を決定的にする
  * @param {Adj} adj
  * @param {string} s
@@ -65,6 +65,15 @@ export function pathTo(prev, s, g) {
   const path = [g];
   while (path.at(-1) !== s) path.push(prev.get(path.at(-1)));
   return path.reverse();
+}
+
+/**
+ * 最短経路木の辺 [親, 子]。全地点への最短ルートを重ねると、S から枝分かれした木になる
+ * @param {Map<string, string>} prev
+ * @returns {[string, string][]}
+ */
+export function treeEdges(prev) {
+  return [...prev].map(([v, u]) => [u, v]);
 }
 
 /**
@@ -111,6 +120,35 @@ export class DeliveryRound {
     this.opt = dijkstra(this.adj, this.route[0]);
     this.optCost = this.opt.dist.get(this.goal);
     this.star2 = stage.star2;
+    /** 各交差点から G への最短。ヒント②で、現在地からの次の一手を求めるのに使う */
+    this.goalDist = distToGoal(stage);
+    /** 使ったヒントのいちばん上の段階。0 は未使用 */
+    this.hintLevelUsed = 0;
+  }
+
+  /**
+   * ヒント(2.6)。① 進める交差点、② 現在地から G への最短で次に進む交差点を光らせる。③ 最短ルートを示す。
+   * ③ を使ったラウンドは★1が上限になる
+   * @param {1 | 2 | 3} level
+   * @returns {{ glow: string[], path: string[] | null }}
+   */
+  hint(level) {
+    this.hintLevelUsed = Math.max(this.hintLevelUsed, level);
+    if (level === 3) return { glow: [], path: pathTo(this.opt.prev, this.route[0], this.goal) };
+    const here = this.route.at(-1);
+    const next = [...this.adj.get(here).keys()].filter((n) => !this.route.includes(n));
+    if (level === 1) return { glow: next, path: null };
+    // 遠回りした後でも、今いる所から G へいちばん早い一手を示す。袋小路に入る一手は勧めない
+    let best = null;
+    let bestCost = INF;
+    for (const n of next) {
+      const c = this.adj.get(here).get(n) + this.goalDist.get(n);
+      if (c < bestCost && canReach(this.adj, n, this.goal, this.route)) {
+        best = n;
+        bestCost = c;
+      }
+    }
+    return { glow: best === null ? [] : [best], path: null };
   }
 
   /** @param {string} n */
@@ -182,6 +220,8 @@ export class DeliveryRound {
   /** 経路ではなくコストで判定する。同点の最短ルートはどれでも★3 */
   stars() {
     const c = this.cost();
+    // 最短ルートを見たら(ヒント③)、そのとおりに進んでも★1
+    if (this.hintLevelUsed >= 3) return 1;
     if (c === this.optCost) return 3;
     if (c <= this.star2) return 2;
     return 1;
@@ -190,7 +230,7 @@ export class DeliveryRound {
 
 /**
  * 層B(管制室)のラウンド。札が最小の候補を確定し、隣の札を書き換えるのを繰り返す。
- * 管制室ではこれを自動で1手ずつ進めて見せ、大都市では一気に回す
+ * 管制室ではこれを自動で1手ずつ進めて見せる
  */
 export class ControlRound {
   /** @param {Stage} stage */
@@ -243,18 +283,4 @@ export class ControlRound {
     }
     return { node: n, relaxations };
   }
-}
-
-/**
- * start から全地点を自動で解く(Stage 3 大都市)。管制室と同じ手順を一気に回す。
- * order は確定した順で、波紋の演出にそのまま使う。prev は、お届け先までのルートを出すのに使う
- * @param {Stage} stage
- * @param {string} start
- */
-export function solveFrom(stage, start) {
-  const round = new ControlRound({ ...stage, start });
-  /** @type {string[]} */
-  const order = [];
-  for (let r = round.step(); r !== null; r = round.step()) order.push(r.node);
-  return { order, dist: round.dist, prev: round.prev };
 }

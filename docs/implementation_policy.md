@@ -5,7 +5,7 @@
 - 作成日: 2026-10-06(2026-10-15 改訂: 研究室サイトを別のリポジトリへ移したため、その記述を外した。2026-10-20 改訂: 特設サイトの方針を6章に加えた。アプリの前提を基盤から Django に改めた。特設サイトの日時と場所、ロゴ、色、告知の始め方を決めた)
 - 対象: ゲームのアプリ `apps/*`(1〜5章)、特設サイト `site/`(6章)
 - 用語: `GLOSSARY.md`
-- 関連: ゲームの設計 `docs/dijkstra_game_design.md`
+- 関連: ゲーム案と全ゲームに共通する方針 `docs/games.md`、ゲームの設計 `docs/dijkstra_game_design.md`
 - 研究室サイトは [kawahara-lab-site](https://github.com/custard-1855/kawahara-lab-site) で作っている(実装方針は同リポジトリの `docs/spec.md`)
 
 ---
