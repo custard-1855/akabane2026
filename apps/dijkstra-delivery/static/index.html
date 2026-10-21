@@ -11,8 +11,49 @@
     <script type="module" src="./main.js"></script>
   </head>
   <body>
+    <!-- ゲームを選ぶ画面。開くと最初に出す。試作の3本は、展示物にするかを遊んでから決める(docs/games.md 3.1) -->
+    <div id="select-screen" class="title-screen">
+      <header class="brand-bar">
+        <img class="brand-logo" src="logo.png" alt="" width="958" height="1000" />
+        <div class="brand-text">
+          <span class="brand-name">スカラベ・ネットワーク研究会</span>
+          <span class="brand-sub">川原研究室|赤羽台祭2026</span>
+        </div>
+      </header>
+      <main class="select-body">
+        <h1 class="select-title">あそぶゲームを選ぶ</h1>
+        <!-- 説明はプレイ中と同じく、ゲームの言葉だけで書く(docs/games.md 2章) -->
+        <ul class="game-list">
+          <li>
+            <button type="button" id="pick-dijkstra" class="game-card">
+              <span class="card-name">配達員ダイクストラ</span>
+              <span class="card-text">倉庫からお届け先まで、いちばん早いルートで荷物を届けよう。</span>
+            </button>
+          </li>
+          <li>
+            <a class="game-card" href="./kruskal/">
+              <span class="card-name">工事士クラスカル<span class="card-tag">試作</span></span>
+              <span class="card-text">街の局舎どうしを、できるだけ安い工事費で光ファイバーでつなごう。</span>
+            </a>
+          </li>
+          <li>
+            <a class="game-card" href="./welsh/">
+              <span class="card-name">電波技師ウェルシュ<span class="card-tag">試作</span></span>
+              <span class="card-text">混信しないように、基地局にできるだけ少ないチャンネルを割り当てよう。</span>
+            </a>
+          </li>
+          <li>
+            <a class="game-card" href="./ford/">
+              <span class="card-name">回線係フォード<span class="card-tag">試作</span></span>
+              <span class="card-text">データセンターから利用者へ、一度にできるだけ多くのデータを送ろう。</span>
+            </a>
+          </li>
+        </ul>
+      </main>
+    </div>
+
     <!-- タイトル画面。企画名は特設サイトの見出しと同じ書き方にする -->
-    <div id="title-screen" class="title-screen">
+    <div id="title-screen" class="title-screen" hidden>
       <header class="brand-bar">
         <!-- 特設サイト(akabane2026 main ee59521 の site/src/assets/logo.png)からコピーした。背景が白なので白地に直接置く -->
         <img class="brand-logo" src="logo.png" alt="" width="958" height="1000" />
@@ -36,6 +77,7 @@
             <button type="button" id="choose" class="quiet" aria-expanded="false">
               ステージを選ぶ
             </button>
+            <button type="button" id="to-select" class="quiet">ほかのゲームを選ぶ</button>
           </div>
           <div id="stage-list" class="stage-list" hidden></div>
         </div>
