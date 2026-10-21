@@ -9,6 +9,8 @@ import { roadKey } from "./logic.js";
  * @typedef {import("./logic.js").Stage} Stage
  * @typedef {{
  *   laid: Set<string>,          // 敷いた道
+ *   cycle: Set<string>,         // 敷いた道のうち、輪の一部の道
+ *   ghost: Set<string> | null,  // 完成の後に重ねる、最小の敷き方
  * }} ViewState
  */
 
@@ -35,6 +37,8 @@ export function buildMap(svg, stage) {
   svg.replaceChildren();
   svg.setAttribute("viewBox", `0 0 ${VIEW_W} ${VIEW_H}`);
   const roads = el("g", { class: "roads" }, svg);
+  // ゴーストは自分の敷いた道の上、局舎の下に描く
+  const ghosts = el("g", { class: "ghosts" }, svg);
   const nodes = el("g", { class: "nodes" }, svg);
   const labels = el("g", { class: "labels" }, svg);
   const pos = stage.nodes;
@@ -46,6 +50,7 @@ export function buildMap(svg, stage) {
     el("line", { x1, y1, x2, y2, class: "line" }, g);
     // 指で押しやすいよう、見た目より太い透明な線で当たり判定を取る
     el("line", { x1, y1, x2, y2, class: "hit", "stroke-width": ROAD_HIT_W, "data-road": key }, g);
+    el("line", { x1, y1, x2, y2, class: "ghost", "data-ghost": key }, ghosts);
 
     const [mx, my] = [(x1 + x2) / 2, (y1 + y2) / 2];
     const text = String(r.w);
@@ -71,6 +76,10 @@ export function render(svg, vs) {
   for (const g of svg.querySelectorAll("g.road")) {
     const key = /** @type {string} */ (g.getAttribute("data-road"));
     g.classList.toggle("laid", vs.laid.has(key));
+    g.classList.toggle("cycle", vs.cycle.has(key));
+  }
+  for (const line of svg.querySelectorAll("line.ghost")) {
+    line.classList.toggle("shown", vs.ghost?.has(/** @type {string} */ (line.getAttribute("data-ghost"))) ?? false);
   }
   for (const g of svg.querySelectorAll("g.cost")) {
     g.classList.toggle("laid", vs.laid.has(/** @type {string} */ (g.getAttribute("data-cost"))));

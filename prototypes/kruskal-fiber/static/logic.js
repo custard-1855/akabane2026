@@ -137,3 +137,16 @@ export function complete(stage, round) {
   if (!isConnected(Object.keys(stage.nodes), laidRoads(stage, round))) return round;
   return { ...round, done: true };
 }
+
+/**
+ * 1手戻る。最後に敷いた道か外した道を元に戻す。完成の後なら完成も取り消す。
+ * リセットは createRound() で最初の状態に戻す
+ * @param {Round} round
+ * @returns {Round}
+ */
+export function undo(round) {
+  const key = round.history.at(-1);
+  if (key === undefined) return round;
+  const laid = round.laid.includes(key) ? round.laid.filter((k) => k !== key) : [...round.laid, key];
+  return { laid, history: round.history.slice(0, -1), done: false };
+}

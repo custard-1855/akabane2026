@@ -6,6 +6,8 @@
   --road: #b4b9c2;
   --fiber: #ff922b; /* 自分で敷いた道。配達員ダイクストラの「ルート上」の橙 */
   --fiber-line: #a94a00;
+  --cycle: #e03131; /* 輪の一部になっている道 */
+  --ghost: var(--color-text);
   --node: #ffffff;
   --node-line: var(--color-text-sub);
 
@@ -141,6 +143,29 @@ button.primary:not(:disabled) {
 .road.laid .line {
   stroke: var(--fiber);
   stroke-width: 16;
+}
+
+/* 輪の一部の道。色に加えて破線にし、色だけに頼らない */
+.road.laid.cycle .line {
+  stroke: var(--cycle);
+  stroke-dasharray: 28 14;
+}
+
+/* 完成の後に重ねる最小の敷き方。自分の敷いた道(太い橙)と見分けられるよう、細い点線にする */
+.ghosts {
+  pointer-events: none;
+}
+
+.ghost {
+  display: none;
+  stroke: var(--ghost);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 2 18;
+}
+
+.ghost.shown {
+  display: inline;
 }
 
 /* 局舎 */
