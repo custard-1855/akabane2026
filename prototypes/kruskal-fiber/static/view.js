@@ -11,6 +11,9 @@ import { roadKey } from "./logic.js";
  *   laid: Set<string>,          // 敷いた道
  *   cycle: Set<string>,         // 敷いた道のうち、輪の一部の道
  *   ghost: Set<string> | null,  // 完成の後に重ねる、最小の敷き方
+ *   auto: boolean,              // 層B(クラスカル法が敷く)。敷いた道を青で描く
+ *   current: string | null,     // 層B: いま見ている道
+ *   skipped: Set<string>,       // 層B: 輪になるので飛ばした道
  * }} ViewState
  */
 
@@ -73,10 +76,13 @@ export function buildMap(svg, stage) {
  * @param {ViewState} vs
  */
 export function render(svg, vs) {
+  svg.classList.toggle("auto", vs.auto);
   for (const g of svg.querySelectorAll("g.road")) {
     const key = /** @type {string} */ (g.getAttribute("data-road"));
     g.classList.toggle("laid", vs.laid.has(key));
     g.classList.toggle("cycle", vs.cycle.has(key));
+    g.classList.toggle("current", vs.current === key);
+    g.classList.toggle("skipped", vs.skipped.has(key));
   }
   for (const line of svg.querySelectorAll("line.ghost")) {
     line.classList.toggle("shown", vs.ghost?.has(/** @type {string} */ (line.getAttribute("data-ghost"))) ?? false);

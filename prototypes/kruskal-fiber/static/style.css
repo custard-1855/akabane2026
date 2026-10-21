@@ -8,6 +8,9 @@
   --fiber-line: #a94a00;
   --cycle: #e03131; /* 輪の一部になっている道 */
   --ghost: var(--color-text);
+  --auto: #4a90e2; /* 層Bでクラスカル法が敷いた道。配達員ダイクストラの「確定」の青 */
+  --auto-line: #184f95;
+  --current: #2f9e44; /* 層Bでいま見ている道 */
   --node: #ffffff;
   --node-line: var(--color-text-sub);
 
@@ -151,6 +154,49 @@ button.primary:not(:disabled) {
   stroke-dasharray: 28 14;
 }
 
+/* 層B: クラスカル法が敷いた道は青、いま見ている道は緑の光、飛ばした道は細い破線 */
+.auto .road.laid .line {
+  stroke: var(--auto);
+}
+
+.auto .road.laid.cycle .line {
+  stroke: var(--cycle);
+  stroke-dasharray: 28 14;
+}
+
+.auto .road.current .line {
+  stroke: var(--current);
+  stroke-width: 22;
+  animation: glow 1.2s ease-in-out infinite;
+}
+
+.auto .road.current.cycle .line {
+  stroke: var(--cycle);
+}
+
+.auto .road.skipped:not(.current) .line {
+  stroke-width: 4;
+  stroke-dasharray: 6 12;
+}
+
+.auto .road .hit {
+  cursor: default;
+}
+
+.auto .cost.laid .cost-bg {
+  stroke: var(--auto-line);
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 /* 完成の後に重ねる最小の敷き方。自分の敷いた道(太い橙)と見分けられるよう、細い点線にする */
 .ghosts {
   pointer-events: none;
@@ -205,6 +251,50 @@ button.primary:not(:disabled) {
   text-anchor: middle;
   dominant-baseline: central;
   fill: var(--color-text);
+}
+
+/* ことばの対応。地図の上に重ね、ゲームの言葉と正式な用語を並べる(配達員ダイクストラの種明かしと同じ見た目) */
+.terms {
+  position: absolute;
+  top: 32px;
+  left: 48px;
+  right: 48px;
+  max-height: calc(100% - 64px);
+  overflow: auto;
+  padding: 32px 40px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-hero);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.12);
+}
+
+.terms h2 {
+  margin: 0 0 20px;
+  font-size: 32px;
+  font-weight: var(--heading-weight);
+}
+
+.terms dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 14px 32px;
+  margin: 0;
+  font-size: var(--game-msg-font);
+}
+
+.terms dt {
+  color: var(--color-text-sub);
+}
+
+.terms dd {
+  margin: 0;
+  font-weight: var(--heading-weight);
+}
+
+.terms-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 28px;
 }
 
 /* メッセージ欄 */
