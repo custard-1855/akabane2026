@@ -231,6 +231,30 @@ button.primary:not(:disabled) {
   fill: var(--color-text);
 }
 
+/* 完成の後に重ねる最大の送り方。自分の送る量(白い枠)と見分けられるよう、破線の枠にする */
+.ghost {
+  display: none;
+}
+
+.ghost.shown {
+  display: inline;
+}
+
+.ghost-bg {
+  fill: var(--color-surface);
+  stroke: var(--color-text);
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+}
+
+.ghost-text {
+  font-size: 22px;
+  font-weight: 500;
+  text-anchor: middle;
+  dominant-baseline: central;
+  fill: var(--color-text);
+}
+
 /* メッセージ欄 */
 .messages {
   padding: 12px 24px 18px;

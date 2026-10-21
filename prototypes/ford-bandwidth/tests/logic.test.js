@@ -13,6 +13,7 @@ import {
   starsFor,
   tap,
   totalSent,
+  undo,
 } from "../static/logic.js";
 
 const line = (u, v, cap) => ({ u, v, cap });
@@ -123,4 +124,32 @@ test("層A: 順方向のルートがなくなったら完成", () => {
   assert.equal(play(DIAMOND, [["S", "A", "B", "T"]]).done, true);
   assert.equal(play(DIAMOND, [["S", "A", "T"]]).done, false);
   assert.equal(play(DIAMOND, [["S", "A", "T"], ["S", "B", "T"]]).done, true);
+});
+
+test("1手戻る: 作りかけのルートなら、最後にタップした地点を外す", () => {
+  const r = undo(DIAMOND, play(DIAMOND, [["S", "A"]]));
+  assert.deepEqual(r.route, ["S"]);
+});
+
+test("1手戻る: ルートを作り始める前なら、最後に送ったルートを取り消す", () => {
+  const r = undo(DIAMOND, play(DIAMOND, [["S", "A", "T"], ["S", "B", "T"]]));
+  assert.deepEqual(r.flow, { "S-A": 1, "A-T": 1, "S-B": 0, "B-T": 0 });
+  assert.equal(sentTotal(r), 1);
+  assert.equal(r.done, false);
+});
+
+test("1手戻る: 完成の後も、最後に送ったルートを取り消して完成を外す", () => {
+  const r = undo(DIAMOND, play(DIAMOND, [["S", "A", "B", "T"]]));
+  assert.equal(r.done, false);
+  assert.equal(sentTotal(r), 0);
+  assert.equal(hasForwardRoute(DIAMOND, r.flow), true);
+});
+
+test("1手戻る: 何もしていなければ何もしない", () => {
+  assert.deepEqual(undo(DIAMOND, createRound(DIAMOND)), createRound(DIAMOND));
+});
+
+test("リセット: 何も送っていない最初の状態", () => {
+  const r = createRound(DIAMOND);
+  assert.deepEqual(r, { flow: {}, sent: [], route: ["S"], done: false });
 });

@@ -1,18 +1,21 @@
 // 起動と、入力 → 手番 → 描画の接続
 
-import { createRound, maxFlow, sentTotal, starsFor, tap } from "./logic.js";
+import { createRound, flowAfter, fordFulkersonSteps, maxFlow, sentTotal, starsFor, tap, undo } from "./logic.js";
 import { STAGE } from "./stages.js";
 import { buildMap, render } from "./view.js";
 
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const svg = /** @type {SVGSVGElement} */ (/** @type {unknown} */ ($("board")));
 const ui = {
+  undo: /** @type {HTMLButtonElement} */ ($("undo")),
+  reset: /** @type {HTMLButtonElement} */ ($("reset")),
   msg: $("msg"),
   sub: $("sub"),
 };
 
 const stage = STAGE;
 const max = maxFlow(stage);
+const best = flowAfter(fordFulkersonSteps(stage));
 const starText = (/** @type {number} */ n) => "★".repeat(n) + "☆".repeat(3 - n);
 const routeText = (/** @type {string[]} */ r) => r.join("→");
 
@@ -21,12 +24,15 @@ let round = createRound(stage);
 let note = "";
 
 function update() {
-  render(svg, stage, { flow: round.flow, route: round.done ? [] : round.route });
+  render(svg, stage, { flow: round.flow, route: round.done ? [] : round.route, ghost: round.done ? best : null });
   const total = sentTotal(round);
+  const untouched = round.sent.length === 0 && round.route.length === 1;
+  ui.undo.disabled = untouched;
+  ui.reset.disabled = untouched;
   if (round.done) {
     ui.msg.textContent = `完成! 送れた量 ${total} ${starText(starsFor(total, stage))}`;
-    ui.sub.textContent = `データセンターから利用者へのルートは、もうありません。送れる量の最大は ${max}`;
-  } else if (round.sent.length === 0 && round.route.length === 1) {
+    ui.sub.textContent = `データセンターから利用者へのルートは、もうありません。破線の枠は、最大(${max})まで送ったときの送る量`;
+  } else if (untouched) {
     ui.msg.textContent = "データセンター(S)から利用者(T)へ、矢印の向きに地点を順にタップしてルートを作ろう";
     ui.sub.textContent = note || "T に着くと、そのルートで送れるだけ送る。回線の数字は「送る量/帯域」。全体でできるだけ多く送ろう";
   } else {
@@ -48,6 +54,18 @@ svg.addEventListener("click", (ev) => {
   else if (result === "not_next") note = `${here} から ${n} へ、矢印の向きに進める回線はありません`;
   else note = "";
   round = next;
+  update();
+});
+
+ui.undo.addEventListener("click", () => {
+  round = undo(stage, round);
+  note = "";
+  update();
+});
+
+ui.reset.addEventListener("click", () => {
+  round = createRound(stage);
+  note = "";
   update();
 });
 
