@@ -11,6 +11,7 @@ import { lineKey } from "./logic.js";
  * @typedef {{
  *   flow: Flow,                 // 回線ごとの送る量
  *   route: string[],            // 層A: 作りかけのルート
+ *   ghost: Flow | null,         // 完成の後に重ねる、最大の送り方の送る量
  * }} ViewState
  */
 
@@ -79,6 +80,10 @@ export function buildMap(svg, stage) {
     const g = el("g", { class: "amount", "data-amount": key }, labels);
     el("rect", { x: mx - 46, y: my - 24, width: 92, height: 48, rx: 10, class: "amount-bg" }, g);
     el("text", { x: mx, y: my, class: "amount-text" }, g);
+    // 最大の送り方のゴースト。自分の送る量の下に、破線の枠で「最大 n」と出す
+    const gg = el("g", { class: "ghost", "data-ghost": key }, labels);
+    el("rect", { x: mx - 50, y: my + 28, width: 100, height: 36, rx: 8, class: "ghost-bg" }, gg);
+    el("text", { x: mx, y: my + 46, class: "ghost-text" }, gg);
   }
 
   for (const [n, [x, y]] of Object.entries(pos)) {
@@ -129,6 +134,9 @@ export function render(svg, stage, vs) {
     const g = /** @type {SVGGElement} */ (svg.querySelector(`g.amount[data-amount="${key}"]`));
     /** @type {SVGTextElement} */ (g.querySelector(".amount-text")).textContent = `${f}/${e.cap}`;
     g.classList.toggle("full", f >= e.cap);
+    const gg = /** @type {SVGGElement} */ (svg.querySelector(`g.ghost[data-ghost="${key}"]`));
+    gg.classList.toggle("shown", vs.ghost !== null);
+    /** @type {SVGTextElement} */ (gg.querySelector(".ghost-text")).textContent = `最大 ${vs.ghost?.[key] ?? 0}`;
   }
 
   const here = vs.route.at(-1);

@@ -227,3 +227,23 @@ export function tap(stage, round, node) {
  * @param {Round} round
  */
 export const sentTotal = (round) => round.sent.reduce((sum, s) => sum + s.amount, 0);
+
+/**
+ * 1手戻る。作りかけのルートがあれば最後の地点を外し、なければ最後に送ったルートを取り消す。
+ * リセットは createRound() で最初の状態に戻す
+ * @param {Stage} stage
+ * @param {Round} round
+ * @returns {Round}
+ */
+export function undo(stage, round) {
+  if (round.route.length > 1) return { ...round, route: round.route.slice(0, -1), done: false };
+  const last = round.sent.at(-1);
+  if (!last) return round;
+  /** @type {Flow} */
+  const flow = { ...round.flow };
+  for (let i = 0; i + 1 < last.route.length; i++) {
+    const k = lineKey(/** @type {Line} */ (lineOf(stage, last.route[i], last.route[i + 1])));
+    flow[k] = (flow[k] ?? 0) - last.amount;
+  }
+  return { flow, sent: round.sent.slice(0, -1), route: [stage.start], done: false };
+}
