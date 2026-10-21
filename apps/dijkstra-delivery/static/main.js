@@ -23,6 +23,9 @@ const FLOW = STAGES.flatMap((_, stageIndex) => [
 const $ = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const svg = /** @type {SVGSVGElement} */ (/** @type {unknown} */ ($("board")));
 const ui = {
+  selectScreen: $("select-screen"),
+  pickDijkstra: $("pick-dijkstra"),
+  toSelect: $("to-select"),
   titleScreen: $("title-screen"),
   gameScreen: $("game-screen"),
   titleMap: /** @type {SVGSVGElement} */ (/** @type {unknown} */ ($("title-map"))),
@@ -262,10 +265,17 @@ function showStageStars() {
   });
 }
 
+/** ゲームを選ぶ画面を出す。試作の3本は別のページなので、ここからリンクで移る */
+function showSelect() {
+  ui.titleScreen.hidden = true;
+  ui.selectScreen.hidden = false;
+}
+
 /** 次の来場者に端末を渡せるよう、タイトル画面に戻す */
 function showTitle() {
   stopAuto();
   clearFx(svg);
+  ui.selectScreen.hidden = true;
   ui.gameScreen.hidden = true;
   ui.titleScreen.hidden = false;
   ui.stageList.hidden = true;
@@ -373,6 +383,8 @@ ui.revealClose.addEventListener("click", () => {
   update();
 });
 ui.toTitle.addEventListener("click", showTitle);
+ui.pickDijkstra.addEventListener("click", showTitle);
+ui.toSelect.addEventListener("click", showSelect);
 ui.start.addEventListener("click", () => startGame(0));
 ui.choose.addEventListener("click", () => {
   ui.stageList.hidden = !ui.stageList.hidden;
@@ -410,4 +422,4 @@ svg.addEventListener("click", (e) => {
 
 // タイトル画面の挿絵として、Stage 1 の地図をゲームと同じ描画で置く
 buildMap(ui.titleMap, STAGES[0]);
-showTitle();
+showSelect();
