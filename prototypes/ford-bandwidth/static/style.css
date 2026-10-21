@@ -1,0 +1,255 @@
+/* 配達員ダイクストラ(akabane2026 dev 8da5579 の apps/dijkstra-delivery/static/style.css)の外枠をコピーし、
+   地図の部分をデータを送る遊び方に合わせて書き直した。
+   外枠(色、フォント、角丸、見出しの太さ)は tokens.css に揃え、地図の状態の色はゲーム独自の値にする */
+:root {
+  /* 地図の状態の色。遊び方を伝える色なので、サイトのトークンには合わせない */
+  --line: #b4b9c2;
+  --flow: #4a90e2; /* 送っている量。配達員ダイクストラの「確定」の青 */
+  --flow-line: #184f95;
+  --route: #ff922b; /* 作りかけのルート。配達員ダイクストラの「ルート上」の橙 */
+  --route-line: #a94a00;
+  --full: #e03131; /* 帯域いっぱいの回線 */
+  --node: #ffffff;
+  --node-line: var(--color-text-sub);
+
+  /* ゲームの大きさ。14型の端末を指で操作するので、サイトより大きくする */
+  --game-tap: 48px;
+  --game-button-font: 18px;
+  --game-msg-font: 22px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  letter-spacing: var(--letter-spacing-body);
+  /* ダブルタップでの拡大と文字選択を止める。ホバーに頼る表示は作らない */
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+button {
+  font: inherit;
+  font-size: var(--game-button-font);
+  letter-spacing: inherit;
+  min-height: var(--game-tap);
+  padding: 0 22px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-link);
+  outline-offset: 2px;
+}
+
+.segmented button.active {
+  background: var(--color-navy);
+  color: var(--color-bg);
+}
+
+button.primary:not(:disabled) {
+  background: var(--color-navy);
+  color: var(--color-bg);
+}
+
+.game-screen {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+
+.toolbar .game-name {
+  margin-right: 12px;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+
+.toolbar .spacer {
+  flex: 1;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+}
+
+.segmented button {
+  min-height: calc(var(--game-tap) - 6px);
+}
+
+.board-wrap {
+  position: relative;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 12px 16px;
+}
+
+#board {
+  width: 100%;
+  height: 100%;
+  background: var(--color-surface);
+  border-radius: var(--radius-hero);
+}
+
+/* 回線。矢印で向きを示す */
+.line {
+  stroke: var(--line);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.arrow {
+  fill: var(--line);
+}
+
+.arrow-flow {
+  fill: var(--flow-line);
+}
+
+.flows {
+  pointer-events: none;
+}
+
+.flow {
+  stroke: var(--flow);
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+
+.overlay {
+  pointer-events: none;
+}
+
+.overlay .route {
+  fill: none;
+  stroke: var(--route);
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.7;
+}
+
+/* 地点 */
+.node .dot {
+  fill: var(--node);
+  stroke: var(--node-line);
+  stroke-width: 3;
+}
+
+.node .hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.node.on-route .dot {
+  fill: var(--route);
+  stroke: var(--route-line);
+  stroke-width: 7;
+}
+
+.node.current .dot {
+  stroke-width: 11;
+}
+
+/* 地図の文字は、読み込む太さ(400 と 500)のうち太いほうで描く */
+.node .name {
+  font-size: 30px;
+  font-weight: 500;
+  text-anchor: middle;
+  dominant-baseline: central;
+  fill: var(--color-text);
+  pointer-events: none;
+}
+
+.labels {
+  pointer-events: none;
+}
+
+.caption {
+  font-size: 24px;
+  fill: var(--color-text-sub);
+  paint-order: stroke;
+  stroke: var(--color-surface);
+  stroke-width: 6;
+}
+
+/* 送る量/帯域。帯域いっぱいの回線は、枠を赤い太線にする(数字でも 5/5 と分かる) */
+.amount-bg {
+  fill: var(--color-bg);
+  stroke: var(--color-line-strong);
+  stroke-width: 2;
+}
+
+.amount.full .amount-bg {
+  stroke: var(--full);
+  stroke-width: 5;
+}
+
+.amount-text {
+  font-size: 28px;
+  font-weight: 500;
+  text-anchor: middle;
+  dominant-baseline: central;
+  fill: var(--color-text);
+}
+
+/* メッセージ欄 */
+.messages {
+  padding: 12px 24px 18px;
+  border-top: 1px solid var(--color-line);
+  min-height: 108px;
+  line-height: 1.6;
+}
+
+.messages p {
+  margin: 0;
+}
+
+#msg {
+  font-size: var(--game-msg-font);
+  font-weight: var(--heading-weight);
+}
+
+#sub {
+  margin-top: 6px;
+  font-size: var(--game-button-font);
+  color: var(--color-text-sub);
+}
