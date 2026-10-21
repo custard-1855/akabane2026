@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  captionFor,
   createRound,
   flowAfter,
   fordFulkersonSteps,
@@ -152,4 +153,29 @@ test("1手戻る: 何もしていなければ何もしない", () => {
 test("リセット: 何も送っていない最初の状態", () => {
   const r = createRound(DIAMOND);
   assert.deepEqual(r, { flow: {}, sent: [], route: ["S"], done: false });
+});
+
+test("字幕: 順方向だけの手は「ルートで n 送る」", () => {
+  const step = { route: ["S", "A", "T"], hops: [{ key: "S-A", forward: true }, { key: "A-T", forward: true }], amount: 1 };
+  assert.equal(captionFor(step), "S→A→T で 1 送る");
+});
+
+test("字幕: 付け替えの手は、どこへ届けて、どれを取り消し、どこへ回すかを言う", () => {
+  const step = {
+    route: ["S", "B", "D", "F", "A", "C", "E", "T"],
+    hops: [
+      { key: "S-B", forward: true },
+      { key: "B-D", forward: true },
+      { key: "D-F", forward: true },
+      { key: "A-F", forward: false },
+      { key: "A-C", forward: true },
+      { key: "C-E", forward: true },
+      { key: "E-T", forward: true },
+    ],
+    amount: 3,
+  };
+  assert.equal(
+    captionFor(step),
+    "付け替え: S→B→D→F で F に 3 届ける。その分、A→F で送っていた 3 を取り消し、A からは A→C→E→T へ回す",
+  );
 });

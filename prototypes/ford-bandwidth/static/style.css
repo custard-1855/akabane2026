@@ -9,6 +9,9 @@
   --route: #ff922b; /* 作りかけのルート。配達員ダイクストラの「ルート上」の橙 */
   --route-line: #a94a00;
   --full: #e03131; /* 帯域いっぱいの回線 */
+  --back: #9c36b5; /* 付け替え(逆向きの取り消し) */
+  --cut: var(--color-text); /* いちばん細い切れ目 */
+  --side: #d0e4fb; /* 切れ目のデータセンター側の地点 */
   --node: #ffffff;
   --node-line: var(--color-text-sub);
 
@@ -144,6 +147,51 @@ button.primary:not(:disabled) {
   fill: var(--flow-line);
 }
 
+.arrow-hop {
+  fill: var(--route-line);
+}
+
+.arrow-back {
+  fill: var(--back);
+}
+
+/* 層B: いま送るルート(橙)と、付け替え(紫の破線の逆向きの矢印) */
+.overlay .hop {
+  stroke: var(--route);
+  stroke-width: 14;
+  stroke-linecap: round;
+  opacity: 0.75;
+}
+
+.overlay .back {
+  stroke: var(--back);
+  stroke-width: 8;
+  stroke-dasharray: 18 10;
+}
+
+.overlay .back-text {
+  font-size: 26px;
+  font-weight: 500;
+  text-anchor: middle;
+  dominant-baseline: central;
+  fill: var(--back);
+  paint-order: stroke;
+  stroke: var(--color-surface);
+  stroke-width: 8;
+}
+
+/* いちばん細い切れ目。色に加えて、太い黒の縁取りにする */
+.overlay .cut {
+  stroke: var(--cut);
+  stroke-width: 30;
+  stroke-linecap: round;
+  opacity: 0.5;
+}
+
+.node.side .dot {
+  fill: var(--side);
+}
+
 .flows {
   pointer-events: none;
 }
@@ -253,6 +301,50 @@ button.primary:not(:disabled) {
   text-anchor: middle;
   dominant-baseline: central;
   fill: var(--color-text);
+}
+
+/* ことばの対応。地図の上に重ね、ゲームの言葉と正式な用語を並べる(配達員ダイクストラの種明かしと同じ見た目) */
+.terms {
+  position: absolute;
+  top: 32px;
+  left: 48px;
+  right: 48px;
+  max-height: calc(100% - 64px);
+  overflow: auto;
+  padding: 32px 40px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-hero);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.12);
+}
+
+.terms h2 {
+  margin: 0 0 20px;
+  font-size: 32px;
+  font-weight: var(--heading-weight);
+}
+
+.terms dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 14px 32px;
+  margin: 0;
+  font-size: var(--game-msg-font);
+}
+
+.terms dt {
+  color: var(--color-text-sub);
+}
+
+.terms dd {
+  margin: 0;
+  font-weight: var(--heading-weight);
+}
+
+.terms-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 28px;
 }
 
 /* メッセージ欄 */
