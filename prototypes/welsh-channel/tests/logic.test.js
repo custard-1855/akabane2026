@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   canComplete,
+  captionFor,
   channelCount,
   conflicts,
   greedySteps,
@@ -91,4 +92,15 @@ test("層A: 全部にチャンネルがあり、混信がなければ完成に�
   assert.equal(canComplete(SMALL, { A: 1, B: 2, C: 3, D: 1 }), false);
   assert.equal(canComplete(SMALL, { A: 1, B: 2, C: 3, D: 1, E: 1 }), false);
   assert.equal(canComplete(SMALL, { A: 1, B: 2, C: 3, D: 1, E: 2 }), true);
+});
+
+test("字幕: 今までの番号で足りるときは「いちばん小さい番号」", () => {
+  const steps = greedySteps(SMALL, ["A", "B", "C", "D", "E"]);
+  assert.equal(captionFor(steps, 3), "D: 隣が使っていない中でいちばん小さい 1 にする");
+});
+
+test("字幕: 新しい番号を使うときは、隣が使っている番号を添える", () => {
+  const steps = greedySteps(SMALL, ["A", "B", "C", "D", "E"]);
+  assert.equal(captionFor(steps, 0), "A: 隣が使っていない中でいちばん小さい 1 にする");
+  assert.equal(captionFor(steps, 2), "C: 隣が 1・2 を使っているので、新しいチャンネル 3 を使う");
 });
