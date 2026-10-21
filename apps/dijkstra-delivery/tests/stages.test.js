@@ -22,8 +22,6 @@ for (const s of STAGES) {
     assert.deepEqual(validateStage(s), []);
   });
 
-  // 大都市は S から G へ届ける遊びがないので、設計値を持たない
-  if (s.dense) continue;
   test(`${s.id}: 最短距離が設計値 expectedCost と一致する`, () => {
     assert.equal(dijkstra(buildAdj(s), s.start ?? "S").dist.get(s.goal ?? "G"), s.expectedCost);
   });
@@ -125,14 +123,4 @@ test("Stage 2 の目先の罠: S から出る最小の道で始めると、最�
   const withoutS = { ...s, edges: s.edges.filter((e) => e.u !== "S" && e.v !== "S") };
   const best = w + dijkstra(buildAdj(withoutS), t).dist.get("G");
   assert.ok(best > s.star2, `S-${t} で始めた最善 ${best} が star2 ${s.star2} 以下`);
-});
-
-test("dense のステージ(大都市)では、ノードの間隔と辺がノードの上を通る検査を外す", () => {
-  const s = base();
-  // A を S と G の間の線上に、S のすぐ近くに置き、S-G を結ぶ
-  s.nodes.A = [300, 450];
-  s.edges.push({ u: "S", v: "G", w: 9 });
-  assert.match(validateStage(s).join("\n"), /近すぎる/);
-  assert.match(validateStage(s).join("\n"), /上を通る/);
-  assert.deepEqual(validateStage({ ...s, dense: true }), []);
 });

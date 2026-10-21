@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>回線係フォード(試作)|スカラベ・ネットワーク研究会</title>
+    <link rel="stylesheet" href="./fonts/ibm-plex-sans-jp/400.css" />
+    <link rel="stylesheet" href="./fonts/ibm-plex-sans-jp/500.css" />
+    <link rel="stylesheet" href="./tokens.css" />
+    <link rel="stylesheet" href="./style.css" />
+    <script type="module" src="./main.js"></script>
+  </head>
+  <body>
+    <!-- 試作なのでタイトル画面は置かない(docs/games.md 3.2) -->
+    <div class="game-screen">
+      <header class="toolbar">
+        <span class="game-name">回線係フォード</span>
+        <div class="segmented" role="group" aria-label="モード">
+          <button type="button" id="mode-a" class="active">自分で送る</button>
+          <button type="button" id="mode-b">自動で送る</button>
+        </div>
+        <button type="button" id="undo">1手戻る</button>
+        <button type="button" id="reset">リセット</button>
+        <span class="spacer"></span>
+        <button type="button" id="run" class="primary" hidden>スタート</button>
+        <button type="button" id="show-terms" hidden>ことばの対応</button>
+      </header>
+      <main class="board-wrap">
+        <svg id="board" role="img" aria-label="地図"></svg>
+        <!-- 層Bの後に出す、ゲームの言葉と正式な用語の対応表(docs/games.md 6.7)。解説の本文は試作では作らない -->
+        <section id="terms" class="terms" aria-labelledby="terms-title" hidden>
+          <h2 id="terms-title">ことばの対応</h2>
+          <dl id="terms-list"></dl>
+          <div class="terms-actions">
+            <button type="button" id="terms-close" class="primary">地図に戻る</button>
+          </div>
+        </section>
+      </main>
+      <footer class="messages" aria-live="polite">
+        <p id="msg"></p>
+        <p id="sub"></p>
+      </footer>
+    </div>
+  </body>
+</html>

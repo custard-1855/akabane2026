@@ -1,18 +1,19 @@
 // SVG の描画と演出。状態は持たず、main.js から渡された見た目の状態を描くだけにする
 
-import { CITY_DOT_R, NODE_R, HIT_R, VIEW_W, VIEW_H } from "./config.js";
+import { NODE_R, HIT_R, VIEW_W, VIEW_H } from "./config.js";
 
 /**
  * @typedef {import("./stages.js").Stage} Stage
  * @typedef {{
- *   mode: "A" | "B" | "C",            // C は大都市
- *   route: string[],                 // 層A: プレイヤーのルート。大都市では倉庫からお届け先までの最短ルート([倉庫] だけのこともある)
- *   settled: Set<string>,            // 層B と大都市: 確定
+ *   mode: "A" | "B",
+ *   route: string[],                 // 層A: プレイヤーのルート
+ *   settled: Set<string>,            // 層B: 確定
  *   frontier: Set<string>,           // 層B: 候補
  *   labels: Map<string, number> | null, // 層B: 札
  *   ghost: string[] | null,          // 層A: クリア後の最短ルート
  *   glow: string[],                  // 配達の案内で光らせる交差点(ヒント①でも使う)
  *   map: Map<string, number> | null, // 到着時間マップ(クリア後のみ)
+ *   tree: [string, string][] | null, // 層B: 最短経路木の辺(全地点を確定した後、到着時間マップと一緒に)
  * }} ViewState
  */
 
@@ -42,9 +43,6 @@ const layer = (svg, name) => /** @type {SVGGElement} */ (svg.querySelector(`g.${
 export function buildMap(svg, stage) {
   svg.replaceChildren();
   svg.setAttribute("viewBox", `0 0 ${VIEW_W} ${VIEW_H}`);
-  // 大都市は交差点を小さい点で描き、道の所要時間と交差点の名前は出さない(読めないうえ、道を自分で選ばない)
-  const dense = Boolean(stage.dense);
-  svg.classList.toggle("dense", dense);
   const defs = el("defs", {}, svg);
   // 同じページに地図が2枚(タイトル画面とゲーム)あるので、矢印の id を地図ごとに分ける
   const arrowId = `arrow-${svg.id}`;
@@ -78,7 +76,6 @@ export function buildMap(svg, stage) {
       ...(e.directed ? { "marker-end": `url(#${arrowId})` } : {}),
     }, edges);
 
-    if (dense) continue;
     const [mx, my] = [(pos[e.u][0] + pos[e.v][0]) / 2, (pos[e.u][1] + pos[e.v][1]) / 2];
     const text = String(e.w);
     const w = 22 * text.length + 24;
@@ -86,14 +83,11 @@ export function buildMap(svg, stage) {
     el("text", { x: mx, y: my, class: "weight" }, labels).textContent = text;
   }
   el("g", { class: "overlay" }, edges);
+  // 緩和の1本ずつの表示で光らせる道。ノードの下に描き、交差点の名前を隠さない
+  el("g", { class: "relax-edges" }, edges);
 
   for (const [n, [x, y]] of Object.entries(pos)) {
     const g = el("g", { class: "node", "data-node": n }, nodes);
-    if (dense) {
-      // タップは押した位置で受ける(nearestNode)ので、当たり判定の円は置かない
-      el("circle", { cx: x, cy: y, r: CITY_DOT_R, class: "dot" }, g);
-      continue;
-    }
     el("circle", { cx: x, cy: y, r: NODE_R + 16, class: "glow-ring" }, g);
     el("circle", { cx: x, cy: y, r: NODE_R, class: "dot" }, g);
     el("text", { x, y, class: "name" }, g).textContent = n;
@@ -141,8 +135,9 @@ function rampColor(t) {
 export function render(svg, stage, vs) {
   const overlay = /** @type {SVGGElement} */ (svg.querySelector("g.overlay"));
   overlay.replaceChildren();
-  if (vs.mode !== "B") polyline(overlay, stage, vs.route, "route");
+  if (vs.mode === "A") polyline(overlay, stage, vs.route, "route");
   if (vs.ghost) polyline(overlay, stage, vs.ghost, "ghost");
+  for (const [u, v] of vs.tree ?? []) polyline(overlay, stage, [u, v], "tree");
 
   const maxDist = vs.map ? Math.max(...[...vs.map.values()].filter(Number.isFinite), 1) : 1;
   const current = vs.route.at(-1);
@@ -152,11 +147,8 @@ export function render(svg, stage, vs) {
     const dot = /** @type {SVGCircleElement} */ (g.querySelector(".dot"));
     const onRoute = vs.mode === "A" && vs.route.includes(n);
     g.classList.toggle("on-route", onRoute);
-    g.classList.toggle(
-      "current",
-      vs.mode === "C" ? n === vs.route[0] || n === current : vs.mode === "A" && n === current && !vs.map,
-    );
-    g.classList.toggle("settled", vs.mode !== "A" && vs.settled.has(n));
+    g.classList.toggle("current", vs.mode === "A" && n === current && !vs.map);
+    g.classList.toggle("settled", vs.mode === "B" && vs.settled.has(n));
     g.classList.toggle("frontier", vs.mode === "B" && vs.frontier.has(n));
     g.classList.toggle("glow", vs.glow.includes(n));
     g.classList.toggle("map", vs.map !== null);
@@ -194,7 +186,37 @@ export function ripple(svg, stage, n) {
   c.addEventListener("animationend", () => c.remove());
 }
 
+/**
+ * 緩和の1本ずつの表示。確定した交差点から出る道を光らせ、道の横に計算を出す。
+ * 次の確定で clearRelax() が消すまで残し、その手で見た道を見比べられるようにする
+ * @param {SVGSVGElement} svg
+ * @param {Stage} stage
+ * @param {import("./relax.js").RelaxLine} line
+ */
+export function relaxFx(svg, stage, line) {
+  const cls = `relax${line.updated ? " updated" : ""}`;
+  const [x1, y1] = stage.nodes[line.via];
+  const [x2, y2] = stage.nodes[line.node];
+  const edge = el("g", { class: cls }, /** @type {SVGGElement} */ (svg.querySelector("g.relax-edges")));
+  el("line", { x1, y1, x2, y2, class: "relax-edge" }, edge);
+  // 計算は書き換える先の交差点の下に出す。1手で見る道は向きが違うので、文どうしが重なりにくい
+  const g = el("g", { class: cls }, layer(svg, "fx"));
+  const rect = el("rect", { class: "relax-bg", rx: 10 }, g);
+  const text = el("text", { x: x2, y: y2 + NODE_R + 34, class: "relax-text" }, g);
+  text.textContent = line.text;
+  const box = /** @type {SVGTextElement} */ (text).getBBox();
+  for (const [k, v] of Object.entries({
+    x: box.x - 12, y: box.y - 4, width: box.width + 24, height: box.height + 8,
+  })) rect.setAttribute(k, String(v));
+}
+
+/** @param {SVGSVGElement} svg */
+export function clearRelax(svg) {
+  for (const g of svg.querySelectorAll("g.relax")) g.remove();
+}
+
 /** @param {SVGSVGElement} svg */
 export function clearFx(svg) {
   layer(svg, "fx")?.replaceChildren();
+  svg.querySelector("g.relax-edges")?.replaceChildren();
 }

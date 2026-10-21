@@ -14,8 +14,12 @@
     <!-- タイトル画面。企画名は特設サイトの見出しと同じ書き方にする -->
     <div id="title-screen" class="title-screen">
       <header class="brand-bar">
-        <span class="brand-name">スカラベ・ネットワーク研究会</span>
-        <span class="brand-sub">川原研究室|赤羽台祭2026</span>
+        <!-- 特設サイト(akabane2026 main ee59521 の site/src/assets/logo.png)からコピーした。背景が白なので白地に直接置く -->
+        <img class="brand-logo" src="logo.png" alt="" width="958" height="1000" />
+        <div class="brand-text">
+          <span class="brand-name">スカラベ・ネットワーク研究会</span>
+          <span class="brand-sub">川原研究室|赤羽台祭2026</span>
+        </div>
       </header>
       <main class="title-body">
         <div class="title-text">
@@ -48,6 +52,7 @@
           <button type="button" id="mode-b" data-mode="B">管制室</button>
         </div>
         <button type="button" id="undo">1手戻る</button>
+        <button type="button" id="hint">ヒント</button>
         <button type="button" id="reset">リセット</button>
         <button type="button" id="map" aria-pressed="false">到着時間マップ</button>
         <button type="button" id="run" class="primary" hidden>自動で解く</button>
@@ -57,6 +62,15 @@
       </header>
       <main class="board-wrap">
         <svg id="board" role="img" aria-label="地図"></svg>
+        <!-- 解説。クリア後に「次へ」を押したとき、次の層へ進む前に地図に重ねて出す -->
+        <section id="reveal" class="reveal" aria-labelledby="reveal-title" hidden>
+          <h2 id="reveal-title">解説</h2>
+          <dl id="reveal-list"></dl>
+          <div class="reveal-actions">
+            <button type="button" id="reveal-close">地図に戻る</button>
+            <button type="button" id="reveal-next" class="primary">次へ</button>
+          </div>
+        </section>
       </main>
       <footer class="messages" aria-live="polite">
         <p id="msg"></p>

@@ -1,7 +1,6 @@
 // ステージデータと validateStage。座標は viewBox 1600×900 基準
 
-import { generateCity } from "./city.js";
-import { CITY_SEED, HIT_R, MARGIN, MIN_EDGE_GAP, MIN_NODE_GAP, VIEW_H, VIEW_W } from "./config.js";
+import { HIT_R, MARGIN, MIN_EDGE_GAP, MIN_NODE_GAP, VIEW_H, VIEW_W } from "./config.js";
 import { INF, buildAdj, dijkstra } from "./logic.js";
 
 /**
@@ -14,11 +13,10 @@ import { INF, buildAdj, dijkstra } from "./logic.js";
  *   name: string, desc: string,
  *   nodes: Record<string, [number, number]>,
  *   edges: Edge[],
- *   expectedCost?: number,   // 大都市(dense)にはない
- *   star2?: number,          // 大都市(dense)にはない
+ *   expectedCost: number,
+ *   star2: number,
  *   start?: string, goal?: string,
  *   allowNegative?: boolean,
- *   dense?: boolean,
  * }} Stage
  */
 
@@ -75,7 +73,6 @@ export const STAGES = [
     expectedCost: 18,
     star2: 20,
   },
-  generateCity(CITY_SEED),
 ];
 
 /**
@@ -131,9 +128,6 @@ export function validateStage(stage) {
       errors.push(`${n} (${x}, ${y}) が viewBox の余白にはみ出している`);
     }
   }
-  // 大都市は交差点を小さい点で描き、押した位置にいちばん近い交差点としてタップを受けるので、
-  // タップ判定の円の間隔と、辺がノードの上を通るかは検査しない
-  if (stage.dense) return errors;
   for (let i = 0; i < pts.length; i++) {
     for (let j = i + 1; j < pts.length; j++) {
       const [a, p] = pts[i];

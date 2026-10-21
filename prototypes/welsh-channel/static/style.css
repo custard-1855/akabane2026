@@ -1,0 +1,368 @@
+/* 配達員ダイクストラ(akabane2026 dev 8da5579 の apps/dijkstra-delivery/static/style.css)の外枠をコピーし、
+   地図の部分をチャンネルを割り当てる遊び方に合わせて書き直した。
+   外枠(色、フォント、角丸、見出しの太さ)は tokens.css に揃え、地図の状態の色はゲーム独自の値にする */
+:root {
+  /* 地図の状態の色。遊び方を伝える色なので、サイトのトークンには合わせない */
+  --pair: #b4b9c2;
+  --conflict: #e03131; /* 混信している隣どうし */
+  --node: #ffffff;
+  --node-line: var(--color-text-sub);
+  --current: #2f9e44; /* 層Bでいま塗っている基地局 */
+  /* チャンネルの色。番号も書くので、色だけで見分けなくてよい */
+  --ch-1: #4a90e2;
+  --ch-2: #ff922b;
+  --ch-3: #51cf66;
+  --ch-4: #cc5de8;
+  --ch-5: #fcc419;
+
+  /* ゲームの大きさ。14型の端末を指で操作するので、サイトより大きくする */
+  --game-tap: 48px;
+  --game-button-font: 18px;
+  --game-msg-font: 22px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  letter-spacing: var(--letter-spacing-body);
+  /* ダブルタップでの拡大と文字選択を止める。ホバーに頼る表示は作らない */
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+button {
+  font: inherit;
+  font-size: var(--game-button-font);
+  letter-spacing: inherit;
+  min-height: var(--game-tap);
+  padding: 0 22px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-link);
+  outline-offset: 2px;
+}
+
+.segmented button.active {
+  background: var(--color-navy);
+  color: var(--color-bg);
+}
+
+button.primary:not(:disabled) {
+  background: var(--color-navy);
+  color: var(--color-bg);
+}
+
+.game-screen {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+
+.toolbar .game-name {
+  margin-right: 12px;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+
+.toolbar .spacer {
+  flex: 1;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+}
+
+.segmented button {
+  min-height: calc(var(--game-tap) - 6px);
+}
+
+.board-wrap {
+  position: relative;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 12px 16px;
+}
+
+#board {
+  width: 100%;
+  height: 100%;
+  background: var(--color-surface);
+  border-radius: var(--radius-hero);
+}
+
+/* 隣どうし。混信している線は、色に加えて太い破線にし、色だけに頼らない */
+.pair {
+  stroke: var(--pair);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.pair.conflict {
+  stroke: var(--conflict);
+  stroke-width: 12;
+  stroke-dasharray: 24 12;
+}
+
+/* 基地局 */
+.node .dot {
+  fill: var(--node);
+  stroke: var(--node-line);
+  stroke-width: 3;
+}
+
+.node .hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.node.ch-1 .dot {
+  fill: var(--ch-1);
+}
+.node.ch-2 .dot {
+  fill: var(--ch-2);
+}
+.node.ch-3 .dot {
+  fill: var(--ch-3);
+}
+.node.ch-4 .dot {
+  fill: var(--ch-4);
+}
+.node.ch-5 .dot {
+  fill: var(--ch-5);
+}
+
+.node[class*="ch-"] .dot {
+  stroke: var(--color-text);
+  stroke-width: 4;
+}
+
+/* 地図の文字は、読み込む太さ(400 と 500)のうち太いほうで描く */
+.node .num {
+  font-size: 36px;
+  font-weight: 500;
+  text-anchor: middle;
+  dominant-baseline: central;
+  fill: var(--color-text);
+  pointer-events: none;
+}
+
+.node .name {
+  font-size: 26px;
+  font-weight: 500;
+  text-anchor: middle;
+  dominant-baseline: central;
+  fill: var(--color-text-sub);
+  paint-order: stroke;
+  stroke: var(--color-surface);
+  stroke-width: 6;
+  pointer-events: none;
+}
+
+/* 完成の後に重ねる最小の割り当て。外側の破線の輪と、右上の小さい番号で示す */
+.node .ghost-ring,
+.node .ghost-num {
+  display: none;
+  pointer-events: none;
+}
+
+.node.ghost .ghost-ring {
+  display: inline;
+  fill: none;
+  stroke-width: 6;
+  stroke-dasharray: 4 10;
+  stroke-linecap: round;
+}
+
+.node.ghost .ghost-num {
+  display: inline;
+  font-size: 26px;
+  font-weight: 500;
+  text-anchor: middle;
+  dominant-baseline: central;
+  fill: var(--color-text);
+  paint-order: stroke;
+  stroke: var(--color-surface);
+  stroke-width: 6;
+}
+
+.node.gh-1 .ghost-ring {
+  stroke: var(--ch-1);
+}
+.node.gh-2 .ghost-ring {
+  stroke: var(--ch-2);
+}
+.node.gh-3 .ghost-ring {
+  stroke: var(--ch-3);
+}
+.node.gh-4 .ghost-ring {
+  stroke: var(--ch-4);
+}
+.node.gh-5 .ghost-ring {
+  stroke: var(--ch-5);
+}
+
+/* 層Bでいま塗っている基地局。外側の輪を脈打たせる */
+.node .glow-ring {
+  fill: none;
+  stroke: var(--current);
+  stroke-width: 8;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.node.current .glow-ring {
+  animation: glow 1.2s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* 2回の結果と自分の答えを並べる。地図の代わりに、小さい地図を3枚横に置く */
+.compare {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 16px;
+}
+
+.compare figure {
+  margin: 0;
+}
+
+.compare svg {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  background: var(--color-surface);
+  border-radius: var(--radius-hero);
+  pointer-events: none;
+}
+
+.compare figcaption {
+  margin-top: 10px;
+  font-size: var(--game-msg-font);
+  text-align: center;
+}
+
+.compare figcaption strong {
+  font-size: 40px;
+  font-weight: 500;
+}
+
+/* ことばの対応。地図の上に重ね、ゲームの言葉と正式な用語を並べる(配達員ダイクストラの解説と同じ見た目) */
+.terms {
+  position: absolute;
+  top: 32px;
+  left: 48px;
+  right: 48px;
+  max-height: calc(100% - 64px);
+  overflow: auto;
+  padding: 32px 40px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-hero);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.12);
+}
+
+.terms h2 {
+  margin: 0 0 20px;
+  font-size: 32px;
+  font-weight: var(--heading-weight);
+}
+
+.terms dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 14px 32px;
+  margin: 0;
+  font-size: var(--game-msg-font);
+}
+
+.terms dt {
+  color: var(--color-text-sub);
+}
+
+.terms dd {
+  margin: 0;
+  font-weight: var(--heading-weight);
+}
+
+.terms-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 28px;
+}
+
+/* メッセージ欄 */
+.messages {
+  padding: 12px 24px 18px;
+  border-top: 1px solid var(--color-line);
+  min-height: 108px;
+  line-height: 1.6;
+}
+
+.messages p {
+  margin: 0;
+}
+
+#msg {
+  font-size: var(--game-msg-font);
+  font-weight: var(--heading-weight);
+}
+
+#sub {
+  margin-top: 6px;
+  font-size: var(--game-button-font);
+  color: var(--color-text-sub);
+}

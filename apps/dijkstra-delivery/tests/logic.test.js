@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { INF, buildAdj, dijkstra, distToGoal, pathTo } from "../static/logic.js";
+import { INF, buildAdj, dijkstra, distToGoal, pathTo, treeEdges } from "../static/logic.js";
 import { STAGES } from "../static/stages.js";
 import { oneway } from "./graphs.js";
 
@@ -31,4 +31,10 @@ test("distToGoal は一方通行を逆にたどる(一方通行のグラフの A
   const toGoal = distToGoal(oneway);
   assert.equal(toGoal.get("A"), 11);
   assert.equal(toGoal.get("G"), 0);
+});
+
+test("最短経路木: Stage 1 の木は 8 本で、同点の C は先に確定する A から伸びる", () => {
+  const { prev } = dijkstra(buildAdj(stage("downtown")), "S");
+  const edges = treeEdges(prev).map(([u, v]) => `${u}-${v}`).sort();
+  assert.deepEqual(edges, ["A-C", "A-D", "B-E", "D-F", "D-H", "H-G", "S-A", "S-B"]);
 });
