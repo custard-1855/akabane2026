@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  captionFor,
   complete,
+  cyclePath,
   createRound,
   cycleRoads,
   isConnected,
@@ -125,4 +127,21 @@ test("リセット: 何も敷いていない最初の状態に戻る", () => {
   r = complete(SMALL, r);
   assert.deepEqual(createRound(), { laid: [], history: [], done: false });
   assert.equal(totalCost(laidRoads(SMALL, createRound())), 0);
+});
+
+test("輪の道筋: 敷いた道で u から v へ行く道筋の道を返す", () => {
+  const laid = [road("A", "B", 1), road("B", "C", 2), road("C", "D", 4)];
+  assert.deepEqual(cyclePath(laid, "A", "C").sort(), ["A-B", "B-C"]);
+});
+
+test("輪の道筋: つながっていなければ空", () => {
+  assert.deepEqual(cyclePath([road("A", "B", 1)], "A", "D"), []);
+});
+
+test("字幕: 敷く手は「いちばん安い道 X(n万円)を敷く」", () => {
+  assert.equal(captionFor({ road: road("A", "B", 3), action: "lay" }), "いちばん安い道 A–B(3万円)を敷く");
+});
+
+test("字幕: 飛ばす手は「X を敷くと輪になるので飛ばす」", () => {
+  assert.equal(captionFor({ road: road("B", "E", 5), action: "skip" }), "B–E(5万円)を敷くと輪になるので飛ばす");
 });

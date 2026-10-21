@@ -150,3 +150,49 @@ export function undo(round) {
   const laid = round.laid.includes(key) ? round.laid.filter((k) => k !== key) : [...round.laid, key];
   return { laid, history: round.history.slice(0, -1), done: false };
 }
+
+/**
+ * 敷いた道で u から v へ行く道筋の道の key。層Bで、飛ばす道が閉じる輪を見せるのに使う
+ * @param {Road[]} roads 敷いた道(輪のない形)
+ * @param {string} u
+ * @param {string} v
+ * @returns {string[]}
+ */
+export function cyclePath(roads, u, v) {
+  /** @type {Map<string, Road>} 局舎 → そこへ来た道 */
+  const came = new Map();
+  const seen = new Set([u]);
+  const queue = [u];
+  while (queue.length > 0) {
+    const n = /** @type {string} */ (queue.shift());
+    if (n === v) break;
+    for (const r of roads) {
+      const m = r.u === n ? r.v : r.v === n ? r.u : null;
+      if (m === null || seen.has(m)) continue;
+      seen.add(m);
+      came.set(m, r);
+      queue.push(m);
+    }
+  }
+  if (!seen.has(v)) return [];
+  const out = [];
+  for (let n = v; n !== u; ) {
+    const r = /** @type {Road} */ (came.get(n));
+    out.push(roadKey(r));
+    n = r.u === n ? r.v : r.u;
+  }
+  return out;
+}
+
+/** @param {Road} r 字幕に出す道の名前 */
+const roadName = (r) => `${r.u}–${r.v}(${r.w}万円)`;
+
+/**
+ * 層Bの1手の字幕(docs/games.md 4.4)
+ * @param {KruskalStep} step
+ */
+export function captionFor(step) {
+  return step.action === "lay"
+    ? `いちばん安い道 ${roadName(step.road)}を敷く`
+    : `${roadName(step.road)}を敷くと輪になるので飛ばす`;
+}

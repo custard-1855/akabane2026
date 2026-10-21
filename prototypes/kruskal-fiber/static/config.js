@@ -7,3 +7,6 @@ export const VIEW_H = 900;
 export const NODE_R = 30;
 /** 道のタップ判定の太さ。見た目の線より太い透明な線で受ける */
 export const ROAD_HIT_W = 56;
+
+/** 層Bで、クラスカル法が道を1本見る間隔(ミリ秒)。字幕1行と、飛ばすときの輪を見られる長さにする */
+export const AUTO_STEP_MS = 1800;
