@@ -2,7 +2,7 @@
 // 配達員ダイクストラ(akabane2026 dev 8da5579 の apps/dijkstra-delivery/static/view.js)の地図の描画(有向辺の矢印を含む)をコピーして、
 // データを送る遊び方に合わせて直した
 
-import { FLOW_MAX_W, HIT_R, NODE_R, VIEW_H, VIEW_W } from "./config.js";
+import { BACK_OFFSET, FLOW_MAX_W, HIT_R, NODE_R, VIEW_H, VIEW_W } from "./config.js";
 import { lineKey } from "./logic.js";
 
 /**
@@ -12,6 +12,10 @@ import { lineKey } from "./logic.js";
  *   flow: Flow,                 // 回線ごとの送る量
  *   route: string[],            // 層A: 作りかけのルート
  *   ghost: Flow | null,         // 完成の後に重ねる、最大の送り方の送る量
+ *   hops: import("./logic.js").Hop[] | null, // 層B: いま送るルート。逆向きの区間は付け替え
+ *   amount: number,             // 層B: いま送る量(付け替えの矢印に「取り消し −n」と添える)
+ *   cut: Set<string> | null,    // 層B: いちばん細い切れ目の回線
+ *   side: Set<string> | null,   // 層B: 切れ目のデータセンター側の地点
  * }} ViewState
  */
 
@@ -59,7 +63,7 @@ export function buildMap(svg, stage) {
   svg.setAttribute("viewBox", `0 0 ${VIEW_W} ${VIEW_H}`);
   const defs = el("defs", {}, svg);
   // 矢印の大きさは線の太さによらず一定にする(送る量で線の太さが変わっても、向きが同じように読める)
-  for (const name of ["arrow", "arrow-flow"]) {
+  for (const name of ["arrow", "arrow-flow", "arrow-hop", "arrow-back"]) {
     const marker = el("marker", {
       id: `${name}-${svg.id}`, viewBox: "0 0 10 10", refX: 9, refY: 5,
       markerWidth: 28, markerHeight: 28, orient: "auto-start-reverse", markerUnits: "userSpaceOnUse",
@@ -127,6 +131,28 @@ export function render(svg, stage, vs) {
   if (vs.route.length >= 2) {
     el("polyline", { points: vs.route.map((n) => pos[n].join(",")).join(" "), class: "route" }, overlay);
   }
+  for (const h of vs.hops ?? []) {
+    const [u, v] = h.key.split("-");
+    if (h.forward) {
+      el("line", { ...trimmed(pos[u], pos[v]), class: "hop", "marker-end": `url(#arrow-hop-${svg.id})` }, overlay);
+      continue;
+    }
+    // 付け替え: 回線を少しずらした所に、逆向き(v → u)の紫の破線の矢印を重ねる
+    const [dx, dy] = [pos[v][0] - pos[u][0], pos[v][1] - pos[u][1]];
+    const len = Math.hypot(dx, dy);
+    const [ox, oy] = [(-dy / len) * BACK_OFFSET, (dx / len) * BACK_OFFSET];
+    const t = trimmed(pos[v], pos[u]);
+    el("line", {
+      x1: t.x1 + ox, y1: t.y1 + oy, x2: t.x2 + ox, y2: t.y2 + oy,
+      class: "back", "marker-end": `url(#arrow-back-${svg.id})`,
+    }, overlay);
+    const [mx, my] = [(pos[u][0] + pos[v][0]) / 2 + ox * 3.2, (pos[u][1] + pos[v][1]) / 2 + oy * 3.2];
+    el("text", { x: mx, y: my, class: "back-text" }, overlay).textContent = `取り消し −${vs.amount}`;
+  }
+  for (const e of stage.edges) {
+    if (!vs.cut?.has(lineKey(e))) continue;
+    el("line", { ...trimmed(pos[e.u], pos[e.v]), class: "cut" }, overlay);
+  }
 
   for (const e of stage.edges) {
     const key = lineKey(e);
@@ -144,5 +170,6 @@ export function render(svg, stage, vs) {
     const n = /** @type {string} */ (g.getAttribute("data-node"));
     g.classList.toggle("on-route", vs.route.includes(n));
     g.classList.toggle("current", n === here);
+    g.classList.toggle("side", vs.side?.has(n) ?? false);
   }
 }

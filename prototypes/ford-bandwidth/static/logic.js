@@ -247,3 +247,22 @@ export function undo(stage, round) {
   }
   return { flow, sent: round.sent.slice(0, -1), route: [stage.start], done: false };
 }
+
+/**
+ * 層Bの1手の字幕。付け替えが1か所の手では、どこへ届けて、どれを取り消し、どこへ回すかを言う
+ * @param {FordStep} step
+ */
+export function captionFor(step) {
+  const back = step.hops.map((h, i) => ({ h, i })).filter((x) => !x.h.forward);
+  if (back.length === 0) return `${step.route.join("→")} で ${step.amount} 送る`;
+  if (back.length > 1) return `付け替えを${back.length}か所使って、${step.route.join("→")} で ${step.amount} 増やす`;
+  const { h, i } = back[0];
+  const [u, v] = h.key.split("-");
+  // i 番目の区間は route[i](= v)から route[i + 1](= u)へ、u→v を逆にたどる
+  const before = step.route.slice(0, i + 1);
+  const after = step.route.slice(i + 1);
+  return (
+    `付け替え: ${before.join("→")} で ${v} に ${step.amount} 届ける。` +
+    `その分、${u}→${v} で送っていた ${step.amount} を取り消し、${u} からは ${after.join("→")} へ回す`
+  );
+}
