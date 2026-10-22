@@ -33,6 +33,8 @@ const ui = {
   reset: /** @type {HTMLButtonElement} */ ($("reset")),
   run: /** @type {HTMLButtonElement} */ ($("run")),
   showTerms: $("show-terms"),
+  playOther: $("play-other"),
+  handOver: $("hand-over"),
   terms: $("terms"),
   termsList: $("terms-list"),
   termsClose: $("terms-close"),
@@ -115,6 +117,8 @@ function updateB() {
   ui.run.disabled = state.shown >= 0 && !finished;
   ui.run.textContent = finished ? "もう一度" : "スタート";
   ui.showTerms.hidden = !finished;
+  ui.playOther.hidden = !finished;
+  ui.handOver.hidden = !finished;
   if (state.shown < 0) {
     ui.msg.textContent = "工事費の安い道から順に、1本ずつ敷くかどうかを決めていきます";
     ui.sub.textContent = "「スタート」を押そう";
@@ -136,6 +140,8 @@ function update() {
   ui.run.hidden = a;
   if (a) {
     ui.showTerms.hidden = true;
+    ui.playOther.hidden = true;
+    ui.handOver.hidden = true;
     updateA();
   } else updateB();
 }
@@ -155,8 +161,11 @@ function setMode(mode) {
   update();
 }
 
-// 選ぶ画面(配達員ダイクストラの index.html)に戻る
-$("to-select").addEventListener("click", () => location.assign("../"));
+// 同じ人が続けて遊ぶときは、入門を飛ばしてゲームを選ぶ画面(配達員ダイクストラの index.html)に戻る。
+// 来場者が交代するときは、アプリを開き直して入門から始める
+$("to-select").addEventListener("click", () => location.assign("../#select"));
+ui.playOther.addEventListener("click", () => location.assign("../#select"));
+ui.handOver.addEventListener("click", () => location.assign("../"));
 
 svg.addEventListener("click", (ev) => {
   if (state.mode !== "A") return;
