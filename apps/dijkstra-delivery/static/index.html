@@ -8,11 +8,15 @@
     <link rel="stylesheet" href="./fonts/ibm-plex-sans-jp/500.css" />
     <link rel="stylesheet" href="./tokens.css" />
     <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./intro/style.css" />
     <script type="module" src="./main.js"></script>
   </head>
   <body>
-    <!-- ゲームを選ぶ画面。開くと最初に出す。試作の3本は、展示物にするかを遊んでから決める(docs/games.md 3.1) -->
-    <div id="select-screen" class="title-screen">
+    <!-- 入門。開くと最初に出し、終えるとゲームを選ぶ画面に移る。飛ばす手段は置かない(GLOSSARY.md の入門) -->
+    <div id="intro-screen" class="intro-screen" hidden></div>
+
+    <!-- ゲームを選ぶ画面。入門を終えると出す。試作の3本は、展示物にするかを遊んでから決める(docs/games.md 3.1) -->
+    <div id="select-screen" class="title-screen" hidden>
       <header class="brand-bar">
         <img class="brand-logo" src="logo.png" alt="" width="958" height="1000" />
         <div class="brand-text">

@@ -2,6 +2,7 @@
 
 import { AUTO_SETTLE_MS, RELAX_EDGE_MS } from "./config.js";
 import { guideStep } from "./guide.js";
+import { startIntro } from "./intro/main.js";
 import { ControlRound, DeliveryRound, INF, buildAdj, dijkstra, treeEdges } from "./logic.js";
 import { relaxLines, stepInterval } from "./relax.js";
 import { revealFor } from "./reveal.js";
@@ -23,6 +24,7 @@ const FLOW = STAGES.flatMap((_, stageIndex) => [
 const $ = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const svg = /** @type {SVGSVGElement} */ (/** @type {unknown} */ ($("board")));
 const ui = {
+  introScreen: $("intro-screen"),
   selectScreen: $("select-screen"),
   pickDijkstra: $("pick-dijkstra"),
   toSelect: $("to-select"),
@@ -265,8 +267,17 @@ function showStageStars() {
   });
 }
 
+/** 入門を最初の段から出す。終えるとゲームを選ぶ画面に移る */
+function showIntro() {
+  ui.selectScreen.hidden = true;
+  ui.titleScreen.hidden = true;
+  ui.introScreen.hidden = false;
+  startIntro(ui.introScreen, showSelect);
+}
+
 /** ゲームを選ぶ画面を出す。試作の3本は別のページなので、ここからリンクで移る */
 function showSelect() {
+  ui.introScreen.hidden = true;
   ui.titleScreen.hidden = true;
   ui.selectScreen.hidden = false;
 }
@@ -422,4 +433,4 @@ svg.addEventListener("click", (e) => {
 
 // タイトル画面の挿絵として、Stage 1 の地図をゲームと同じ描画で置く
 buildMap(ui.titleMap, STAGES[0]);
-showSelect();
+showIntro();

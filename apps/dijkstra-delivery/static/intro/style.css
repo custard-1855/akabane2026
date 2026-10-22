@@ -1,0 +1,199 @@
+/* 入門。色と大きさはゲーム(../style.css)の値に合わせる。
+   ゲームの地図と同じクラス名(.edge、.weight など)を使うので、すべて .intro-screen の下に閉じる */
+.intro-screen {
+  --marked: #2f9e44;
+  --term: var(--color-navy);
+  --hint-bg: #fff4d6;
+  --hint-line: #8a6a00;
+
+  height: 100%;
+}
+
+.intro-screen button {
+  font-size: 20px;
+  min-height: 52px;
+  padding: 0 26px;
+}
+
+/* ---- グラフ ---- */
+.intro-screen .graph-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.intro-screen .graph-wrap > svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.intro-screen .edge {
+  stroke: var(--road);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+.intro-screen .edge.on {
+  stroke: var(--route);
+  stroke-width: 12;
+}
+.intro-screen .edge.removed {
+  stroke-dasharray: 4 18;
+  opacity: 0.4;
+}
+.intro-screen .hit {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 60;
+  cursor: pointer;
+}
+.intro-screen .node {
+  fill: #fff;
+  stroke: var(--node-line);
+  stroke-width: 4;
+}
+.intro-screen .node.on {
+  fill: var(--on-route);
+  stroke: var(--on-route-line);
+}
+.intro-screen .node.marked {
+  fill: #b2f2bb;
+  stroke: var(--marked);
+}
+.intro-screen .node.focus {
+  stroke: var(--route);
+  stroke-width: 8;
+}
+.intro-screen .node-label {
+  font-size: 34px;
+  font-weight: 500;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+.intro-screen .weight circle {
+  fill: #fff;
+  stroke: var(--color-line-strong);
+  stroke-width: 3;
+}
+.intro-screen .weight text {
+  font-size: 32px;
+  font-weight: 500;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+/* ---- 吹き出し ---- */
+.intro-screen .bubble-fo {
+  pointer-events: none;
+  overflow: visible;
+}
+.intro-screen .bubble-box {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.intro-screen .above .bubble-box {
+  justify-content: flex-end;
+}
+.intro-screen .bubble {
+  max-width: 100%;
+  padding: 18px 24px;
+  border-radius: 18px;
+  font-size: 26px;
+  line-height: 1.6;
+  box-shadow: 0 6px 20px rgb(15 37 71 / 0.18);
+  animation: intro-rise 0.35s ease-out;
+}
+.intro-screen .bubble strong {
+  display: block;
+  font-size: 34px;
+  font-weight: 500;
+}
+.intro-screen .bubble.term {
+  background: var(--term);
+  color: #fff;
+}
+.intro-screen .bubble.hint {
+  background: var(--hint-bg);
+  color: var(--color-text);
+  border: 2px solid var(--hint-line);
+}
+@keyframes intro-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+/* ---- 字幕と操作 ---- */
+.intro-layout {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+.intro-screen .stage {
+  position: relative;
+  min-height: 0;
+  padding: 0 40px;
+}
+.intro-caption {
+  display: flex;
+  align-items: baseline;
+  gap: 28px;
+  padding: 22px 40px 10px;
+}
+.intro-caption p {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 500;
+}
+.intro-screen .progress {
+  flex: none;
+  padding: 4px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-sub);
+  font-size: 20px;
+}
+.intro-screen .controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  min-height: 92px;
+  padding-bottom: 24px;
+}
+.intro-screen .themes {
+  display: flex;
+  gap: 12px;
+}
+.intro-screen .themes button.seen {
+  box-shadow: inset 0 0 0 2px var(--color-line-strong);
+}
+.intro-screen .themes button.selected {
+  background: var(--color-navy);
+  color: #fff;
+}
+.intro-screen .sum,
+.intro-screen .theme-card {
+  position: absolute;
+  right: 40px;
+  top: 20px;
+  padding: 14px 22px;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  font-size: 24px;
+}
+.intro-screen .theme-card {
+  max-width: 420px;
+}
+.intro-screen .theme-card p {
+  margin: 0 0 6px;
+}
+.intro-screen .theme-card .q {
+  font-weight: 500;
+}
+.intro-screen .theme-card .g {
+  color: var(--color-text-sub);
+  font-size: 20px;
+}
