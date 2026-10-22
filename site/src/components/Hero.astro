@@ -2,6 +2,7 @@
 // 研究室サイト(kawahara-lab-site 2231987 の src/components/Hero.astro)からコピーした。正本は研究室サイトにある
 // トップのみ。角丸の面の中で、有名なグラフが回転し、その上を信号が伝わる(src/hero/)。
 // ドラッグで回り、クリックで形ごとの処理(探索・塗り分け)を実行する。
+// 下に図形の切り替えと形の説明を出す(研究室サイトでは検証用で、公開ページには出さない)。
 // prefers-reduced-motion では止まった1枚を表示する。JavaScript が無ければ面だけが残る
 ---
 
@@ -72,21 +73,23 @@
       height: 320px;
     }
   }
-  /* 検証用の図形切り替え(開発サーバーか ?dev のときだけ出る) */
-  :global(nav.dev) {
+  /* 図形の切り替えと、いま見えている形の説明(src/hero/shape-panel.ts が作る) */
+  :global(.shape-panel) {
+    padding: 12px 0 0;
+  }
+  :global(.shape-panel nav) {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 6px 10px;
-    padding: 12px 0;
     font-size: 13px;
     color: var(--color-text-sub);
   }
-  :global(nav.dev .tag) {
+  :global(.shape-panel .tag) {
     font-family: var(--font-mono);
     font-size: 11px;
   }
-  :global(nav.dev button) {
+  :global(.shape-panel button) {
     font: inherit;
     color: var(--color-text);
     background: transparent;
@@ -95,8 +98,18 @@
     padding: 3px 11px;
     cursor: pointer;
   }
-  :global(nav.dev button[aria-pressed="true"]) {
+  :global(.shape-panel button[aria-pressed="true"]) {
     background: var(--color-navy);
     color: var(--color-bg);
+  }
+  :global(.shape-desc) {
+    margin: 12px 0 0;
+    max-width: 48em;
+    font-size: 14px;
+    line-height: 1.8;
+  }
+  :global(.shape-desc strong) {
+    margin-right: 0.75em;
+    font-weight: var(--heading-weight);
   }
 </style>

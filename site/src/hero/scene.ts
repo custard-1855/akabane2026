@@ -1,4 +1,5 @@
 // 研究室サイト(kawahara-lab-site 2231987 の src/hero/scene.ts)からコピーした。正本は研究室サイトにある
+// 特設サイトでは、形ごとの説明(desc)と、動きを減らす設定で形を選んだときの修正(研究室サイト 3db3a58 時点の setShape)を足した
 // 回転するグラフと、その上を伝わる信号の状態。時間を進める(update)が、描き方と DOM は知らない
 import { ALGOS, type Algo, type AlgoId, type SceneEvent } from "./algorithms";
 import { BASE_TILT, CFG } from "./config";
@@ -6,16 +7,32 @@ import { fullerene, geodesic, hypercube, toGraph, torus, type Shape } from "./gr
 import { clamp, type Vec3 } from "./math";
 import { PAL } from "./palette";
 
-/** 見せる形と、クリックで実行する処理 */
-export type ShowcaseShape = Shape & { algo: AlgoId };
+/** 見せる形と、クリックで実行する処理。desc はヒーローの下に出す、形と処理の説明 */
+export type ShowcaseShape = Shape & { algo: AlgoId; desc: string };
 
 /** 形ごとに、その形の特徴がよく見える処理を割り当てる */
 export function showcase(): ShowcaseShape[] {
   return [
-    { ...fullerene(), algo: "edges" }, // 辺がちょうど3色で塗り分けられる
-    { ...torus(), algo: "bfs" }, // 波が輪を回り込み、反対側でぶつかる
-    { ...hypercube(), algo: "bipartite" }, // 4つの中で唯一、2色で塗れる
-    { ...geodesic(), algo: "three" }, // 3色では塗れず、4色で塗り直す
+    {
+      ...fullerene(),
+      algo: "edges", // 辺がちょうど3色で塗り分けられる
+      desc: "炭素の原子60個が、サッカーボールと同じ形につながった分子です。どの点からも線が3本ずつ出ています。点をクリックすると、1つの点に集まる3本の線がすべて違う色になるよう、線を3色で塗り分けます。",
+    },
+    {
+      ...torus(),
+      algo: "bfs", // 波が輪を回り込み、反対側でぶつかる
+      desc: "ドーナツの表面に点を格子状に並べ、となりどうしを線でつないだ形です。点をクリックすると、そこから信号が線を1本ずつたどって波のように広がり、輪を回り込んで反対側でぶつかります。",
+    },
+    {
+      ...hypercube(),
+      algo: "bipartite", // 4つの中で唯一、2色で塗れる
+      desc: "正方形を立方体へ広げるように、次元を6つまで増やした形です。点は64個あり、どの点からも線が6本出ています。点をクリックすると、線でつながった点どうしが同じ色にならないよう、2色を交互に塗ります。4つの形のうち、2色で塗り分けられるのはこの形だけです。",
+    },
+    {
+      ...geodesic(),
+      algo: "three", // 3色では塗れず、4色で塗り直す
+      desc: "三角形を組み合わせて球に近づけた形で、ドーム型の屋根などに使われます。点をクリックすると、線でつながった点どうしが同じ色にならないよう、3色で塗れるかを試します。行き詰まったら戻って塗り直し、3色で塗りきれなければ4色で塗ります。",
+    },
   ];
 }
 
@@ -54,7 +71,7 @@ export type SceneHooks = {
 export class Scene {
   list = showcase();
   si = 0;
-  /** 検証用に固定した形の番号(null は自動の切り替え) */
+  /** 選んで固定した形の番号(null は自動の切り替え) */
   lock: number | null = null;
   rot = 0;
   tilt = BASE_TILT;
@@ -193,7 +210,7 @@ export class Scene {
     this.hoverA += ((this.hoverOn ? 1 : 0) - this.hoverA) * Math.min(1, dt * 8);
   }
 
-  // 検証用: 形を選んで固定する(null で自動の切り替えに戻す)
+  // 形を選んで固定する(null で自動の切り替えに戻す)
   setShape(i: number | null) {
     this.lock = i;
     if (i === null) {
@@ -203,7 +220,9 @@ export class Scene {
     this.si = i;
     this.load(this.list[i]);
     this.shapeT = 0;
-    this.fade = 0;
+    // 動きを減らす設定ではフェードインが進まないので、すぐに静止画まで進める
+    if (this.reduceMotion) this.settle();
+    else this.fade = 0;
   }
 
   // 信号を3秒ぶん進める(形は切り替えない)
