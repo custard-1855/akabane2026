@@ -21,6 +21,7 @@ npm run dev
 | 日時と場所                                     | `site.config.ts` の `date`、`place`                  |
 | トップの企画の紹介、スカラベの解説、展示の概要 | `pages/index.astro`                                  |
 | 展示紹介のページ(冒頭の紹介と、展示物ごとの節) | `pages/exhibits/index.astro`                         |
+| トップのヒーローの下に出る、形ごとの説明       | `hero/scene.ts` の `showcase()` の `desc`            |
 
 - 節の見出しは `<Section title="…" label="…">` の `title`(日本語)と `label`(英語)で変える
 - 企画名と添え書きは OGP 画像にも入っている。変えたら `npm run og` で `public/og.png` を作り直す

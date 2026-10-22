@@ -1,11 +1,12 @@
 // 研究室サイト(kawahara-lab-site 2231987 の src/hero/main.ts)からコピーした。正本は研究室サイトにある
+// 特設サイトでは、検証用のパネルの代わりに図形の切り替えと説明のパネル(shape-panel.ts)を常に出す
 // 起動と、DOM・入力・時間の接続
 import { CFG } from "./config";
-import { setupDevPanel, devPanelEnabled } from "./dev-panel";
 import { clamp } from "./math";
 import { readColors } from "./palette";
 import { createRenderer } from "./render";
-import { Scene } from "./scene";
+import { Scene, type ShowcaseShape } from "./scene";
+import { setupShapePanel } from "./shape-panel";
 
 /** hero の中の canvas と名前の欄を使ってヒーローを動かす */
 export function startHero(hero: HTMLElement) {
@@ -145,10 +146,13 @@ export function startHero(hero: HTMLElement) {
   });
   readColors(hero);
   sizeCanvas();
+  // 説明のパネルは scene を使って作るので、最初の形の読み込みには間に合わない(パネルが自分で最初の形を出す)
+  let showDesc: ((shape: ShowcaseShape) => void) | undefined;
   const scene = new Scene(
     {
       onShapeLoad: (shape) => {
         nameEl.textContent = shape.name;
+        showDesc?.(shape);
       },
       // ヒーローでは結果の文は出さず、実行中の処理の名前だけを形の名前の横に出す
       onAlgoStart: (algo) => {
@@ -160,7 +164,7 @@ export function startHero(hero: HTMLElement) {
     },
     reduceMotion,
   );
-  if (devPanelEnabled()) setupDevPanel(hero, scene, draw);
+  showDesc = setupShapePanel(hero, scene, draw);
 
   if (reduceMotion) {
     // 動きを減らす設定では、信号が広がった状態の1枚で止める(ドラッグとクリックには応じる)
