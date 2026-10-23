@@ -2,6 +2,7 @@
 
 import { AUTO_SETTLE_MS, RELAX_EDGE_MS } from "./config.js";
 import { guideStep } from "./guide.js";
+import { startIntro } from "./intro/main.js";
 import { ControlRound, DeliveryRound, INF, buildAdj, dijkstra, treeEdges } from "./logic.js";
 import { relaxLines, stepInterval } from "./relax.js";
 import { revealFor } from "./reveal.js";
@@ -23,6 +24,7 @@ const FLOW = STAGES.flatMap((_, stageIndex) => [
 const $ = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const svg = /** @type {SVGSVGElement} */ (/** @type {unknown} */ ($("board")));
 const ui = {
+  introScreen: $("intro-screen"),
   selectScreen: $("select-screen"),
   pickDijkstra: $("pick-dijkstra"),
   toSelect: $("to-select"),
@@ -43,6 +45,8 @@ const ui = {
   run: /** @type {HTMLButtonElement} */ ($("run")),
   skipGuide: $("skip-guide"),
   next: /** @type {HTMLButtonElement} */ ($("next")),
+  playOther: $("play-other"),
+  handOver: $("hand-over"),
   reveal: $("reveal"),
   revealList: $("reveal-list"),
   revealClose: $("reveal-close"),
@@ -253,7 +257,6 @@ function goNext() {
   }
   const f = FLOW[flowIndex() + 1];
   if (f) load(f.stageIndex, f.mode);
-  else showTitle();
 }
 
 /** ステージを選ぶボタンに、配達の最高記録を添える */
@@ -265,13 +268,28 @@ function showStageStars() {
   });
 }
 
+/** 入門を最初の段から出す。終えるとゲームを選ぶ画面に移る。来場者が交代するときもここから始める */
+function showIntro() {
+  stopAuto();
+  clearFx(svg);
+  ui.gameScreen.hidden = true;
+  ui.selectScreen.hidden = true;
+  ui.titleScreen.hidden = true;
+  ui.introScreen.hidden = false;
+  startIntro(ui.introScreen, showSelect);
+}
+
 /** ゲームを選ぶ画面を出す。試作の3本は別のページなので、ここからリンクで移る */
 function showSelect() {
+  stopAuto();
+  clearFx(svg);
+  ui.gameScreen.hidden = true;
+  ui.introScreen.hidden = true;
   ui.titleScreen.hidden = true;
   ui.selectScreen.hidden = false;
 }
 
-/** 次の来場者に端末を渡せるよう、タイトル画面に戻す */
+/** タイトル画面に戻す */
 function showTitle() {
   stopAuto();
   clearFx(svg);
@@ -323,9 +341,11 @@ function update() {
   ui.map.setAttribute("aria-pressed", String(done && state.showMap));
   ui.run.hidden = state.mode !== "B";
   ui.run.disabled = state.autoTimer !== 0 || c.finished;
-  // 最後のステージの後は、「次へ」の代わりに「タイトルへ」を出す
-  ui.next.textContent = isLast() ? "タイトルへ" : "次へ";
+  // 最後の層を終えたら、「次へ」の代わりに終わりの戻り先を2つ出す
+  ui.next.hidden = isLast();
   ui.next.disabled = !done;
+  ui.playOther.hidden = !(isLast() && done);
+  ui.handOver.hidden = !(isLast() && done);
   ui.skipGuide.hidden = g === null;
   const reveal = state.revealOpen ? revealFor(s, state.mode) : null;
   ui.reveal.hidden = reveal === null;
@@ -344,7 +364,8 @@ function update() {
       return [dt, dd];
     }),
   );
-  ui.revealNext.textContent = ui.next.textContent;
+  // 最後の層の解説からは先へ進まない。地図に戻って、終わりの戻り先を選ぶ
+  ui.revealNext.hidden = isLast();
   // 案内中は字幕を主に出し、ふだんの1行目(「ここまで 3分」など)を2行目に回す
   ui.msg.textContent = g ? g.caption : state.msg;
   ui.sub.textContent = g
@@ -377,6 +398,8 @@ ui.skipGuide.addEventListener("click", () => {
   update();
 });
 ui.next.addEventListener("click", goNext);
+ui.playOther.addEventListener("click", showSelect);
+ui.handOver.addEventListener("click", showIntro);
 ui.revealNext.addEventListener("click", goNext);
 ui.revealClose.addEventListener("click", () => {
   state.revealOpen = false;
@@ -422,4 +445,9 @@ svg.addEventListener("click", (e) => {
 
 // タイトル画面の挿絵として、Stage 1 の地図をゲームと同じ描画で置く
 buildMap(ui.titleMap, STAGES[0]);
-showSelect();
+// 試作のゲームから「ほかのゲームで遊ぶ」で戻ったときだけ、入門を飛ばす。
+// ハッシュは消しておき、読み込み直したときや、アプリの URL をそのまま開いたときは入門から始める
+if (location.hash === "#select") {
+  history.replaceState(null, "", location.pathname + location.search);
+  showSelect();
+} else showIntro();

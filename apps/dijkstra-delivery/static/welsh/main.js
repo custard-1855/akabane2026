@@ -30,6 +30,8 @@ const ui = {
   reset: /** @type {HTMLButtonElement} */ ($("reset")),
   run: /** @type {HTMLButtonElement} */ ($("run")),
   showTerms: $("show-terms"),
+  playOther: $("play-other"),
+  handOver: $("hand-over"),
   compare: $("compare"),
   terms: $("terms"),
   termsList: $("terms-list"),
@@ -103,6 +105,8 @@ function updateB() {
   ui.run.disabled = state.run >= 0 && !finished;
   ui.run.textContent = finished ? "もう一度" : "スタート";
   ui.showTerms.hidden = !finished;
+  ui.playOther.hidden = !finished;
+  ui.handOver.hidden = !finished;
 
   if (state.run < 0) {
     render(svg, { assign: {}, conflicts: new Set(), ghost: null, current: null });
@@ -150,6 +154,8 @@ function update() {
   ui.run.hidden = a;
   if (a) {
     ui.showTerms.hidden = true;
+    ui.playOther.hidden = true;
+    ui.handOver.hidden = true;
     ui.compare.hidden = true;
     svg.style.display = "";
     updateA();
@@ -188,8 +194,11 @@ function setMode(mode) {
   update();
 }
 
-// 選ぶ画面(配達員ダイクストラの index.html)に戻る
-$("to-select").addEventListener("click", () => location.assign("../"));
+// 同じ人が続けて遊ぶときは、入門を飛ばしてゲームを選ぶ画面(配達員ダイクストラの index.html)に戻る。
+// 来場者が交代するときは、アプリを開き直して入門から始める
+$("to-select").addEventListener("click", () => location.assign("../#select"));
+ui.playOther.addEventListener("click", () => location.assign("../#select"));
+ui.handOver.addEventListener("click", () => location.assign("../"));
 
 svg.addEventListener("click", (ev) => {
   if (state.mode !== "A" || state.done) return;
