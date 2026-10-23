@@ -14,7 +14,7 @@
 
 | | ゲームのアプリ `apps/*` |
 |---|---|
-| 配信先 | Django の静的ファイル。置き場所と URL は組み込むときに決める(設計書 3.8)。開発中は静的サーバで動かす |
+| 配信先 | Django の静的ファイル。置き場所と URL は組み込むときに決める(設計書 3.8)。開発中は静的サーバで動かす。main の `static/` は GitHub Pages(https://custard-1855.github.io/akabane2026/)にも公開する(`.github/workflows/games.yml`) |
 | 書く言語 | JavaScript(ESモジュール)+ JSDocで型 |
 | ビルド | なし。`static/` をそのまま配信する |
 | 型チェック | `tsc --noEmit`(`checkJs`)※未導入 |
