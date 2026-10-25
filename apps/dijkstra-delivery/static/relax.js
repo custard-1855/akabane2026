@@ -1,7 +1,7 @@
 // 管制室の緩和の1本ずつの表示。確定した交差点から出る道ごとに、計算と書き換えたかを文にする。
 // DOM に依存させず、Node で直接テストする
 
-import { AUTO_SETTLE_MS, RELAX_EDGE_MS } from "./config.js";
+import { AUTO_SETTLE_MS, RELAX_EDGE_MS, RELAX_HOLD_MS } from "./config.js";
 
 /**
  * @typedef {{ node: string, via: string, from: number, cand: number, updated: boolean }} Relaxation
@@ -29,9 +29,10 @@ export function relaxLines(r, base) {
 }
 
 /**
- * 1手の間隔。道を1本ずつ見せ終えるまで次の確定を待つ
+ * 1手の間隔。道を1本ずつ見せ終え、最後の道にも RELAX_HOLD_MS の間を置いてから次の確定へ進む
  * @param {number} edges その手で見せる道の本数
  */
 export function stepInterval(edges) {
-  return Math.max(AUTO_SETTLE_MS, edges * RELAX_EDGE_MS);
+  if (edges === 0) return AUTO_SETTLE_MS;
+  return Math.max(AUTO_SETTLE_MS, (edges - 1) * RELAX_EDGE_MS + RELAX_HOLD_MS);
 }

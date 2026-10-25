@@ -18,8 +18,9 @@ test("緩和の1本ずつ: Stage 1 で D(6)を確定すると、C はそのま�
   ]);
 });
 
-test("緩和の1本ずつ: 1手の間隔は、1本0.6秒で 1.8秒に収まればそのまま、収まらなければ延ばす", () => {
-  assert.equal(stepInterval(0), 1800);
-  assert.equal(stepInterval(3), 1800);
-  assert.equal(stepInterval(4), 2400);
+test("緩和の1本ずつ: 1手の間隔は、1本0.8秒で最後の道の後に1.5秒置き、2.2秒に収まればそのまま、収まらなければ延ばす", () => {
+  assert.equal(stepInterval(0), 2200);
+  assert.equal(stepInterval(1), 2200);
+  assert.equal(stepInterval(2), 2300);
+  assert.equal(stepInterval(4), 3900);
 });

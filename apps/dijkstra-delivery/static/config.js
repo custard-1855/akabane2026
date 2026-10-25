@@ -15,6 +15,8 @@ export const MIN_NODE_GAP = 150;
 export const MIN_EDGE_GAP = 60;
 
 /** 管制室で、自動で1つ確定する間隔(ミリ秒)。確定ごとの字幕2行を読める長さにする */
-export const AUTO_SETTLE_MS = 1800;
+export const AUTO_SETTLE_MS = 2200;
 /** 管制室で、確定した交差点から出る道を1本ずつ見せる間隔(ミリ秒)。1手に収まらなければ1手の間隔を延ばす */
-export const RELAX_EDGE_MS = 600;
+export const RELAX_EDGE_MS = 800;
+/** 管制室で、最後の道を見せてから次の確定までに置く間(ミリ秒)。最後の1本の計算も読み切れるようにする */
+export const RELAX_HOLD_MS = 1500;

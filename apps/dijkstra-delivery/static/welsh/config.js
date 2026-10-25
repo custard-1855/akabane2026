@@ -13,7 +13,7 @@ export const HIT_R = 64;
  */
 export const MAX_CHANNELS = 5;
 
-/** 層Bで、基地局を1つ塗る間隔(ミリ秒)。字幕1行を読める長さにする */
-export const AUTO_STEP_MS = 1600;
+/** 層Bで、基地局を1つ塗る間隔(ミリ秒)。新しいチャンネルを使うときの長い字幕も読める長さにする */
+export const AUTO_STEP_MS = 2800;
 /** 層Bで、1回目を塗り終えてから2回目を始めるまでの間(ミリ秒)。使った数を見てもらう */
-export const RUN_PAUSE_MS = 3000;
+export const RUN_PAUSE_MS = 4000;
